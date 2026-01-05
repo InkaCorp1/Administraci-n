@@ -3,20 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Administracion Inka Corp</title>
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" href="/favicon.ico">
+  <title>Administración Inka Corp</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="favicon.ico">
+  
   <style>
     body, html {
       margin: 0;
       padding: 0;
       height: 100%;
+      width: 100%;
       overflow: hidden;
+      background-color: #0f4353;
     }
     iframe {
       border: none;
       width: 100%;
       height: 100%;
+      display: block;
     }
     #install-banner {
       position: fixed;
@@ -84,22 +88,17 @@
       width: 30px;
       height: 30px;
     }
-    #close-banner:hover {
-      opacity: 0.8;
-    }
     .hidden {
       display: none !important;
     }
   </style>
 </head>
 <body>
-  <!-- Iframe con el contenido de la aplicación -->
-  <iframe src="https://administracion.inkacorp.net/" frameborder="0"></iframe>
+  <iframe src="administrador.html" id="app-iframe"></iframe>
   
-  <!-- Banner de instalación mejorado -->
   <div id="install-banner" class="hidden">
     <div class="banner-content">
-      <img src="/icons/icon-192.png" alt="Logo Administracion Inka Corp" class="banner-logo">
+      <img src="icons/icon-192.png" alt="Logo" class="banner-logo">
       <div class="banner-text">
         <div class="banner-title">Instalar Administracion Inka Corp</div>
       </div>
@@ -111,109 +110,55 @@
   </div>
   
   <script>
-    // Variables para el banner de instalación
     let deferredPrompt;
     const installBanner = document.getElementById('install-banner');
     const installBtn = document.getElementById('install-btn');
     const closeBanner = document.getElementById('close-banner');
     
-    // Eliminar el banner anterior si existe
-    window.addEventListener('load', function() {
-      // Eliminar cualquier banner previo que pudiera estar causando conflicto
-      const oldBanners = document.querySelectorAll('.install-banner, .app-install-banner');
-      oldBanners.forEach(banner => {
-        if (banner !== installBanner) {
-          banner.remove();
-        }
-      });
-    });
-    
-    // Registro del service worker después de cargar la página
-    window.addEventListener('load', function() {
-      if ('serviceWorker' in navigator) {
+    // Registro del Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js')
-          .then(registration => {
-            console.log('Service Worker registrado con éxito:', registration);
-          })
-          .catch(error => {
-            console.log('Fallo en el registro del Service Worker:', error);
-          });
-      }
-    });
-    
-    // Verificar si ya está instalada
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                         window.navigator.standalone || 
-                         document.referrer.includes('android-app://');
-    
-    // Capturar evento de instalación
+          .then(reg => console.log('SW registrado'))
+          .catch(err => console.log('Error SW:', err));
+      });
+    }
+
+    // Detectar si ya está en modo PWA
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+    // Lógica del banner de instalación
     window.addEventListener('beforeinstallprompt', (e) => {
-      console.log('Evento beforeinstallprompt capturado');
-      
-      // Prevenir el banner nativo
       e.preventDefault();
-      
-      // Guardar el evento para usarlo después
       deferredPrompt = e;
       
-      // Mostrar nuestro banner personalizado INMEDIATAMENTE después de capturar el evento
-      if (!isStandalone && localStorage.getItem('installBannerClosed') !== 'true') {
-        console.log('Mostrando banner personalizado');
-        setTimeout(() => {
-          installBanner.classList.remove('hidden');
-        }, 500);
+      // Mostrar banner si no se ha cerrado antes y no está instalada
+      if (!isStandalone && localStorage.getItem('pwaBannerClosed') !== 'true') {
+        installBanner.classList.remove('hidden');
       }
     });
-    
-    // Manejar clic en el botón de instalación
+
     installBtn.addEventListener('click', async () => {
-      if (!deferredPrompt) {
-        console.log('No hay evento de instalación disponible');
-        alert('Para instalar: Usa el menú del navegador para añadir esta app a tu pantalla de inicio');
-        return;
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          console.log('Usuario aceptó la instalación');
+        }
+        deferredPrompt = null;
+        installBanner.classList.add('hidden');
       }
-      
-      console.log('Mostrando prompt de instalación');
-      // Mostrar el prompt de instalación
-      deferredPrompt.prompt();
-      
-      // Esperar a que el usuario responda al prompt
-      const choiceResult = await deferredPrompt.userChoice;
-      console.log('Usuario respondió:', choiceResult);
-      
-      // Ocultar el banner después de la decisión del usuario
-      installBanner.classList.add('hidden');
-      
-      // Limpiar la variable, el prompt solo se puede usar una vez
-      deferredPrompt = null;
     });
-    
-    // Cerrar el banner manualmente
+
     closeBanner.addEventListener('click', () => {
       installBanner.classList.add('hidden');
-      localStorage.setItem('installBannerClosed', 'true');
+      localStorage.setItem('pwaBannerClosed', 'true');
     });
-    
-    // Ocultar banner cuando se instala
-    window.addEventListener('appinstalled', (e) => {
-      console.log('Aplicación instalada correctamente');
+
+    window.addEventListener('appinstalled', () => {
       installBanner.classList.add('hidden');
+      deferredPrompt = null;
     });
-    
-    // Si no se detecta el evento beforeinstallprompt pero el usuario no ha instalado la app,
-    // mostrar el banner después de un tiempo
-    if (!isStandalone && localStorage.getItem('installBannerClosed') !== 'true') {
-      setTimeout(() => {
-        if (!installBanner.classList.contains('hidden')) {
-          return; // El banner ya está visible
-        }
-        
-        if (!deferredPrompt) {
-          console.log('Mostrando banner manual después de timeout');
-          installBanner.classList.remove('hidden');
-        }
-      }, 3000);
-    }
   </script>
 </body>
 </html>
