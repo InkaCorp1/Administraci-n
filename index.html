@@ -1,155 +1,219 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>INKA CORP - Dashboard</title>
-    <meta name="description" content="Sistema de gestión INKA CORP - Panel de administración">
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/creditos.css">
-    <link rel="stylesheet" href="css/polizas.css">
-    <link rel="stylesheet" href="css/socios.css">
-    <link rel="stylesheet" href="css/solicitud_credito.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- jsPDF para generación de fichas PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- QRious para códigos QR en PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
-    <script src="js/config.js"></script>
-    <script src="js/auth.js"></script>
-    <script>
-        // Detección de dispositivo móvil y redirección
-        (function() {
-            // Verificar si el usuario forzó la versión de escritorio
-            if (sessionStorage.getItem('forceDesktop') === 'true') {
-                sessionStorage.removeItem('forceDesktop');
-                return; // No redirigir
-            }
-            
-            // Detectar si es móvil
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
-                || (window.innerWidth <= 768 && 'ontouchstart' in window);
-            
-            if (isMobile) {
-                window.location.href = 'movil.html';
-            }
-        })();
-        
-        // Verificación de sesión inmediata antes de renderizar el cuerpo
-        (async function () {
-            initSupabase();
-            const { isAuthenticated } = await checkSession();
-            if (!isAuthenticated) {
-                window.location.href = 'login.html';
-            }
-        })();
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administracion Inka Corp</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/favicon.ico">
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+    iframe {
+      border: none;
+      width: 100%;
+      height: 100%;
+    }
+    #install-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #0c4e32;
+      color: white;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 9999;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+      font-family: Arial, sans-serif;
+    }
+    .banner-content {
+      display: flex;
+      align-items: center;
+      flex: 1;
+    }
+    .banner-logo {
+      width: 40px;
+      height: 40px;
+      margin-right: 15px;
+      border-radius: 50%;
+      background: white;
+      padding: 3px;
+    }
+    .banner-text {
+      flex: 1;
+    }
+    .banner-title {
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .banner-actions {
+      display: flex;
+      align-items: center;
+    }
+    #install-btn {
+      background: #e48410;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+      transition: background-color 0.2s;
+    }
+    #install-btn:hover {
+      opacity: 0.9;
+    }
+    #close-banner {
+      background: transparent;
+      color: white;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      margin-left: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+    }
+    #close-banner:hover {
+      opacity: 0.8;
+    }
+    .hidden {
+      display: none !important;
+    }
+  </style>
 </head>
-
 <body>
-    <!-- Layout Principal -->
-    <div class="app-layout">
-        <!-- Botón Hamburguesa (visible cuando sidebar está cerrado) -->
-        <button id="sidebar-toggle" class="sidebar-toggle" title="Menú">
-            <i class="fas fa-bars"></i>
-        </button>
-
-        <!-- Overlay para cerrar sidebar -->
-        <div id="sidebar-overlay" class="sidebar-overlay"></div>
-
-        <!-- Sidebar -->
-        <aside id="sidebar" class="sidebar collapsed">
-            <div class="sidebar-header">
-                <div class="sidebar-logo">
-                    <img src="https://i.ibb.co/3mC22Hc4/inka-corp.png" alt="INKA CORP Logo">
-                </div>
-                <div>
-                    <div class="sidebar-title">INKA CORP</div>
-                    <div class="sidebar-subtitle">Sistema de Gestión</div>
-                </div>
-            </div>
-
-            <nav class="nav-menu">
-                <div class="nav-section-title">Navegación</div>
-
-                <a href="#dashboard" class="nav-item active" data-view="dashboard">
-                    <i class="fas fa-th-large"></i>
-                    <span>Dashboard</span>
-                </a>
-
-                <a href="#socios" class="nav-item" data-view="socios" data-module="socios">
-                    <i class="fas fa-users"></i>
-                    <span>Socios</span>
-                </a>
-
-                <a href="#solicitud_credito" class="nav-item" data-view="solicitud_credito"
-                    data-module="solicitud_credito">
-                    <i class="fas fa-file-invoice-dollar"></i>
-                    <span>Solicitud de Crédito</span>
-                </a>
-
-                <a href="#creditos" class="nav-item" data-view="creditos" data-module="creditos">
-                    <i class="fas fa-hand-holding-usd"></i>
-                    <span>Créditos</span>
-                </a>
-
-                <a href="#precancelaciones" class="nav-item" data-view="precancelaciones"
-                    data-module="precancelaciones">
-                    <i class="fas fa-hand-holding-usd"></i>
-                    <span>Precancelaciones</span>
-                </a>
-
-                <a href="#ahorros" class="nav-item" data-view="ahorros" data-module="ahorros">
-                    <i class="fas fa-piggy-bank"></i>
-                    <span>Ahorros</span>
-                </a>
-
-                <div class="nav-section-title" style="margin-top: 1rem;">Configuración</div>
-
-
-
-            </nav>
-
-            <!-- Perfil de Usuario -->
-            <div class="user-profile">
-                <div id="user-avatar" class="user-avatar">U</div>
-                <div class="user-info">
-                    <div id="user-name" class="user-name">Usuario</div>
-                    <div id="user-role" class="user-role">Rol</div>
-                </div>
-                <button id="logout-btn" class="logout-btn" title="Cerrar Sesión">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
-            </div>
-        </aside>
-
-        <!-- Contenido Principal -->
-        <main id="main-content" class="main-content">
-            <!-- El contenido dinámico se cargará aquí -->
-        </main>
-
-
+  <!-- Iframe con el contenido de la aplicación -->
+  <iframe src="https://administracion.inkacorp.net/" frameborder="0"></iframe>
+  
+  <!-- Banner de instalación mejorado -->
+  <div id="install-banner" class="hidden">
+    <div class="banner-content">
+      <img src="/icons/icon-192.png" alt="Logo Administracion Inka Corp" class="banner-logo">
+      <div class="banner-text">
+        <div class="banner-title">Instalar Administracion Inka Corp</div>
+      </div>
     </div>
-
-    <!-- Loader Global -->
-    <div id="app-loader" class="app-loader hidden">
-        <div class="app-loader-card">
-            <div class="app-loader-spinner"></div>
-            <div id="app-loader-text" class="app-loader-text">Cargando...</div>
-        </div>
+    <div class="banner-actions">
+      <button id="install-btn">Instalar App</button>
+      <button id="close-banner">×</button>
     </div>
-
-    <!-- Scripts -->
-    <script src="js/config.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/app.js"></script>
-    <script src="js/modules/socios.js"></script>
-    <script src="js/modules/solicitud_credito.js"></script>
-    <script src="js/modules/creditos.js"></script>
-    <script src="js/modules/precancelaciones.js"></script>
-    <script src="js/modules/ahorros.js"></script>
+  </div>
+  
+  <script>
+    // Variables para el banner de instalación
+    let deferredPrompt;
+    const installBanner = document.getElementById('install-banner');
+    const installBtn = document.getElementById('install-btn');
+    const closeBanner = document.getElementById('close-banner');
+    
+    // Eliminar el banner anterior si existe
+    window.addEventListener('load', function() {
+      // Eliminar cualquier banner previo que pudiera estar causando conflicto
+      const oldBanners = document.querySelectorAll('.install-banner, .app-install-banner');
+      oldBanners.forEach(banner => {
+        if (banner !== installBanner) {
+          banner.remove();
+        }
+      });
+    });
+    
+    // Registro del service worker después de cargar la página
+    window.addEventListener('load', function() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then(registration => {
+            console.log('Service Worker registrado con éxito:', registration);
+          })
+          .catch(error => {
+            console.log('Fallo en el registro del Service Worker:', error);
+          });
+      }
+    });
+    
+    // Verificar si ya está instalada
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                         window.navigator.standalone || 
+                         document.referrer.includes('android-app://');
+    
+    // Capturar evento de instalación
+    window.addEventListener('beforeinstallprompt', (e) => {
+      console.log('Evento beforeinstallprompt capturado');
+      
+      // Prevenir el banner nativo
+      e.preventDefault();
+      
+      // Guardar el evento para usarlo después
+      deferredPrompt = e;
+      
+      // Mostrar nuestro banner personalizado INMEDIATAMENTE después de capturar el evento
+      if (!isStandalone && localStorage.getItem('installBannerClosed') !== 'true') {
+        console.log('Mostrando banner personalizado');
+        setTimeout(() => {
+          installBanner.classList.remove('hidden');
+        }, 500);
+      }
+    });
+    
+    // Manejar clic en el botón de instalación
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) {
+        console.log('No hay evento de instalación disponible');
+        alert('Para instalar: Usa el menú del navegador para añadir esta app a tu pantalla de inicio');
+        return;
+      }
+      
+      console.log('Mostrando prompt de instalación');
+      // Mostrar el prompt de instalación
+      deferredPrompt.prompt();
+      
+      // Esperar a que el usuario responda al prompt
+      const choiceResult = await deferredPrompt.userChoice;
+      console.log('Usuario respondió:', choiceResult);
+      
+      // Ocultar el banner después de la decisión del usuario
+      installBanner.classList.add('hidden');
+      
+      // Limpiar la variable, el prompt solo se puede usar una vez
+      deferredPrompt = null;
+    });
+    
+    // Cerrar el banner manualmente
+    closeBanner.addEventListener('click', () => {
+      installBanner.classList.add('hidden');
+      localStorage.setItem('installBannerClosed', 'true');
+    });
+    
+    // Ocultar banner cuando se instala
+    window.addEventListener('appinstalled', (e) => {
+      console.log('Aplicación instalada correctamente');
+      installBanner.classList.add('hidden');
+    });
+    
+    // Si no se detecta el evento beforeinstallprompt pero el usuario no ha instalado la app,
+    // mostrar el banner después de un tiempo
+    if (!isStandalone && localStorage.getItem('installBannerClosed') !== 'true') {
+      setTimeout(() => {
+        if (!installBanner.classList.contains('hidden')) {
+          return; // El banner ya está visible
+        }
+        
+        if (!deferredPrompt) {
+          console.log('Mostrando banner manual después de timeout');
+          installBanner.classList.remove('hidden');
+        }
+      }, 3000);
+    }
+  </script>
 </body>
-
 </html>
