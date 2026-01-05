@@ -25,8 +25,8 @@
     </script>
     <style>
         /* ==========================================
-           VARIABLES Y RESET
-           ========================================== */
+            VARIABLES Y RESET
+            ========================================== */
         :root {
             --primary: #0B4E32;
             --primary-light: #146E3A;
@@ -67,8 +67,8 @@
         }
 
         /* ==========================================
-           LAYOUT PRINCIPAL
-           ========================================== */
+            LAYOUT PRINCIPAL
+            ========================================== */
         .mobile-app {
             min-height: 100vh;
             display: flex;
@@ -77,8 +77,8 @@
         }
 
         /* ==========================================
-           HEADER
-           ========================================== */
+            HEADER
+            ========================================== */
         .mobile-header {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             padding: 1rem 1rem 1.25rem;
@@ -155,8 +155,8 @@
         }
 
         /* ==========================================
-           SECCIÓN DE DESEMBOLSOS
-           ========================================== */
+            SECCIÓN DE DESEMBOLSOS
+            ========================================== */
         .main-content {
             flex: 1;
             padding: 1rem;
@@ -391,8 +391,8 @@
         }
 
         /* ==========================================
-           MODAL DE DOCUMENTOS
-           ========================================== */
+            MODAL DE DOCUMENTOS
+            ========================================== */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -703,8 +703,8 @@
         }
 
         /* ==========================================
-           NAVEGACIÓN INFERIOR
-           ========================================== */
+            NAVEGACIÓN INFERIOR
+            ========================================== */
         .bottom-nav {
             background: var(--bg-card);
             border-top: 1px solid var(--border-color);
@@ -776,8 +776,8 @@
         }
 
         /* ==========================================
-           ESTILOS PARA MODAL DE UPLOAD
-           ========================================== */
+            ESTILOS PARA MODAL DE UPLOAD
+            ========================================== */
         .upload-doc-item {
             background: var(--bg-main);
             border: 1px solid var(--border-color);
@@ -914,7 +914,6 @@
 
 <body>
     <div class="mobile-app">
-        <!-- Header -->
         <header class="mobile-header">
             <div class="header-top">
                 <div class="header-logo">
@@ -936,7 +935,6 @@
             </div>
         </header>
 
-        <!-- Contenido Principal -->
         <main class="main-content">
             <div class="section-header">
                 <h2 class="section-title">
@@ -953,7 +951,6 @@
                 </div>
             </div>
 
-            <!-- Botón para ir a versión PC -->
             <div class="switch-version">
                 <button class="switch-version-btn" onclick="goToDesktop()">
                     <i class="fas fa-desktop"></i>
@@ -962,7 +959,6 @@
             </div>
         </main>
 
-        <!-- Navegación Inferior -->
         <nav class="bottom-nav">
             <button class="nav-item active">
                 <i class="fas fa-money-bill-wave"></i>
@@ -975,7 +971,6 @@
         </nav>
     </div>
 
-    <!-- Modal de Documentos -->
     <div class="modal-overlay" id="docs-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -986,13 +981,11 @@
             </div>
             <div class="modal-body">
                 <div id="docs-list" class="docs-list">
-                    <!-- Los documentos se cargan dinámicamente -->
-                </div>
+                    </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal de Confirmación -->
     <div class="confirm-modal" id="confirm-modal">
         <div class="confirm-content">
             <div class="confirm-icon">
@@ -1012,7 +1005,6 @@
         </div>
     </div>
 
-    <!-- Modal de Carga de Documentos para Desembolso -->
     <div class="modal-overlay" id="upload-modal">
         <div class="modal-content" style="max-height: 95vh;">
             <div class="modal-header" style="background: linear-gradient(135deg, #0B4E32 0%, #073D27 100%);">
@@ -1022,7 +1014,6 @@
                 </button>
             </div>
             <div class="modal-body" style="padding: 1rem;">
-                <!-- Aviso importante -->
                 <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; border-radius: 12px; padding: 0.875rem; margin-bottom: 1rem;">
                     <div style="display: flex; align-items: flex-start; gap: 0.625rem;">
                         <i class="fas fa-exclamation-triangle" style="color: #d97706; margin-top: 2px;"></i>
@@ -1033,12 +1024,9 @@
                     </div>
                 </div>
 
-                <!-- Lista de documentos a subir -->
                 <div id="upload-docs-list" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;">
-                    <!-- Se genera dinámicamente -->
-                </div>
+                    </div>
 
-                <!-- Botón de confirmar desembolso -->
                 <button id="btn-confirmar-desembolso" class="desembolso-btn desembolso-btn-desembolsar" style="width: 100%; padding: 1rem; font-size: 0.9rem;" disabled onclick="confirmDesembolsoWithDocs()">
                     <i class="fas fa-check-circle"></i> Confirmar Desembolso
                 </button>
@@ -1049,7 +1037,6 @@
         </div>
     </div>
 
-    <!-- Toast -->
     <div class="toast" id="toast">
         <i class="fas fa-check-circle"></i>
         <span id="toast-message">Mensaje</span>
@@ -1608,7 +1595,7 @@
 
             try {
                 const supabase = window.getSupabaseClient();
-                const currentUser = await getCurrentUser();
+                const { data: { user } } = await supabase.auth.getUser();
                 const now = new Date().toISOString();
                 const todayStr = now.split('T')[0];
 
@@ -1630,8 +1617,8 @@
                     estado_anterior: 'PENDIENTE',
                     estado_nuevo: 'ACTIVO',
                     fecha_cambio: now,
-                    usuario: currentUser?.id || null,
-                    motivo: `Desembolso completado con carga de documentos (Móvil). Procesado por: ${currentUser?.nombre || currentUser?.email || 'Sistema'}`
+                    usuario: user?.id || null,
+                    motivo: `Desembolso completado con carga de documentos (Móvil).`
                 });
 
                 // 3. Actualizar solicitud
@@ -1648,13 +1635,6 @@
                         .eq('solicitudid', creditoData.id_solicitud);
                 }
                 
-                // Log de éxito
-                console.log('✅ Desembolso completado:', {
-                    creditoId: currentCreditoId,
-                    documentos: uploadedFiles,
-                    fecha: now
-                });
-
                 closeUploadModal();
                 showToast('¡Desembolso realizado con éxito!', 'success');
                 
@@ -1669,7 +1649,6 @@
             }
         }
 
-        // Confirmar desembolso (versión legacy sin documentos - ya no se usa)
         async function confirmDesembolso() {
             if (!currentCreditoId) return;
             
@@ -1718,12 +1697,12 @@
             }, 3000);
         }
 
-        // Ir a versión de escritorio
+        // AJUSTE: Ir a versión de escritorio (administrador.html)
         function goToDesktop() {
-            // Guardar preferencia
             sessionStorage.setItem('forceDesktop', 'true');
-            window.location.href = 'index.html';
+            window.location.href = 'administrador.html';
         }
     </script>
 </body>
+
 </html>
