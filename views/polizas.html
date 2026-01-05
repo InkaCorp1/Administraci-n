@@ -1,0 +1,203 @@
+<!-- Vista Administración de Pólizas - INKA CORP -->
+<div class="content-wrapper polizas-wrapper">
+    <!-- Hero Header del Módulo -->
+    <div class="polizas-hero">
+        <div class="hero-bg-polizas"></div>
+        <div class="hero-content-polizas">
+            <div class="hero-icon-polizas">
+                <i class="fas fa-certificate"></i>
+            </div>
+            <h1 class="hero-title-polizas">Pólizas</h1>
+            <p class="hero-subtitle-polizas">Inversiones y certificados</p>
+        </div>
+
+        <!-- Stats integrados en hero -->
+        <div class="polizas-hero-stats">
+            <div class="polizas-hero-stat">
+                <span class="polizas-hero-value" id="stat-polizas-activos">0</span>
+                <span class="polizas-hero-label">Activas</span>
+            </div>
+            <div class="polizas-hero-stat warning">
+                <span class="polizas-hero-value" id="stat-polizas-vencimiento">0</span>
+                <span class="polizas-hero-label">Por Vencer</span>
+            </div>
+            <div class="polizas-hero-stat highlight">
+                <span class="polizas-hero-value" id="stat-polizas-total">$0</span>
+                <span class="polizas-hero-label">Total Invertido</span>
+            </div>
+            <div class="polizas-hero-stat">
+                <span class="polizas-hero-value" id="stat-polizas-interes">$0</span>
+                <span class="polizas-hero-label">Interés Proyectado</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros de Estado -->
+    <div class="estado-tabs">
+        <button class="estado-tab active" data-estado="">
+            <span>Todas</span>
+            <span id="count-polizas-all" class="estado-count">0</span>
+        </button>
+        <button class="estado-tab" data-estado="ACTIVO">
+            <span>Activas</span>
+            <span id="count-polizas-activo" class="estado-count">0</span>
+        </button>
+        <button class="estado-tab" data-estado="PAGADO">
+            <span>Pagadas</span>
+            <span id="count-polizas-pagado" class="estado-count">0</span>
+        </button>
+        <button class="estado-tab" data-estado="CAPITALIZADO">
+            <span>Capitalizadas</span>
+            <span id="count-polizas-capitalizado" class="estado-count">0</span>
+        </button>
+    </div>
+
+    <!-- Tabla de Pólizas -->
+    <div class="table-container">
+        <div class="table-header">
+            <h3 class="table-title">Lista de Pólizas</h3>
+            <div class="table-actions">
+                <button type="button" id="btn-nueva-poliza" class="btn btn-primary" title="Registrar Nueva Póliza">
+                    <i class="fas fa-plus"></i>
+                    <span class="hide-mobile">Nueva Póliza</span>
+                </button>
+
+                <button type="button" id="btn-refresh-polizas" class="btn-refresh" title="Actualizar datos">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+
+                <!-- Botones de ordenamiento rápido -->
+                <div class="sort-buttons">
+                    <div class="sort-group-primary">
+                        <button type="button" class="btn-sort btn-sort-primary active" data-sort="alfabetico"
+                            title="Ordenar por socio">
+                            <i class="fas fa-sort-alpha-down"></i>
+                        </button>
+                        <button type="button" class="btn-sort btn-sort-primary" data-sort="fecha"
+                            title="Ordenar por fecha">
+                            <i class="fas fa-calendar-alt"></i>
+                        </button>
+                        <button type="button" class="btn-sort btn-sort-primary" data-sort="valor"
+                            title="Ordenar por valor">
+                            <i class="fas fa-dollar-sign"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="search-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-polizas" class="search-input"
+                        placeholder="Buscar por socio o certificado...">
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table id="table-polizas">
+                <thead>
+                    <tr>
+                        <th>Socio</th>
+                        <th class="hide-mobile">Fecha</th>
+                        <th>Valor</th>
+                        <th class="hide-mobile">Interés</th>
+                        <th>Vencimiento</th>
+                        <th>Estado</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-polizas">
+                    <!-- Dinámico -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <!-- Modal Registrar/Editar Póliza -->
+    <div id="poliza-modal" class="modal hidden">
+        <div class="modal-backdrop" data-close-modal></div>
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="poliza-modal-title" class="modal-title">Nueva Póliza</h2>
+                <button class="modal-close" data-close-modal>
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="form-poliza">
+                    <input type="hidden" id="poliza-id">
+
+                    <div class="form-section">
+                        <h4 class="form-section-title">Información del Socio</h4>
+                        <div class="form-group">
+                            <label class="form-label">Socio *</label>
+                            <select id="poliza-socio" class="form-select" required>
+                                <option value="">Seleccione un socio...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4 class="form-section-title">Detalles de la Inversión</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Fecha de Inicio *</label>
+                                <input type="date" id="poliza-fecha" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Valor Inversión ($) *</label>
+                                <input type="number" id="poliza-valor" class="form-control" step="0.01" min="0"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Interés (%) *</label>
+                                <input type="number" id="poliza-interes" class="form-control" step="0.01" value="10.00"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Plazo (Meses) *</label>
+                                <input type="number" id="poliza-plazo" class="form-control" value="12" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4 class="form-section-title">Resultados Proyectados</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Fecha Vencimiento</label>
+                                <input type="date" id="poliza-vencimiento" class="form-control" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Valor Final ($)</label>
+                                <input type="number" id="poliza-valor-final" class="form-control" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4 class="form-section-title">Documentos y Estado</h4>
+                        <div class="form-group">
+                            <label class="form-label">URL Certificado Firmado</label>
+                            <input type="url" id="poliza-certificado" class="form-control" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Estado</label>
+                            <select id="poliza-estado" class="form-select">
+                                <option value="ACTIVO">Activo</option>
+                                <option value="PAGADO">Pagado</option>
+                                <option value="CAPITALIZADO">Capitalizado</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-close-modal>Cancelar</button>
+                <button type="button" id="btn-guardar-poliza" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Guardar Póliza
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,47 @@
+-- =====================================================
+-- SCRIPT PARA DESHACER COLOCACIÓN DE CRÉDITO
+-- Crédito ID: b41da98b-44fc-48b1-b5cd-beeccd917c44
+-- Solicitud ID: 02012026185400710
+-- =====================================================
+
+-- IMPORTANTE: Ejecutar en este orden para respetar las foreign keys
+
+-- 1. Eliminar historial del crédito
+DELETE FROM ic_creditos_historial 
+WHERE id_credito = 'b41da98b-44fc-48b1-b5cd-beeccd917c44';
+
+-- 2. Eliminar garantes (si existen)
+DELETE FROM ic_creditos_garantes 
+WHERE id_credito = 'b41da98b-44fc-48b1-b5cd-beeccd917c44';
+
+-- 3. Eliminar documentos del crédito
+DELETE FROM ic_creditos_documentos 
+WHERE id_credito = 'b41da98b-44fc-48b1-b5cd-beeccd917c44';
+
+-- 4. Eliminar ahorros programados
+DELETE FROM ic_creditos_ahorro 
+WHERE id_credito = 'b41da98b-44fc-48b1-b5cd-beeccd917c44';
+
+-- 5. Eliminar tabla de amortización
+DELETE FROM ic_creditos_amortizacion 
+WHERE id_credito = 'b41da98b-44fc-48b1-b5cd-beeccd917c44';
+
+-- 6. Eliminar el crédito principal
+DELETE FROM ic_creditos 
+WHERE id_credito = 'b41da98b-44fc-48b1-b5cd-beeccd917c44';
+
+-- 7. Revertir estado de la solicitud a APROBADA
+UPDATE ic_solicitud_de_credito 
+SET estado = 'APROBADA' 
+WHERE solicitudid = '02012026185400710';
+
+-- =====================================================
+-- VERIFICACIÓN (ejecutar después para confirmar)
+-- =====================================================
+-- SELECT * FROM ic_creditos WHERE id_credito = 'b41da98b-44fc-48b1-b5cd-beeccd917c44';
+-- SELECT * FROM ic_creditos_amortizacion WHERE id_credito = 'b41da98b-44fc-48b1-b5cd-beeccd917c44';
+-- SELECT * FROM ic_creditos_ahorro WHERE id_credito = 'b41da98b-44fc-48b1-b5cd-beeccd917c44';
+-- SELECT * FROM ic_creditos_documentos WHERE id_credito = 'b41da98b-44fc-48b1-b5cd-beeccd917c44';
+-- SELECT * FROM ic_creditos_garantes WHERE id_credito = 'b41da98b-44fc-48b1-b5cd-beeccd917c44';
+-- SELECT * FROM ic_creditos_historial WHERE id_credito = 'b41da98b-44fc-48b1-b5cd-beeccd917c44';
+-- SELECT estado FROM ic_solicitud_de_credito WHERE solicitudid = '02012026185400710';
