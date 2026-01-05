@@ -46,18 +46,17 @@
             initSupabase();
             const sb = getSupabaseClient();
 
-            // Listener para cambios de autenticación - esto detecta cuando la sesión se establece
+            // AJUSTE: Redirigir a administrador.html en lugar de index.html
             sb.auth.onAuthStateChange((event, session) => {
                 if (event === 'SIGNED_IN' && session) {
-                    // Sesión establecida correctamente, redirigir
-                    window.location.replace('index.html');
+                    window.location.replace('administrador.html');
                 }
             });
 
-            // Si ya hay sesión activa, redirigir inmediatamente
+            // AJUSTE: Si ya hay sesión activa, ir directo a administrador.html
             checkSession().then(({ isAuthenticated }) => {
                 if (isAuthenticated) {
-                    window.location.replace('index.html');
+                    window.location.replace('administrador.html');
                 }
             });
 
@@ -79,7 +78,6 @@
 
                     if (error) throw error;
 
-                    // Verificar perfil en tabla de usuarios
                     const { data: userProfile, error: profileError } = await sb
                         .from('ic_users')
                         .select('*')
@@ -90,9 +88,8 @@
                         throw new Error('Usuario no registrado en el sistema.');
                     }
 
-                    // La redirección se manejará por onAuthStateChange
-                    // pero también forzamos aquí por si acaso
-                    window.location.replace('index.html');
+                    // AJUSTE: Redirección forzada a administrador.html
+                    window.location.replace('administrador.html');
 
                 } catch (error) {
                     submitBtn.disabled = false;
@@ -103,7 +100,5 @@
             });
         });
     </script>
-
 </body>
-
 </html>
