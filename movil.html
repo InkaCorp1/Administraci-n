@@ -3364,7 +3364,7 @@
                     if (c.socio?.whatsapp) {
                         await sendPaymentWebhook({
                             whatsapp: c.socio.whatsapp,
-                            image_Base64: receiptImage,
+                            image_base64: receiptImage,
                             message: messageSocio
                         });
                     }
@@ -3372,7 +3372,7 @@
                     // 2. Webhook Dueño (Aviso José - Solo las variables obligatorias)
                     await sendOwnerWebhook({
                         whatsapp: c.socio?.whatsapp || '',
-                        image_Base64: noticeImage,
+                        image_base64: noticeImage,
                         message: messageOwner
                     });
                 } catch (err) {
