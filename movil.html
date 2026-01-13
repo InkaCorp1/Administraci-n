@@ -1679,6 +1679,17 @@
                     </div>
                 </div>
 
+                <!-- Contenedor de Mora (Solo visible si hay retraso) -->
+                <div id="lite-pago-mora-cont" style="display: none; background: rgba(220, 38, 38, 0.05); border: 1px dashed #ef4444; padding: 10px; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span class="lite-det-label" style="color: #ef4444; margin-bottom: 0;">Mora Detectada</span>
+                            <div class="lite-det-value" id="lite-pago-txt-mora" style="color: #ef4444; font-size: 0.95rem; font-weight: bold;">0 días ($0.00)</div>
+                        </div>
+                        <i class="fas fa-exclamation-triangle" style="color: #ef4444; font-size: 1.5rem;"></i>
+                    </div>
+                </div>
+
                 <div class="lite-form-group">
                     <label class="lite-det-label">Monto a Pagar</label>
                     <div class="lite-input-wrapper">
@@ -3171,10 +3182,19 @@
 
                 // Llenar formulario
                 document.getElementById('lite-pago-sugerido').textContent = `$${parseFloat(currentLiteCuota.cuota_total).toLocaleString('es-EC', { minimumFractionDigits: 2 })}`;
-                document.getElementById('lite-pago-monto').value = currentLiteCuota.cuota_total;
-                document.getElementById('lite-pago-fecha').valueAsDate = new Date();
+                
+                // Configurar fecha inicial
+                const fechaInput = document.getElementById('lite-pago-fecha');
+                fechaInput.valueAsDate = new Date();
+                
+                // Listener para recalcular mora cuando cambia la fecha
+                fechaInput.onchange = () => updateLiteMoraUI();
+
                 document.getElementById('lite-pago-referencia').value = '';
                 document.getElementById('lite-pago-metodo').value = 'EFECTIVO';
+
+                // Calcular mora inicial
+                updateLiteMoraUI();
 
                 // Resetear comprobante
                 clearMobileComprobantePreview();
@@ -3209,9 +3229,12 @@
                 return;
             }
 
-            // Validar que el monto coincida con la cuota total
-            if (Math.abs(monto - parseFloat(currentLiteCuota.cuota_total)) > 0.01) {
-                showToast(`El monto debe ser $${parseFloat(currentLiteCuota.cuota_total).toFixed(2)}`, 'warning');
+            // Validar que el monto coincida (Cuota + Mora)
+            const moraCalculada = calcularMoraLite(currentLiteCuota.fecha_vencimiento, fecha);
+            const totalEsperado = parseFloat(currentLiteCuota.cuota_total) + moraCalculada.montoMora;
+
+            if (Math.abs(monto - totalEsperado) > 0.01) {
+                showToast(`El monto no coincide. Esperado: $${totalEsperado.toFixed(2)} (Cuota: $${parseFloat(currentLiteCuota.cuota_total).toFixed(2)} + Mora: $${moraCalculada.montoMora.toFixed(2)})`, 'warning');
                 return;
             }
 
@@ -3248,6 +3271,12 @@
                 const comprobanteUrl = uploadResult.url;
                 console.log('Comprobante móvil subido:', comprobanteUrl);
 
+                // Preparar observaciones con detalle de mora si existe
+                let obsFinal = referencia || 'Pago registrado desde móvil';
+                if (moraCalculada.estaEnMora) {
+                    obsFinal += ` | MORA: $${moraCalculada.montoMora.toFixed(2)} (${moraCalculada.diasMora} días)`;
+                }
+
                 // 3. Registrar el pago
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
                 const { error: errorPago } = await supabase
@@ -3259,7 +3288,7 @@
                         monto_pagado: monto,
                         metodo_pago: metodo,
                         referencia_pago: referencia,
-                        observaciones: 'Pago registrado desde móvil',
+                        observaciones: obsFinal,
                         comprobante_url: comprobanteUrl,
                         cobrado_por: user?.id || null
                     });
@@ -3313,7 +3342,10 @@
                         numeroCuota: currentLiteCuota.numero_cuota,
                         montoPagado: monto,
                         fechaPago: fecha,
-                        metodoPago: metodo
+                        metodoPago: metodo,
+                        estaEnMora: moraCalculada.estaEnMora,
+                        diasMora: moraCalculada.diasMora,
+                        montoMora: moraCalculada.montoMora
                     };
 
                     const receiptImage = await generateReceiptCanvas(receiptData);
@@ -3464,6 +3496,68 @@
         }
 
         /* ==========================================
+           LÓGICA DE MORA (PORTADO DE PC)
+           ========================================== */
+        /**
+         * Parsea una fecha asegurando que los strings YYYY-MM-DD se interpreten en la zona horaria de Ecuador
+         */
+        function parseDate(dateInput) {
+            if (!dateInput) return null;
+            if (dateInput instanceof Date) return dateInput;
+            try {
+                let dateStr = String(dateInput).trim();
+                if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+                    const onlyDate = dateStr.substring(0, 10);
+                    return new Date(onlyDate + 'T00:00:00-05:00');
+                }
+                const d = new Date(dateStr);
+                return isNaN(d.getTime()) ? null : d;
+            } catch (e) {
+                console.error('Error parsing date:', e);
+                return null;
+            }
+        }
+
+        function getEcuadorNow() {
+            const now = new Date();
+            const ecuadorTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
+            ecuadorTime.setHours(0, 0, 0, 0);
+            return ecuadorTime;
+        }
+
+        function calcularMoraLite(fechaVencimiento, fechaPago = null, costoPorDia = 2) {
+            if (!fechaVencimiento) return { diasMora: 0, montoMora: 0, estaEnMora: false };
+            const fechaPagoDate = fechaPago ? parseDate(fechaPago) : getEcuadorNow();
+            const fechaVencDate = parseDate(fechaVencimiento);
+            if (!fechaPagoDate || !fechaVencDate) return { diasMora: 0, montoMora: 0, estaEnMora: false };
+            const diffTime = fechaPagoDate.getTime() - fechaVencDate.getTime();
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays <= 0) return { diasMora: 0, montoMora: 0, estaEnMora: false };
+            return { diasMora: diffDays, montoMora: diffDays * costoPorDia, estaEnMora: true };
+        }
+
+        function updateLiteMoraUI() {
+            if (!currentLiteCuota) return;
+            const fechaPago = document.getElementById('lite-pago-fecha').value;
+            const mora = calcularMoraLite(currentLiteCuota.fecha_vencimiento, fechaPago);
+            
+            const cont = document.getElementById('lite-pago-mora-cont');
+            const txt = document.getElementById('lite-pago-txt-mora');
+            const montoInput = document.getElementById('lite-pago-monto');
+            
+            if (mora.estaEnMora) {
+                if (cont) cont.style.display = 'block';
+                if (txt) txt.textContent = `${mora.diasMora} días ($${mora.montoMora.toFixed(2)})`;
+                // El monto sugerido con mora es cuota_total + montoMora
+                const totalConMora = parseFloat(currentLiteCuota.cuota_total) + mora.montoMora;
+                montoInput.value = totalConMora.toFixed(2);
+            } else {
+                if (cont) cont.style.display = 'none';
+                montoInput.value = parseFloat(currentLiteCuota.cuota_total).toFixed(2);
+            }
+        }
+
+        /* ==========================================
            SISTEMA DE NOTIFICACIONES (PRODUCCIÓN)
            ========================================== */
         function formatEcuadorDateTime() {
@@ -3540,9 +3634,19 @@
                     ctx.fillStyle = '#64748B'; ctx.font = '12px Arial'; ctx.fillText('CUOTA', 50, boxY + 60);
                     ctx.fillStyle = '#0F172A'; ctx.font = 'bold 18px Arial'; ctx.fillText(`${data.numeroCuota} de ${data.plazo}`, 50, boxY + 82);
                     ctx.textAlign = 'right'; ctx.fillStyle = '#64748B'; ctx.fillText('ESTADO', canvas.width - 50, boxY + 60);
-                    ctx.fillStyle = '#10B981'; ctx.font = 'bold 14px Arial'; ctx.fillText('A TIEMPO', canvas.width - 50, boxY + 82);
-                    ctx.fillStyle = '#0B4E32'; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'left'; ctx.fillText('TOTAL PAGADO', 50, boxY + 145);
-                    ctx.textAlign = 'right'; ctx.font = 'bold 28px Arial'; ctx.fillText(formatMoney(data.montoPagado), canvas.width - 50, boxY + 148);
+                    
+                    if (data.estaEnMora) {
+                        ctx.fillStyle = '#EF4444'; ctx.font = 'bold 14px Arial'; 
+                        ctx.fillText(`MORA (${data.diasMora}d)`, canvas.width - 50, boxY + 82);
+                        ctx.textAlign = 'center'; ctx.fillStyle = '#EF4444'; ctx.font = '12px Arial';
+                        ctx.fillText(`⚠️ Mora: ${data.diasMora} días x $2 = $${data.montoMora.toFixed(2)}`, canvas.width / 2, boxY + 110);
+                    } else {
+                        ctx.fillStyle = '#10B981'; ctx.font = 'bold 14px Arial'; 
+                        ctx.fillText('A TIEMPO', canvas.width - 50, boxY + 82);
+                    }
+
+                    ctx.fillStyle = '#0B4E32'; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'left'; ctx.fillText('TOTAL PAGADO', 50, boxY + 155);
+                    ctx.textAlign = 'right'; ctx.font = 'bold 28px Arial'; ctx.fillText(formatMoney(data.montoPagado), canvas.width - 50, boxY + 158);
                     ctx.textAlign = 'center'; ctx.fillStyle = '#94A3B8'; ctx.font = '11px Arial';
                     ctx.fillText('Generado automáticamente por INKA CORP', canvas.width / 2, canvas.height - 30);
                     resolve(canvas.toDataURL('image/png'));
@@ -3576,9 +3680,15 @@
                     ctx.fillText('CÓDIGO CRÉDITO:', 80, y); ctx.fillText(data.codigoCredito, 250, y);
                     ctx.fillText('NÚMERO CUOTA:', 80, y + 45); ctx.fillText(`${data.numeroCuota} de ${data.plazo}`, 250, y + 45);
                     ctx.fillText('MONTO PAGADO:', 80, y + 90); ctx.fillStyle = '#0B4E32'; ctx.font = 'bold 22px Arial'; ctx.fillText(formatMoney(data.montoPagado), 250, y + 90);
+                    
+                    if (data.estaEnMora) {
+                        ctx.fillStyle = '#EF4444'; ctx.font = 'bold 12px Arial';
+                        ctx.fillText(`(Incluye $${data.montoMora.toFixed(2)} de mora por ${data.diasMora} días)`, 250, y + 110);
+                    }
+
                     ctx.fillStyle = '#64748B'; ctx.font = 'bold 13px Arial';
-                    ctx.fillText('FECHA PAGO:', 80, y + 135); ctx.fillText(data.fechaPago, 250, y + 135);
-                    ctx.fillText('MÉTODO:', 80, y + 180); ctx.fillText(data.metodoPago, 250, y + 180);
+                    ctx.fillText('FECHA PAGO:', 80, y + 145); ctx.fillText(data.fechaPago, 250, y + 145);
+                    ctx.fillText('MÉTODO:', 80, y + 190); ctx.fillText(data.metodoPago, 250, y + 190);
                     ctx.fillStyle = '#0B4E32'; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'center';
                     ctx.fillText('El socio ya ha sido notificado correctamente', canvas.width / 2, 640);
                     resolve(canvas.toDataURL('image/png'));
