@@ -1,0 +1,472 @@
+/**
+ * INKA CORP - Estilos del Módulo de Polizas
+ * Gestión de inversiones y certificados
+ */
+
+/* ==========================================
+   HERO SECTION
+   ========================================== */
+.polizas-hero {
+    position: relative;
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--black) 100%);
+    border-radius: 1.5rem;
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    overflow: hidden;
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--border-color);
+}
+
+.hero-bg-polizas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+        radial-gradient(circle at 10% 20%, rgba(11, 78, 50, 0.2) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(242, 187, 58, 0.1) 0%, transparent 20%);
+    z-index: 1;
+}
+
+.hero-content-polizas {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.hero-icon-polizas {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+    border-radius: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 10px 25px rgba(242, 187, 58, 0.3);
+    transform: rotate(-5deg);
+}
+
+.hero-icon-polizas i {
+    font-size: 2.5rem;
+    color: var(--black);
+}
+
+.hero-title-polizas {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--white);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.5px;
+}
+
+.hero-subtitle-polizas {
+    font-size: 1.1rem;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+}
+
+/* ==========================================
+   STATS CARDS
+   ========================================== */
+.polizas-hero-stats {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.polizas-hero-stat {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    padding: 1.5rem;
+    border-radius: 1rem;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all var(--transition-normal);
+}
+
+.polizas-hero-stat:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.polizas-hero-stat.warning {
+    background: rgba(242, 187, 58, 0.1);
+    border-color: rgba(242, 187, 58, 0.2);
+}
+
+.polizas-hero-stat.highlight {
+    background: rgba(11, 78, 50, 0.2);
+    border-color: rgba(11, 78, 50, 0.3);
+}
+
+.polizas-hero-value {
+    display: block;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 0.25rem;
+}
+
+.polizas-hero-stat.warning .polizas-hero-value {
+    color: var(--gold);
+}
+
+.polizas-hero-stat.highlight .polizas-hero-value {
+    color: var(--success-light);
+}
+
+.polizas-hero-label {
+    font-size: 0.8rem;
+    color: var(--gray-400);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* ==========================================
+   TABS DE ESTADO
+   ========================================== */
+.estado-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    background: var(--gray-800);
+    padding: 0.5rem;
+    border-radius: 1rem;
+    display: inline-flex;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 1px solid var(--border-color);
+}
+
+.estado-tab {
+    background: transparent;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    color: var(--gray-400);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.estado-tab:hover {
+    color: var(--white);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.estado-tab.active {
+    background: var(--primary);
+    color: var(--white);
+    box-shadow: var(--shadow-primary);
+}
+
+.estado-count {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.15rem 0.5rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    color: var(--gold);
+}
+
+.estado-tab.active .estado-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--white);
+}
+
+/* ==========================================
+   TABLE DOCUMENT SCROLL
+   ========================================== */
+.table-container {
+    display: flex;
+    flex-direction: column;
+    /* Remover altura fija para permitir scroll del documento */
+    /* height: auto; */
+    min-height: 500px;
+    background: var(--gray-800);
+    border-radius: 1rem;
+    border: 1px solid var(--border-color);
+    overflow: visible;
+    /* Permitir que contenido fluya */
+    margin-bottom: 2rem;
+}
+
+.table-header {
+    flex-shrink: 0;
+    background: var(--gray-900);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+
+    /* Sticky header para la barra de acciones */
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.table-responsive {
+    flex: 1;
+    overflow-x: auto;
+    /* Solo scroll horizontal si es necesario */
+    overflow-y: visible;
+    /* Dejar que el documento maneje el scroll vertical */
+}
+
+.table-responsive table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-responsive thead {
+    position: sticky;
+    top: 73px;
+    /* Just below table-header */
+    z-index: 10;
+}
+
+.table-responsive thead th {
+    background: var(--gray-900);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--gray-400);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    padding: 1rem 1.5rem;
+    text-align: left;
+}
+
+.table-responsive td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+/* ==========================================
+   BOTONES DE ORDENAMIENTO Y ACCIONES
+   ========================================== */
+/* Sort Buttons */
+.sort-buttons {
+    display: flex;
+    align-items: center;
+}
+
+.sort-group-primary {
+    display: flex;
+    background: var(--gray-700);
+    border-radius: 0.5rem;
+    padding: 0.25rem;
+    border: 1px solid var(--border-color);
+}
+
+.btn-sort {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--gray-500);
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-sort:hover {
+    color: var(--white);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-sort.active {
+    background: var(--primary);
+    color: var(--white);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Refresh Button */
+.btn-refresh {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    background: var(--gray-700);
+    border: 1px solid var(--border-color);
+    color: var(--white);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-right: 0.5rem;
+}
+
+.btn-refresh:hover {
+    background: var(--gray-600);
+    border-color: var(--primary);
+    color: var(--primary-light);
+}
+
+.btn-refresh.loading i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Action Button in table */
+.btn-action {
+    width: 32px;
+    height: 32px;
+    border-radius: 0.375rem;
+    border: 1px solid var(--border-color);
+    background: var(--gray-800);
+    color: var(--gray-400);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-action:hover {
+    background: var(--primary);
+    color: var(--white);
+    border-color: var(--primary);
+}
+
+/* ==========================================
+   BADGES
+   ========================================== */
+.badge-poliza-activo {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10B981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-poliza-pagado {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3B82F6;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-poliza-capitalizado {
+    background: rgba(245, 158, 11, 0.15);
+    color: #F59E0B;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* ==========================================
+   TABLE & UTILS
+   ========================================== */
+.socio-info-cell {
+    display: flex;
+    flex-direction: column;
+}
+
+.socio-name {
+    font-weight: 600;
+    color: var(--white);
+}
+
+.socio-meta {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+}
+
+.vencimiento-cell.text-warning {
+    color: var(--warning) !important;
+    font-weight: 600;
+}
+
+.font-weight-bold {
+    font-weight: 700 !important;
+    color: var(--white);
+}
+
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+@media (max-width: 768px) {
+    .polizas-hero {
+        padding: 1.5rem;
+        border-radius: 1rem;
+    }
+
+    .hero-title-polizas {
+        font-size: 1.75rem;
+    }
+
+    .polizas-hero-stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .estado-tabs {
+        width: 100%;
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        justify-content: flex-start !important;
+        padding-bottom: 0.5rem;
+        -webkit-overflow-scrolling: touch;
+        left: 0;
+        transform: none;
+        border-radius: 0.75rem;
+        background: transparent;
+        border: none;
+        margin-bottom: 1rem !important;
+    }
+
+    .estado-tab {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        padding: 0.6rem 1rem;
+        background: var(--gray-800);
+        margin-right: 0.5rem;
+        border: 1px solid var(--border-color);
+    }
+
+    .polizas-hero-stat {
+        padding: 1rem;
+    }
+
+    .polizas-hero-value {
+        font-size: 1.25rem;
+    }
+}

@@ -1,0 +1,3430 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>INKA CORP - Móvil</title>
+    <meta name="description" content="Sistema de gestión INKA CORP - Vista Móvil">
+    <meta name="theme-color" content="#0B4E32">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // Verificación de sesión
+        (async function () {
+            initSupabase();
+            const { isAuthenticated } = await checkSession();
+            if (!isAuthenticated) {
+                window.location.href = 'login.html';
+            }
+        })();
+    </script>
+    <style>
+        /* ==========================================
+           VARIABLES Y RESET
+           ========================================== */
+        :root {
+            --primary: #0B4E32;
+            --primary-light: #146E3A;
+            --primary-dark: #073D27;
+            --gold: #F2BB3A;
+            --gold-dark: #D3900D;
+            --bg-main: #F5F7FA;
+            --bg-card: #FFFFFF;
+            --text-primary: #0F172A;
+            --text-secondary: #64748B;
+            --text-muted: #94A3B8;
+            --border-color: rgba(11, 78, 50, 0.12);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.12);
+            --success: #10B981;
+            --error: #EF4444;
+            --warning: #F59E0B;
+        }
+
+        /* ==========================================
+           LITE VIEWS (NATIVE MOBILE)
+           ========================================== */
+        .lite-search-wrapper {
+            padding: 0 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .lite-search-container {
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .lite-search-container:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(11, 78, 50, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .lite-search-container i {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .lite-search-container input {
+            border: none;
+            background: none;
+            width: 100%;
+            padding: 0.85rem 0.75rem;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        .lite-list-container {
+            padding: 0 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .lite-credit-card,
+        .lite-socio-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.25rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .lite-credit-card:active,
+        .lite-socio-card:active {
+            transform: scale(0.98);
+        }
+
+        .lite-credit-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--primary);
+        }
+
+        .lite-credit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .lite-credit-code {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .lite-credit-amount {
+            font-weight: 800;
+            font-size: 1.05rem;
+            color: var(--primary);
+        }
+
+        .lite-credit-status {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .lite-credit-footer {
+            margin-top: 1rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        /* Socios Styles */
+        .lite-socio-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .lite-socio-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .lite-socio-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .lite-socio-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .lite-socio-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .lite-socio-whatsapp {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(37, 211, 102, 0.1);
+            color: #25D366;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+        }
+
+        .lite-socio-whatsapp:active {
+            background: #25D366;
+            color: white;
+        }
+
+        /* Modales Fullscreen Elegantes */
+        #credito-lite-modal,
+        #pago-lite-modal {
+            align-items: flex-end !important;
+            padding: 0 !important;
+        }
+
+        .lite-modal {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+            overflow: hidden;
+            border: none;
+            box-shadow: none;
+            animation: slideUpFullscreen 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        @keyframes slideUpFullscreen {
+            from {
+                transform: translateY(100%);
+                opacity: 0.8;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes litePop {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .lite-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%) !important;
+            padding: 1.25rem 1.5rem !important;
+            border: none !important;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .lite-header h3 {
+            color: white !important;
+            margin: 0;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .lite-body {
+            padding: 1.5rem !important;
+            padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)) !important;
+            background: white;
+            flex: 1 !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+
+        .lite-detail-header {
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .lite-detail-header h4 {
+            font-size: 1.25rem;
+            color: var(--primary);
+            margin-bottom: 0.25rem;
+            font-weight: 800;
+        }
+
+        .lite-det-socio {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .lite-det-section {
+            background: #F8FAFC;
+            padding: 1.25rem;
+            border-radius: 20px;
+            margin-bottom: 1.25rem;
+            border: 1px solid #E2E8F0;
+        }
+
+        .lite-det-label {
+            font-size: 0.7rem;
+            color: #64748B;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.75rem;
+            font-weight: 700;
+        }
+
+        .lite-progress-container {
+            height: 12px;
+            background: #E2E8F0;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .lite-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 6px;
+            transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .lite-progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .lite-det-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .lite-det-item {
+            background: #F8FAFC;
+            padding: 1rem;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid #E2E8F0;
+        }
+
+        .lite-det-item.highlight {
+            background: rgba(11, 78, 50, 0.05);
+            border: 1px solid rgba(11, 78, 50, 0.1);
+        }
+
+        .lite-det-value {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-top: 0.25rem;
+        }
+
+        .lite-det-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1.25rem;
+            border-top: 1px solid #E2E8F0;
+            font-size: 0.75rem;
+            color: #64748B;
+        }
+
+        .lite-det-status {
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 0.35rem 0.65rem;
+            border-radius: 8px;
+            background: #F1F5F9;
+            letter-spacing: 0.5px;
+            font-size: 0.65rem;
+        }
+
+        /* Status overrides for both cards and modal */
+        .lite-status-badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.65rem;
+        }
+
+        .badge-activo {
+            background: rgba(16, 185, 129, 0.1) !important;
+            color: #10b981 !important;
+        }
+
+        .badge-pendiente {
+            background: rgba(245, 158, 11, 0.1) !important;
+            color: #f59e0b !important;
+        }
+
+        .badge-moroso {
+            background: rgba(239, 68, 68, 0.1) !important;
+            color: #ef4444 !important;
+        }
+
+        /* Payment Form Elements */
+        .lite-form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .lite-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .lite-input-wrapper i {
+            position: absolute;
+            left: 1rem;
+            color: #94A3B8;
+            font-size: 0.9rem;
+        }
+
+        .lite-input-wrapper input,
+        .lite-input-wrapper select {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            border-radius: 14px;
+            border: 1px solid #E2E8F0;
+            background: #F8FAFC;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .lite-input-wrapper input:focus,
+        .lite-input-wrapper select:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(11, 78, 50, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        /* ==========================================
+           LAYOUT PRINCIPAL
+           ========================================== */
+        .mobile-app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        /* ==========================================
+           HEADER
+           ========================================== */
+        .mobile-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 1rem 1rem 1.25rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-md);
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+        }
+
+        .header-logo img {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+        }
+
+        .header-logo-text {
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .header-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .header-btn:active {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(0.95);
+        }
+
+        .header-greeting {
+            color: white;
+        }
+
+        .greeting-text {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .greeting-name {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--gold);
+        }
+
+        /* ==========================================
+           SECCIÓN DE DESEMBOLSOS
+           ========================================== */
+        .main-content {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.875rem;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .section-title i {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+        }
+
+        .section-badge {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(11, 78, 50, 0.25);
+        }
+
+        /* Lista de desembolsos */
+        .desembolsos-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.875rem;
+        }
+
+        /* Card de Desembolso */
+        .desembolso-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .desembolso-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dark) 100%);
+        }
+
+        .desembolso-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.875rem;
+        }
+
+        .desembolso-socio {
+            flex: 1;
+            padding-right: 0.5rem;
+        }
+
+        .desembolso-nombre {
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            line-height: 1.3;
+            margin-bottom: 0.15rem;
+        }
+
+        .desembolso-cedula {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .desembolso-monto {
+            text-align: right;
+        }
+
+        .desembolso-monto-valor {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--gold-dark);
+            line-height: 1;
+        }
+
+        .desembolso-monto-label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-top: 0.15rem;
+        }
+
+        /* Info Grid */
+        .desembolso-info {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: var(--bg-main);
+            border-radius: 10px;
+        }
+
+        .desembolso-info-item {
+            text-align: center;
+        }
+
+        .desembolso-info-label {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 0.15rem;
+        }
+
+        .desembolso-info-value {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Botones de Acción */
+        .desembolso-actions {
+            display: flex;
+            gap: 0.625rem;
+        }
+
+        .desembolso-btn {
+            flex: 1;
+            padding: 0.75rem;
+            border-radius: 10px;
+            border: none;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            transition: all 0.2s ease;
+        }
+
+        .desembolso-btn:active {
+            transform: scale(0.97);
+        }
+
+        .desembolso-btn-docs {
+            background: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .desembolso-btn-desembolsar {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(11, 78, 50, 0.25);
+        }
+
+        /* Estado vacío */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Loading */
+        .loading-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ==========================================
+           MODAL DE DOCUMENTOS
+           ========================================== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            width: 100%;
+            max-height: 90vh;
+            border-radius: 24px 24px 0 0;
+            overflow: hidden;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 1.25rem 1rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:active {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .modal-body {
+            padding: 1rem;
+            overflow-y: auto;
+            max-height: calc(90vh - 70px);
+        }
+
+        /* Lista de documentos */
+        .docs-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.625rem;
+        }
+
+        .doc-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem;
+            background: var(--bg-main);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .doc-item:active {
+            background: rgba(11, 78, 50, 0.05);
+            transform: scale(0.99);
+        }
+
+        .doc-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .doc-icon.pdf {
+            background: rgba(239, 68, 68, 0.12);
+            color: #dc2626;
+        }
+
+        .doc-icon.contract {
+            background: rgba(59, 130, 246, 0.12);
+            color: #2563eb;
+        }
+
+        .doc-icon.payment {
+            background: rgba(16, 185, 129, 0.12);
+            color: #059669;
+        }
+
+        .doc-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .doc-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .doc-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .doc-action {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* Modal de confirmación */
+        .confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .confirm-modal.active {
+            display: flex;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .confirm-content {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 340px;
+            text-align: center;
+            animation: scaleIn 0.25s ease;
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .confirm-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(11, 78, 50, 0.1) 0%, rgba(11, 78, 50, 0.05) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+
+        .confirm-icon i {
+            font-size: 1.75rem;
+            color: var(--primary);
+        }
+
+        .confirm-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .confirm-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.25rem;
+            line-height: 1.5;
+        }
+
+        .confirm-amount {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 1.25rem;
+        }
+
+        .confirm-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .confirm-btn {
+            flex: 1;
+            padding: 0.875rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .confirm-btn:active {
+            transform: scale(0.97);
+        }
+
+        .confirm-btn-cancel {
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .confirm-btn-confirm {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border: none;
+            color: white;
+            box-shadow: 0 4px 12px rgba(11, 78, 50, 0.25);
+        }
+
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.875rem 1.25rem;
+            border-radius: 12px;
+            background: var(--text-primary);
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: var(--shadow-lg);
+            z-index: 1200;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            max-width: calc(100% - 2rem);
+        }
+
+        .toast.success {
+            background: var(--success);
+        }
+
+        .toast.error {
+            background: var(--error);
+        }
+
+        .toast.active {
+            display: flex;
+            animation: toastIn 0.3s ease;
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        /* ==========================================
+           NAVEGACIÓN INFERIOR
+           ========================================== */
+        .bottom-nav {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+            display: flex;
+            justify-content: space-around;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.65rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item i {
+            font-size: 1.25rem;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+            background: rgba(11, 78, 50, 0.08);
+        }
+
+        .nav-item:active {
+            transform: scale(0.95);
+        }
+
+        /* Ir a versión PC */
+        .switch-version {
+            text-align: center;
+            padding: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .switch-version-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .switch-version-btn:active {
+            background: var(--bg-main);
+        }
+
+        /* ==========================================
+           ESTILOS PARA MODAL DE UPLOAD
+           ========================================== */
+        .upload-doc-item {
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .upload-doc-item.uploaded {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-color: #86efac;
+        }
+
+        .upload-doc-item.uploading {
+            background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+            border-color: #fde047;
+        }
+
+        .upload-doc-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        .upload-doc-info {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .upload-doc-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            flex-shrink: 0;
+            background: rgba(11, 78, 50, 0.1);
+            color: var(--primary);
+        }
+
+        .upload-doc-icon.success {
+            background: rgba(16, 185, 129, 0.15);
+            color: #059669;
+        }
+
+        .upload-doc-text {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .upload-doc-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .upload-doc-status {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .upload-doc-status.success {
+            color: #059669;
+            font-weight: 600;
+        }
+
+        .upload-btn {
+            padding: 0.5rem 0.875rem;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: var(--primary);
+            color: white;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .upload-btn:active {
+            transform: scale(0.95);
+        }
+
+        .upload-btn.uploaded {
+            background: #059669;
+        }
+
+        .upload-btn:disabled {
+            background: #94A3B8;
+            cursor: not-allowed;
+        }
+
+        .upload-progress {
+            margin-top: 0.625rem;
+            display: none;
+        }
+
+        .upload-progress.active {
+            display: block;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+            transition: width 0.3s ease;
+        }
+
+        .file-input-hidden {
+            display: none;
+        }
+
+        /* Estilos para Comprobante de Pago Móvil */
+        .comprobante-mobile-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .comprobante-buttons {
+            display: flex;
+            gap: 0.75rem;
+            width: 100%;
+        }
+
+        .btn-capture-comprobante {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 1rem 0.75rem;
+            background: linear-gradient(135deg, rgba(11, 78, 50, 0.1) 0%, rgba(11, 78, 50, 0.05) 100%);
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            border-radius: 16px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+
+        .btn-capture-comprobante i {
+            font-size: 1.5rem;
+            color: var(--gold);
+        }
+
+        .btn-capture-comprobante:active {
+            transform: scale(0.97);
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-capture-comprobante:active i {
+            color: var(--gold);
+        }
+
+        .btn-capture-comprobante.gallery {
+            background: linear-gradient(135deg, rgba(242, 187, 58, 0.15) 0%, rgba(242, 187, 58, 0.08) 100%);
+            border-color: var(--gold);
+            color: var(--text-primary);
+        }
+
+        .btn-capture-comprobante.gallery:active {
+            background: var(--gold);
+            color: var(--primary-dark);
+        }
+
+        .btn-capture-comprobante.uploaded {
+            background: #10B981 !important;
+            border-color: #10B981 !important;
+            color: white !important;
+        }
+
+        .btn-capture-comprobante.uploaded i {
+            color: white !important;
+        }
+
+        .comprobante-mobile-preview {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            text-align: center;
+        }
+
+        .comprobante-mobile-preview img {
+            max-width: 100%;
+            max-height: 120px;
+            border-radius: 10px;
+            object-fit: contain;
+            border: 2px solid var(--primary);
+        }
+
+        .btn-clear-mobile {
+            position: absolute;
+            top: -8px;
+            right: 50%;
+            transform: translateX(calc(50% + 40px));
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: none;
+            background: #EF4444;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="mobile-app">
+        <!-- Header -->
+        <header class="mobile-header">
+            <div class="header-top">
+                <div class="header-logo">
+                    <img src="https://i.ibb.co/3mC22Hc4/inka-corp.png" alt="INKA CORP">
+                    <span class="header-logo-text">INKA CORP</span>
+                </div>
+                <div class="header-actions">
+                    <button class="header-btn" onclick="location.reload()">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="header-btn" id="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="header-greeting">
+                <div class="greeting-text">Bienvenido,</div>
+                <div class="greeting-name" id="user-name">Usuario</div>
+            </div>
+        </header>
+
+        <!-- Contenido Principal -->
+        <main class="main-content">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-money-bill-wave"></i>
+                    Desembolsos Pendientes
+                </h2>
+                <span class="section-badge" id="desembolsos-count">0</span>
+            </div>
+
+            <div id="desembolsos-container" class="desembolsos-container">
+                <div class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <p>Cargando desembolsos...</p>
+                </div>
+            </div>
+
+            <!-- Botón para ir a versión PC -->
+            <div class="switch-version">
+                <button class="switch-version-btn" onclick="goToDesktop()">
+                    <i class="fas fa-desktop"></i>
+                    Ir a versión completa
+                </button>
+            </div>
+        </main>
+
+        <!-- Navegación Inferior -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" id="nav-desembolsos" onclick="goToDesembolsos()">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>Desembolsos</span>
+            </button>
+            <button class="nav-item" id="nav-simulador" onclick="goToSimulador()">
+                <i class="fas fa-calculator"></i>
+                <span>Simulador</span>
+            </button>
+            <button class="nav-item" id="nav-creditos" onclick="goToCreditos()">
+                <i class="fas fa-hand-holding-usd"></i>
+                <span>Créditos</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Modal de Documentos -->
+    <div class="modal-overlay" id="docs-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-pdf"></i> Documentos del Crédito</h3>
+                <button class="modal-close" onclick="closeDocsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="docs-list" class="docs-list">
+                    <!-- Los documentos se cargan dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación -->
+    <div class="confirm-modal" id="confirm-modal">
+        <div class="confirm-content">
+            <div class="confirm-icon">
+                <i class="fas fa-money-bill-wave"></i>
+            </div>
+            <h3 class="confirm-title">Confirmar Desembolso</h3>
+            <p class="confirm-text" id="confirm-text">¿Estás seguro de desembolsar el crédito?</p>
+            <div class="confirm-amount" id="confirm-amount">$0.00</div>
+            <div class="confirm-actions">
+                <button class="confirm-btn confirm-btn-cancel" onclick="closeConfirmModal()">
+                    Cancelar
+                </button>
+                <button class="confirm-btn confirm-btn-confirm" id="confirm-btn" onclick="confirmDesembolso()">
+                    Desembolsar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Carga de Documentos para Desembolso -->
+    <div class="modal-overlay" id="upload-modal">
+        <div class="modal-content" style="max-height: 95vh;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0B4E32 0%, #073D27 100%);">
+                <h3><i class="fas fa-cloud-upload-alt"></i> Subir Documentos Firmados</h3>
+                <button class="modal-close" onclick="closeUploadModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 1rem;">
+                <!-- Aviso importante -->
+                <div
+                    style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; border-radius: 12px; padding: 0.875rem; margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: flex-start; gap: 0.625rem;">
+                        <i class="fas fa-exclamation-triangle" style="color: #d97706; margin-top: 2px;"></i>
+                        <div>
+                            <div style="font-weight: 700; color: #92400e; font-size: 0.85rem; margin-bottom: 0.25rem;">
+                                Paso obligatorio</div>
+                            <div style="font-size: 0.75rem; color: #a16207; line-height: 1.4;">Suba los documentos
+                                firmados antes de completar el desembolso. Esta acción es irreversible.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de documentos a subir -->
+                <div id="upload-docs-list"
+                    style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;">
+                    <!-- Se genera dinámicamente -->
+                </div>
+
+                <!-- Botón de confirmar desembolso -->
+                <button id="btn-confirmar-desembolso" class="desembolso-btn desembolso-btn-desembolsar"
+                    style="width: 100%; padding: 1rem; font-size: 0.9rem;" disabled
+                    onclick="confirmDesembolsoWithDocs()">
+                    <i class="fas fa-check-circle"></i> Confirmar Desembolso
+                </button>
+                <p id="upload-status-text"
+                    style="text-align: center; font-size: 0.7rem; color: #94A3B8; margin-top: 0.5rem;">
+                    Suba todos los documentos para habilitar el desembolso
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Detalle de Crédito Lite -->
+    <div class="modal-overlay" id="credito-lite-modal">
+        <div class="modal-content lite-modal">
+            <div class="modal-header lite-header">
+                <h3><i class="fas fa-file-invoice-dollar"></i> Detalle de Crédito</h3>
+                <button class="modal-close" onclick="closeLiteModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body lite-body">
+                <div class="lite-detail-header">
+                    <h4 id="lite-det-codigo">CRE-XXXXX</h4>
+                    <div class="lite-det-socio" id="lite-det-socio">Nombre del Socio</div>
+                </div>
+
+                <div class="lite-det-section">
+                    <div class="lite-det-label">Progreso del Crédito</div>
+                    <div class="lite-progress-container">
+                        <div class="lite-progress-bar" id="lite-progreso-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="lite-progress-info">
+                        <span id="lite-det-cuotas">0/0 cuotas</span>
+                        <span id="lite-det-pct">0%</span>
+                    </div>
+                </div>
+
+                <div class="lite-det-grid">
+                    <div class="lite-det-item highlight">
+                        <div class="lite-det-label">Cuota Mensual</div>
+                        <div class="lite-det-value" id="lite-det-cuota">$0.00</div>
+                    </div>
+                    <div class="lite-det-item">
+                        <div class="lite-det-label">Capital Total</div>
+                        <div class="lite-det-value" id="lite-det-capital">$0.00</div>
+                    </div>
+                </div>
+
+                <div class="lite-det-footer">
+                    <div class="lite-det-status" id="lite-det-estado">ACTIVO</div>
+                    <div class="lite-det-date" id="lite-det-fecha">Desembolso: --/--/----</div>
+                </div>
+
+                <button class="desembolso-btn desembolso-btn-desembolsar"
+                    style="width: 100%; margin-top: 1rem; border-radius: 16px;" onclick="openLitePaymentModal()">
+                    <i class="fas fa-cash-register"></i> Registrar Pago de Cuota
+                </button>
+
+                <button class="switch-version-btn" style="width: 100%; margin-top: 1rem;"
+                    onclick="goToFullCreditDetails()">
+                    <i class="fas fa-desktop"></i>
+                    Ver gestión completa (PC)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Registro de Pago Lite -->
+    <div class="modal-overlay" id="pago-lite-modal">
+        <div class="modal-content lite-modal" style="max-height: 85vh;">
+            <div class="modal-header lite-header">
+                <h3><i class="fas fa-money-check-alt"></i> Registrar Pago</h3>
+                <button class="modal-close" onclick="closeLitePaymentModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body lite-body" style="padding-top: 1rem !important;">
+                <div class="lite-det-item highlight"
+                    style="margin-bottom: 1.5rem; background: rgba(11, 78, 50, 0.05); border-color: rgba(11, 78, 50, 0.1);">
+                    <div class="lite-det-label" style="color: var(--primary);">Monto Sugerido (Cuota)</div>
+                    <div class="lite-det-value" id="lite-pago-sugerido"
+                        style="color: var(--primary-dark); font-size: 1.5rem;">$0.00
+                    </div>
+                </div>
+
+                <div class="lite-form-group">
+                    <label class="lite-det-label">Monto a Pagar</label>
+                    <div class="lite-input-wrapper">
+                        <i class="fas fa-dollar-sign"></i>
+                        <input type="number" id="lite-pago-monto" step="0.01" placeholder="0.00">
+                    </div>
+                </div>
+
+                <div class="lite-form-group">
+                    <label class="lite-det-label">Fecha de Pago</label>
+                    <div class="lite-input-wrapper">
+                        <i class="fas fa-calendar-day"></i>
+                        <input type="date" id="lite-pago-fecha">
+                    </div>
+                </div>
+
+                <div class="lite-form-group">
+                    <label class="lite-det-label">Referencia / Observación</label>
+                    <div class="lite-input-wrapper">
+                        <i class="fas fa-tag"></i>
+                        <input type="text" id="lite-pago-referencia" placeholder="Ej: Depósito #12345">
+                    </div>
+                </div>
+
+                <div class="lite-form-group">
+                    <label class="lite-det-label">Método de Pago</label>
+                    <div class="lite-input-wrapper">
+                        <i class="fas fa-wallet"></i>
+                        <select id="lite-pago-metodo">
+                            <option value="EFECTIVO">Efectivo</option>
+                            <option value="TRANSFERENCIA">Transferencia</option>
+                            <option value="DEPÓSITO">Depósito</option>
+                            <option value="OTRO">Otro</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Campo de Comprobante de Pago (OBLIGATORIO) -->
+                <div class="lite-form-group">
+                    <label class="lite-det-label" style="color: var(--primary);">Comprobante de Pago *</label>
+                    <div class="comprobante-mobile-area" id="comprobante-mobile-area">
+                        <!-- Input para cámara -->
+                        <input type="file" id="lite-pago-comprobante-camera" accept="image/*" capture="environment"
+                            style="display: none" onchange="handleMobileComprobanteSelect(this)">
+                        <!-- Input para galería -->
+                        <input type="file" id="lite-pago-comprobante-gallery" accept="image/*" style="display: none"
+                            onchange="handleMobileComprobanteSelect(this)">
+
+                        <div class="comprobante-buttons" id="comprobante-buttons">
+                            <button type="button" class="btn-capture-comprobante camera"
+                                onclick="document.getElementById('lite-pago-comprobante-camera').click()">
+                                <i class="fas fa-camera"></i>
+                                <span>Tomar Foto</span>
+                            </button>
+                            <button type="button" class="btn-capture-comprobante gallery"
+                                onclick="document.getElementById('lite-pago-comprobante-gallery').click()">
+                                <i class="fas fa-images"></i>
+                                <span>Galería</span>
+                            </button>
+                        </div>
+
+                        <div class="comprobante-mobile-preview" id="lite-comprobante-preview" style="display: none;">
+                            <img id="lite-comprobante-img" alt="Preview">
+                            <button type="button" class="btn-clear-mobile" onclick="clearMobileComprobantePreview()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <small style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-top: 0.5rem;">
+                        Obligatorio. La imagen se comprimirá automáticamente.
+                    </small>
+                </div>
+
+                <button id="btn-confirmar-pago-lite" class="desembolso-btn desembolso-btn-desembolsar"
+                    style="width: 100%; margin-top: 1rem; border-radius: 16px; background: var(--primary);"
+                    onclick="confirmLitePayment()">
+                    <i class="fas fa-check-circle"></i> Confirmar Pago
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toast-message">Mensaje</span>
+    </div>
+
+    <script>
+        // Variables globales
+        let currentCreditoId = null;
+        let creditosData = [];
+        let uploadedFiles = {};
+        let requiredDocs = [];
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', async function () {
+            await loadUserInfo();
+            // Cargar Desembolsos como vista inicial
+            await loadDesembolsosView();
+            setupEventListeners();
+        });
+
+        // Cargar información del usuario
+        async function loadUserInfo() {
+            try {
+                const supabase = window.getSupabaseClient();
+                const { data: { user } } = await supabase.auth.getUser();
+
+                if (user) {
+                    // Intentar obtener de ic_users (tabla correcta)
+                    const { data: userData, error } = await supabase
+                        .from('ic_users')
+                        .select('nombre')
+                        .eq('id', user.id)
+                        .single();
+
+                    if (userData && userData.nombre) {
+                        document.getElementById('user-name').textContent = userData.nombre;
+                    } else {
+                        // Fallback: usar email o metadata del usuario auth
+                        const nombre = user.user_metadata?.nombre || user.email?.split('@')[0] || 'Usuario';
+                        document.getElementById('user-name').textContent = nombre;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+                // En caso de error, intentar con datos básicos
+                try {
+                    const supabase = window.getSupabaseClient();
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                        const nombre = user.user_metadata?.nombre || user.email?.split('@')[0] || 'Usuario';
+                        document.getElementById('user-name').textContent = nombre;
+                    }
+                } catch (e) {
+                    console.error('Error fallback user info:', e);
+                }
+            }
+        }
+
+        // Cargar desembolsos pendientes
+        async function loadDesembolsosPendientes() {
+            const container = document.getElementById('desembolsos-container');
+            const countBadge = document.getElementById('desembolsos-count');
+
+            try {
+                const supabase = window.getSupabaseClient();
+
+                const { data: creditosPendientes, error } = await supabase
+                    .from('ic_creditos')
+                    .select(`
+                        id_credito,
+                        codigo_credito,
+                        capital,
+                        plazo,
+                        cuota_con_ahorro,
+                        tasa_interes_mensual,
+                        garante,
+                        created_at,
+                        id_socio
+                    `)
+                    .eq('estado_credito', 'PENDIENTE')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (!creditosPendientes || creditosPendientes.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-check-circle"></i>
+                            <h3>Sin desembolsos pendientes</h3>
+                            <p>No hay créditos pendientes de desembolso en este momento.</p>
+                        </div>
+                    `;
+                    countBadge.textContent = '0';
+                    return;
+                }
+
+                // Cargar datos de socios
+                const socioIds = [...new Set(creditosPendientes.map(c => c.id_socio))];
+                const { data: socios } = await supabase
+                    .from('ic_socios')
+                    .select('idsocio, nombre, cedula, whatsapp')
+                    .in('idsocio', socioIds);
+
+                creditosPendientes.forEach(credito => {
+                    credito.socio = socios?.find(s => s.idsocio === credito.id_socio) || {};
+                });
+
+                creditosData = creditosPendientes;
+                countBadge.textContent = creditosPendientes.length;
+
+                container.innerHTML = creditosPendientes.map(credito => {
+                    const socio = credito.socio || {};
+                    const nombreCompleto = socio.nombre || 'Sin nombre';
+                    const capitalFormatted = parseFloat(credito.capital).toLocaleString('es-EC', { minimumFractionDigits: 2 });
+                    const cuotaFormatted = parseFloat(credito.cuota_con_ahorro).toLocaleString('es-EC', { minimumFractionDigits: 2 });
+
+                    return `
+                        <div class="desembolso-card" data-id="${credito.id_credito}">
+                            <div class="desembolso-header">
+                                <div class="desembolso-socio">
+                                    <div class="desembolso-nombre">${nombreCompleto}</div>
+                                    <div class="desembolso-cedula">${socio.cedula || '-'} | ${credito.codigo_credito}</div>
+                                </div>
+                                <div class="desembolso-monto">
+                                    <div class="desembolso-monto-valor">$${capitalFormatted}</div>
+                                    <div class="desembolso-monto-label">Capital</div>
+                                </div>
+                            </div>
+                            <div class="desembolso-info">
+                                <div class="desembolso-info-item">
+                                    <span class="desembolso-info-label">Plazo</span>
+                                    <span class="desembolso-info-value">${credito.plazo} meses</span>
+                                </div>
+                                <div class="desembolso-info-item">
+                                    <span class="desembolso-info-label">Cuota</span>
+                                    <span class="desembolso-info-value">$${cuotaFormatted}</span>
+                                </div>
+                                <div class="desembolso-info-item">
+                                    <span class="desembolso-info-label">Tasa</span>
+                                    <span class="desembolso-info-value">${credito.tasa_interes_mensual}%</span>
+                                </div>
+                                <div class="desembolso-info-item">
+                                    <span class="desembolso-info-label">Garante</span>
+                                    <span class="desembolso-info-value">${credito.garante ? 'Sí' : 'No'}</span>
+                                </div>
+                            </div>
+                            <div class="desembolso-actions">
+                                <button class="desembolso-btn desembolso-btn-docs" onclick="openDocsModal('${credito.id_credito}')">
+                                    <i class="fas fa-file-pdf"></i> Documentos
+                                </button>
+                                <button class="desembolso-btn desembolso-btn-desembolsar" onclick="openUploadModal('${credito.id_credito}')">
+                                    <i class="fas fa-cloud-upload-alt"></i> Desembolsar
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error loading desembolsos:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Error al cargar</h3>
+                        <p>No se pudieron cargar los desembolsos. Intenta de nuevo.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Logout
+            document.getElementById('logout-btn').addEventListener('click', async () => {
+                try {
+                    const supabase = window.getSupabaseClient();
+                    await supabase.auth.signOut();
+                    window.location.href = 'login.html';
+                } catch (error) {
+                    console.error('Error logout:', error);
+                }
+            });
+
+            // Cerrar modales al hacer clic fuera
+            document.getElementById('docs-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'docs-modal') closeDocsModal();
+            });
+
+            document.getElementById('confirm-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'confirm-modal') closeConfirmModal();
+            });
+        }
+
+        // Abrir modal de documentos
+        async function openDocsModal(creditoId) {
+            currentCreditoId = creditoId;
+            const modal = document.getElementById('docs-modal');
+            const docsList = document.getElementById('docs-list');
+
+            modal.classList.add('active');
+            docsList.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div></div>';
+
+            try {
+                const supabase = window.getSupabaseClient();
+                const { data: credito } = await supabase
+                    .from('ic_creditos')
+                    .select('codigo_credito, id_socio')
+                    .eq('id_credito', creditoId)
+                    .single();
+
+                const { data: socio } = await supabase
+                    .from('ic_socios')
+                    .select('nombre, cedula')
+                    .eq('idsocio', credito.id_socio)
+                    .single();
+
+                // Documentos disponibles
+                const docs = [
+                    {
+                        name: 'Contrato de Crédito',
+                        icon: 'contract',
+                        type: 'contrato',
+                        meta: `${credito.codigo_credito}`
+                    },
+                    {
+                        name: 'Tabla de Pagos',
+                        icon: 'payment',
+                        type: 'tabla',
+                        meta: 'Cronograma de cuotas'
+                    },
+                    {
+                        name: 'Pagaré',
+                        icon: 'pdf',
+                        type: 'pagare',
+                        meta: 'Documento legal'
+                    }
+                ];
+
+                docsList.innerHTML = docs.map(doc => `
+                    <div class="doc-item" onclick="downloadDocument('${creditoId}', '${doc.type}')">
+                        <div class="doc-icon ${doc.icon}">
+                            <i class="fas fa-file-${doc.icon === 'pdf' ? 'pdf' : doc.icon === 'contract' ? 'signature' : 'invoice-dollar'}"></i>
+                        </div>
+                        <div class="doc-info">
+                            <div class="doc-name">${doc.name}</div>
+                            <div class="doc-meta">${doc.meta}</div>
+                        </div>
+                        <div class="doc-action">
+                            <i class="fas fa-download"></i>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Error loading docs:', error);
+                docsList.innerHTML = '<p style="text-align:center;padding:1rem;color:var(--text-muted);">Error al cargar documentos</p>';
+            }
+        }
+
+        function closeDocsModal() {
+            document.getElementById('docs-modal').classList.remove('active');
+        }
+
+        // Descargar documento
+        async function downloadDocument(creditoId, tipo) {
+            showToast('Generando documento...', 'info');
+
+            // Aquí iría la lógica de generación de PDF
+            // Por ahora simulamos
+            setTimeout(() => {
+                showToast('Documento generado', 'success');
+            }, 1500);
+        }
+
+        // Abrir modal de confirmación (ya no se usa directamente, se usa openUploadModal)
+        function openConfirmModal(creditoId) {
+            currentCreditoId = creditoId;
+            const credito = creditosData.find(c => c.id_credito === creditoId);
+
+            if (credito) {
+                const capital = parseFloat(credito.capital).toLocaleString('es-EC', { minimumFractionDigits: 2 });
+                document.getElementById('confirm-amount').textContent = `$${capital}`;
+                document.getElementById('confirm-text').textContent =
+                    `¿Confirmas el desembolso del crédito ${credito.codigo_credito} para ${credito.socio?.nombre || 'el socio'}?`;
+            }
+
+            document.getElementById('confirm-modal').classList.add('active');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.remove('active');
+            currentCreditoId = null;
+        }
+
+        // ==========================================
+        // MODAL DE CARGA DE DOCUMENTOS PARA DESEMBOLSO
+        // ==========================================
+
+        async function openUploadModal(creditoId) {
+            currentCreditoId = creditoId;
+            uploadedFiles = {};
+
+            const modal = document.getElementById('upload-modal');
+            const docsList = document.getElementById('upload-docs-list');
+            const credito = creditosData.find(c => c.id_credito === creditoId);
+
+            if (!credito) {
+                showToast('Error: Crédito no encontrado', 'error');
+                return;
+            }
+
+            // Definir documentos requeridos
+            requiredDocs = [
+                { id: 'contrato', label: 'Solicitud / Contrato Firmado', icon: 'fa-file-contract' },
+                { id: 'pagare', label: 'Pagaré Firmado', icon: 'fa-file-signature' },
+                { id: 'tabla', label: 'Tabla de Amortización', icon: 'fa-table' }
+            ];
+
+            // Si tiene garante, agregar documento de garante
+            if (credito.garante) {
+                requiredDocs.push({ id: 'garante', label: 'Documento del Garante', icon: 'fa-user-shield' });
+            }
+
+            // Renderizar lista de documentos
+            docsList.innerHTML = requiredDocs.map(doc => `
+                <div class="upload-doc-item" id="upload-item-${doc.id}">
+                    <div class="upload-doc-header">
+                        <div class="upload-doc-info">
+                            <div class="upload-doc-icon" id="upload-icon-${doc.id}">
+                                <i class="fas ${doc.icon}"></i>
+                            </div>
+                            <div class="upload-doc-text">
+                                <div class="upload-doc-name">${doc.label}</div>
+                                <div class="upload-doc-status" id="upload-status-${doc.id}">Pendiente de carga</div>
+                            </div>
+                        </div>
+                        <button class="upload-btn" id="upload-btn-${doc.id}" onclick="document.getElementById('file-${doc.id}').click()">
+                            <i class="fas fa-upload"></i> Subir
+                        </button>
+                    </div>
+                    <div class="upload-progress" id="upload-progress-${doc.id}">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="progress-bar-${doc.id}"></div>
+                        </div>
+                    </div>
+                    <input type="file" class="file-input-hidden" id="file-${doc.id}" accept="application/pdf,image/*" onchange="handleFileUpload('${doc.id}', this)">
+                </div>
+            `).join('');
+
+            // Reset botón de confirmar
+            updateConfirmButton();
+
+            modal.classList.add('active');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('upload-modal').classList.remove('active');
+            currentCreditoId = null;
+            uploadedFiles = {};
+            requiredDocs = [];
+        }
+
+        async function handleFileUpload(docId, inputElement) {
+            const file = inputElement.files[0];
+            if (!file) return;
+
+            const item = document.getElementById(`upload-item-${docId}`);
+            const icon = document.getElementById(`upload-icon-${docId}`);
+            const status = document.getElementById(`upload-status-${docId}`);
+            const btn = document.getElementById(`upload-btn-${docId}`);
+            const progress = document.getElementById(`upload-progress-${docId}`);
+            const progressBar = document.getElementById(`progress-bar-${docId}`);
+
+            // Validar tamaño (max 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                showToast('El archivo es muy grande (máx. 10MB)', 'error');
+                return;
+            }
+
+            // Mostrar progreso
+            item.classList.add('uploading');
+            item.classList.remove('uploaded');
+            progress.classList.add('active');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            status.textContent = 'Subiendo...';
+
+            try {
+                const supabase = window.getSupabaseClient();
+                const credito = creditosData.find(c => c.id_credito === currentCreditoId);
+                const socioNombre = (credito?.socio?.nombre || 'SOCIO').toUpperCase().replace(/\s+/g, '_');
+
+                // Crear nombre de archivo único
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${credito.codigo_credito}_${docId}_${socioNombre}.${fileExt}`;
+                const filePath = `creditos/${currentCreditoId}/${fileName}`;
+
+                // Simular progreso de subida
+                let progressValue = 0;
+                const progressInterval = setInterval(() => {
+                    progressValue += 10;
+                    if (progressValue <= 90) {
+                        progressBar.style.width = progressValue + '%';
+                    }
+                }, 100);
+
+                // Subir archivo a Supabase Storage
+                const { data, error } = await supabase.storage
+                    .from('documentos')
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: true
+                    });
+
+                clearInterval(progressInterval);
+
+                if (error) {
+                    throw error;
+                }
+
+                // Éxito
+                progressBar.style.width = '100%';
+                uploadedFiles[docId] = {
+                    path: filePath,
+                    name: file.name,
+                    size: file.size,
+                    uploadedAt: new Date().toISOString()
+                };
+
+                setTimeout(() => {
+                    item.classList.remove('uploading');
+                    item.classList.add('uploaded');
+                    icon.classList.add('success');
+                    icon.innerHTML = '<i class="fas fa-check"></i>';
+                    status.textContent = '✓ Subido correctamente';
+                    status.classList.add('success');
+                    btn.classList.add('uploaded');
+                    btn.innerHTML = '<i class="fas fa-check"></i> OK';
+                    btn.disabled = false;
+                    progress.classList.remove('active');
+
+                    updateConfirmButton();
+                    showToast('Documento subido', 'success');
+                }, 300);
+
+            } catch (error) {
+                console.error('Error uploading file:', error);
+
+                item.classList.remove('uploading');
+                progress.classList.remove('active');
+                progressBar.style.width = '0%';
+                status.textContent = 'Error al subir';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-redo"></i> Reintentar';
+
+                showToast('Error al subir: ' + (error.message || 'Intente de nuevo'), 'error');
+            }
+
+            // Limpiar input
+            inputElement.value = '';
+        }
+
+        function updateConfirmButton() {
+            const btn = document.getElementById('btn-confirmar-desembolso');
+            const statusText = document.getElementById('upload-status-text');
+            const uploadedCount = Object.keys(uploadedFiles).length;
+            const requiredCount = requiredDocs.length;
+
+            if (uploadedCount >= requiredCount) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                statusText.innerHTML = '<span style="color: #059669; font-weight: 600;">✓ Todos los documentos subidos. Puede confirmar el desembolso.</span>';
+            } else {
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+                statusText.textContent = `Documentos subidos: ${uploadedCount} de ${requiredCount}`;
+            }
+        }
+
+        async function confirmDesembolsoWithDocs() {
+            if (!currentCreditoId) return;
+            if (Object.keys(uploadedFiles).length < requiredDocs.length) {
+                showToast('Debe subir todos los documentos primero', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('btn-confirmar-desembolso');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+
+            try {
+                const supabase = window.getSupabaseClient();
+
+                // Actualizar estado del crédito a ACTIVO
+                const { error: updateError } = await supabase
+                    .from('ic_creditos')
+                    .update({
+                        estado_credito: 'ACTIVO',
+                        fecha_desembolso: new Date().toISOString().split('T')[0]
+                    })
+                    .eq('id_credito', currentCreditoId);
+
+                if (updateError) throw updateError;
+
+                // Registrar los documentos subidos (opcional: guardar referencia en tabla)
+                const credito = creditosData.find(c => c.id_credito === currentCreditoId);
+
+                // Log de éxito
+                console.log('✅ Desembolso completado:', {
+                    creditoId: currentCreditoId,
+                    codigoCredito: credito?.codigo_credito,
+                    documentos: uploadedFiles,
+                    fecha: new Date().toISOString()
+                });
+
+                closeUploadModal();
+                showToast('¡Desembolso realizado con éxito!', 'success');
+
+                // Recargar lista
+                await loadDesembolsosPendientes();
+
+            } catch (error) {
+                console.error('Error en desembolso:', error);
+                showToast('Error al realizar el desembolso: ' + error.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Desembolso';
+            }
+        }
+
+        // Confirmar desembolso (versión legacy sin documentos - ya no se usa)
+        async function confirmDesembolso() {
+            if (!currentCreditoId) return;
+
+            const btn = document.getElementById('confirm-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            try {
+                const supabase = window.getSupabaseClient();
+
+                const { error } = await supabase
+                    .from('ic_creditos')
+                    .update({
+                        estado_credito: 'ACTIVO',
+                        fecha_desembolso: new Date().toISOString().split('T')[0]
+                    })
+                    .eq('id_credito', currentCreditoId);
+
+                if (error) throw error;
+
+                closeConfirmModal();
+                showToast('¡Desembolso realizado con éxito!', 'success');
+
+                // Recargar lista
+                await loadDesembolsosPendientes();
+
+            } catch (error) {
+                console.error('Error desembolsando:', error);
+                showToast('Error al realizar el desembolso', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Desembolsar';
+            }
+        }
+
+        // Mostrar toast
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+
+            toast.className = 'toast active ' + type;
+            toastMessage.textContent = message;
+
+            setTimeout(() => {
+                toast.classList.remove('active');
+            }, 3000);
+        }
+
+        // Ir al simulador
+        function goToSimulador() {
+            // En lugar de redirigir a desktop, cargar el simulador en la vista móvil
+            loadSimuladorView();
+        }
+
+        // Cargar vista del simulador en móvil
+        function loadSimuladorView() {
+            const mainContent = document.querySelector('.main-content');
+
+            // Actualizar navegación activa
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.nav-item')[1].classList.add('active');
+
+            // Cargar contenido del simulador
+            mainContent.innerHTML = `
+                <link rel="stylesheet" href="css/simulador.css">
+                <div class="content-wrapper simulador-wrapper">
+                    <!-- Hero Header del Módulo -->
+                    <div class="simulador-hero">
+                        <div class="hero-bg-simulador"></div>
+                        <div class="hero-content-simulador">
+                            <div class="hero-icon-simulador">
+                                <i class="fas fa-calculator"></i>
+                            </div>
+                            <h1 class="hero-title-simulador">Simulador</h1>
+                            <p class="hero-subtitle-simulador">Calcula tu crédito o póliza</p>
+                        </div>
+                    </div>
+
+                    <!-- Toggle Tipo de Simulación -->
+                    <div class="simulador-toggle-container">
+                        <div class="simulador-toggle">
+                            <button type="button" class="toggle-btn active" data-tipo="credito" id="toggle-credito">
+                                <i class="fas fa-hand-holding-usd"></i>
+                                <span>Crédito</span>
+                            </button>
+                            <button type="button" class="toggle-btn" data-tipo="poliza" id="toggle-poliza">
+                                <i class="fas fa-certificate"></i>
+                                <span>Póliza</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Formulario de Simulación -->
+                    <div class="simulador-card">
+                        <h2 class="simulador-card-title">
+                            <i class="fas fa-edit"></i>
+                            <span id="form-title">Datos del Crédito</span>
+                        </h2>
+
+                        <form id="simulador-form">
+                            <div class="simulador-form-grid">
+                                <div class="form-group full-width">
+                                    <label class="form-label">Nombre del Socio (opcional)</label>
+                                    <input type="text" id="sim-nombre" class="form-input" placeholder="Nombre para el documento">
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" id="label-capital">Capital Solicitado ($)</label>
+                                    <input type="number" id="sim-capital" class="form-input" value="10000" min="100" step="100" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" id="label-interes">Tasa de Interés Mensual (%)</label>
+                                    <input type="number" id="sim-interes" class="form-input" value="2" min="0.1" max="15" step="0.1" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Plazo (meses)</label>
+                                    <input type="number" id="sim-plazo" class="form-input" value="12" min="1" max="60" step="1" required>
+                                </div>
+
+                                <div class="form-group credito-field">
+                                    <label class="form-label">Fecha de Desembolso</label>
+                                    <input type="date" id="sim-fecha-desembolso" class="form-input">
+                                </div>
+
+                                <div class="form-group credito-field">
+                                    <label class="form-label">Día de Pago Mensual</label>
+                                    <select id="sim-dia-pago" class="form-select">
+                                        <option value="10">Día 10 de cada mes</option>
+                                        <option value="15" selected>Día 15 de cada mes</option>
+                                        <option value="20">Día 20 de cada mes</option>
+                                        <option value="25">Día 25 de cada mes</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group poliza-field hidden">
+                                    <label class="form-label">Fecha de Inicio</label>
+                                    <input type="date" id="sim-fecha-inicio" class="form-input">
+                                </div>
+                            </div>
+
+                            <div class="simulador-info-box credito-field" id="info-credito">
+                                <i class="fas fa-info-circle"></i>
+                                <div>
+                                    <strong>Beneficios del Crédito:</strong>
+                                    <ul>
+                                        <li>Cuotas fijas mensuales durante todo el plazo</li>
+                                        <li>El <strong>ahorro programado</strong> se devuelve al cancelar el crédito</li>
+                                        <li>Precancelación disponible a partir del 3er mes</li>
+                                        <li>Renovación del crédito en cualquier momento</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="simulador-info-box poliza-field hidden" id="info-poliza">
+                                <i class="fas fa-info-circle"></i>
+                                <div>
+                                    <strong>Sobre la Póliza:</strong>
+                                    <ul>
+                                        <li>Inversión segura con tasa fija</li>
+                                        <li>Intereses pagados al vencimiento</li>
+                                        <li>Opciones de capitalización o retiro</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="simulador-actions">
+                                <button type="button" class="btn btn-primary" id="btn-calcular">
+                                    <i class="fas fa-chart-line"></i>
+                                    Calcular Simulación
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="btn-limpiar">
+                                    <i class="fas fa-eraser"></i>
+                                    Limpiar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Resultados de la Simulación -->
+                    <div id="simulador-resultados" class="hidden">
+                        <div class="simulador-card">
+                            <h2 class="simulador-card-title">
+                                <i class="fas fa-chart-pie"></i>
+                                <span id="resumen-title">Resumen del Crédito</span>
+                            </h2>
+
+                            <div class="simulador-resumen-grid">
+                                <div class="resumen-item">
+                                    <span class="resumen-label" id="res-label-capital">Capital Solicitado</span>
+                                    <span class="resumen-value" id="res-capital">$0.00</span>
+                                </div>
+                                <div class="resumen-item">
+                                    <span class="resumen-label" id="res-label-interes-total">Total Intereses</span>
+                                    <span class="resumen-value" id="res-intereses">$0.00</span>
+                                </div>
+                                <div class="resumen-item highlight credito-only">
+                                    <span class="resumen-label">Total Ahorro Programado</span>
+                                    <span class="resumen-value" id="res-ahorro">$0.00</span>
+                                    <small class="resumen-subtext">(se devuelve al socio)</small>
+                                </div>
+                                <div class="resumen-item highlight">
+                                    <span class="resumen-label" id="res-label-cuota-total">Cuota Mensual</span>
+                                    <span class="resumen-value" id="res-cuota-total">$0.00</span>
+                                    <small class="resumen-subtext">(incluye ahorro programado)</small>
+                                </div>
+                                <div class="resumen-item total-neto">
+                                    <span class="resumen-label" id="res-label-total">Total Neto a Pagar</span>
+                                    <span class="resumen-value" id="res-total">$0.00</span>
+                                    <small class="resumen-nota">(sin ahorro - se devuelve al socio)</small>
+                                </div>
+                                <div class="resumen-item poliza-only hidden">
+                                    <span class="resumen-label">Fecha de Vencimiento</span>
+                                    <span class="resumen-value" id="res-vencimiento">-</span>
+                                </div>
+                                <div class="resumen-item poliza-only hidden highlight">
+                                    <span class="resumen-label">Valor al Vencimiento</span>
+                                    <span class="resumen-value" id="res-valor-final">$0.00</span>
+                                </div>
+                            </div>
+
+                            <div class="simulador-info-box success credito-only" id="nota-ahorro">
+                                <i class="fas fa-piggy-bank"></i>
+                                <div>
+                                    <strong>💰 Ahorro Programado:</strong> <span id="nota-ahorro-monto">$0.00</span>
+                                    <p>Este monto será devuelto al socio al cancelar completamente el crédito, o puede usarse para pagar la última cuota.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="simulador-card">
+                            <h2 class="simulador-card-title">
+                                <i class="fas fa-table"></i>
+                                <span id="tabla-title">Tabla de Amortización</span>
+                            </h2>
+
+                            <div class="simulador-table-container">
+                                <table class="simulador-table">
+                                    <thead id="tabla-header"></thead>
+                                    <tbody id="tabla-body"></tbody>
+                                    <tfoot id="tabla-footer"></tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Inicializar funcionalidad del simulador
+            initSimuladorMobile();
+        }
+
+        // Inicializar simulador en móvil
+        function initSimuladorMobile() {
+            // Establecer fecha de hoy
+            const today = new Date().toISOString().split('T')[0];
+            const fechaDesembolso = document.getElementById('sim-fecha-desembolso');
+            const fechaInicio = document.getElementById('sim-fecha-inicio');
+            if (fechaDesembolso) fechaDesembolso.value = today;
+            if (fechaInicio) fechaInicio.value = today;
+
+            // Toggle entre crédito y póliza
+            const toggleCredito = document.getElementById('toggle-credito');
+            const togglePoliza = document.getElementById('toggle-poliza');
+
+            if (toggleCredito && togglePoliza) {
+                toggleCredito.addEventListener('click', () => switchSimType('credito'));
+                togglePoliza.addEventListener('click', () => switchSimType('poliza'));
+            }
+
+            // Botón calcular
+            const btnCalcular = document.getElementById('btn-calcular');
+            if (btnCalcular) {
+                btnCalcular.addEventListener('click', calcularSimulacion);
+            }
+
+            // Botón limpiar
+            const btnLimpiar = document.getElementById('btn-limpiar');
+            if (btnLimpiar) {
+                btnLimpiar.addEventListener('click', limpiarSimulador);
+            }
+        }
+
+        let currentSimType = 'credito';
+
+        function switchSimType(tipo) {
+            currentSimType = tipo;
+
+            // Actualizar toggles
+            document.getElementById('toggle-credito').classList.toggle('active', tipo === 'credito');
+            document.getElementById('toggle-poliza').classList.toggle('active', tipo === 'poliza');
+
+            // Actualizar título
+            document.getElementById('form-title').textContent = tipo === 'credito' ? 'Datos del Crédito' : 'Datos de la Póliza';
+
+            // Mostrar/ocultar campos
+            document.querySelectorAll('.credito-field').forEach(el => {
+                el.classList.toggle('hidden', tipo !== 'credito');
+            });
+            document.querySelectorAll('.poliza-field').forEach(el => {
+                el.classList.toggle('hidden', tipo !== 'poliza');
+            });
+
+            // Actualizar labels
+            document.getElementById('label-capital').textContent = tipo === 'credito' ? 'Capital Solicitado ($)' : 'Monto de Inversión ($)';
+            document.getElementById('label-interes').textContent = tipo === 'credito' ? 'Tasa de Interés Mensual (%)' : 'Tasa de Rendimiento Mensual (%)';
+
+            // Ocultar resultados al cambiar tipo
+            document.getElementById('simulador-resultados').classList.add('hidden');
+        }
+
+        function calcularSimulacion() {
+            const capital = parseFloat(document.getElementById('sim-capital').value) || 0;
+            const tasaMensual = parseFloat(document.getElementById('sim-interes').value) || 0;
+            const plazo = parseInt(document.getElementById('sim-plazo').value) || 0;
+
+            if (capital <= 0 || tasaMensual <= 0 || plazo <= 0) {
+                showToast('Por favor complete todos los campos', 'error');
+                return;
+            }
+
+            if (currentSimType === 'credito') {
+                calcularCredito(capital, tasaMensual, plazo);
+            } else {
+                calcularPoliza(capital, tasaMensual, plazo);
+            }
+
+            document.getElementById('simulador-resultados').classList.remove('hidden');
+
+            // Scroll a resultados
+            document.getElementById('simulador-resultados').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function calcularCredito(capital, tasaMensual, plazo) {
+            const tasa = tasaMensual / 100;
+
+            // Cuota fija (sistema francés)
+            const cuota = capital * (tasa * Math.pow(1 + tasa, plazo)) / (Math.pow(1 + tasa, plazo) - 1);
+
+            // Ahorro programado (5% del capital dividido en el plazo)
+            const totalAhorro = capital * 0.05;
+            const ahorroMensual = totalAhorro / plazo;
+            const cuotaConAhorro = cuota + ahorroMensual;
+
+            // Total intereses
+            const totalPago = cuota * plazo;
+            const totalIntereses = totalPago - capital;
+
+            // Actualizar UI
+            document.getElementById('resumen-title').textContent = 'Resumen del Crédito';
+            document.getElementById('res-capital').textContent = formatMoney(capital);
+            document.getElementById('res-intereses').textContent = formatMoney(totalIntereses);
+            document.getElementById('res-ahorro').textContent = formatMoney(totalAhorro);
+            document.getElementById('res-cuota-total').textContent = formatMoney(cuotaConAhorro);
+            document.getElementById('res-total').textContent = formatMoney(totalPago);
+            document.getElementById('nota-ahorro-monto').textContent = formatMoney(totalAhorro);
+
+            // Mostrar campos de crédito
+            document.querySelectorAll('.credito-only').forEach(el => el.classList.remove('hidden'));
+            document.querySelectorAll('.poliza-only').forEach(el => el.classList.add('hidden'));
+
+            // Generar tabla de amortización
+            generarTablaAmortizacion(capital, tasa, plazo, cuota, ahorroMensual);
+        }
+
+        function calcularPoliza(capital, tasaMensual, plazo) {
+            const tasa = tasaMensual / 100;
+
+            // Interés compuesto
+            const valorFinal = capital * Math.pow(1 + tasa, plazo);
+            const totalIntereses = valorFinal - capital;
+
+            // Fecha de vencimiento
+            const fechaInicio = document.getElementById('sim-fecha-inicio').value;
+            const fechaVenc = new Date(fechaInicio);
+            fechaVenc.setMonth(fechaVenc.getMonth() + plazo);
+
+            // Actualizar UI
+            document.getElementById('resumen-title').textContent = 'Resumen de la Póliza';
+            document.getElementById('res-label-capital').textContent = 'Inversión Inicial';
+            document.getElementById('res-capital').textContent = formatMoney(capital);
+            document.getElementById('res-label-interes-total').textContent = 'Total Rendimiento';
+            document.getElementById('res-intereses').textContent = formatMoney(totalIntereses);
+            document.getElementById('res-vencimiento').textContent = fechaVenc.toLocaleDateString('es-EC');
+            document.getElementById('res-valor-final').textContent = formatMoney(valorFinal);
+
+            // Mostrar campos de póliza
+            document.querySelectorAll('.credito-only').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.poliza-only').forEach(el => el.classList.remove('hidden'));
+
+            // Ocultar tabla en póliza
+            document.getElementById('tabla-title').parentElement.parentElement.style.display = 'none';
+        }
+
+        function generarTablaAmortizacion(capital, tasa, plazo, cuota, ahorroMensual) {
+            const tbody = document.getElementById('tabla-body');
+            const thead = document.getElementById('tabla-header');
+            const tfoot = document.getElementById('tabla-footer');
+
+            // Header
+            thead.innerHTML = `
+                <tr>
+                    <th class="text-center">#</th>
+                    <th class="text-right">Cuota Total</th>
+                    <th class="text-right">Capital</th>
+                    <th class="text-right">Interés</th>
+                    <th class="text-right">Saldo</th>
+                </tr>
+            `;
+
+            let saldo = capital;
+            let totalCapital = 0;
+            let totalInteres = 0;
+            let totalCuota = 0;
+            let rows = '';
+
+            for (let i = 1; i <= plazo; i++) {
+                const interes = saldo * tasa;
+                const abonoCapital = cuota - interes;
+                saldo -= abonoCapital;
+                if (saldo < 0) saldo = 0;
+
+                const cuotaTotal = cuota + ahorroMensual;
+
+                totalCapital += abonoCapital;
+                totalInteres += interes;
+                totalCuota += cuotaTotal;
+
+                rows += `
+                    <tr>
+                        <td class="text-center">${i}</td>
+                        <td class="text-right">${formatMoney(cuotaTotal)}</td>
+                        <td class="text-right">${formatMoney(abonoCapital)}</td>
+                        <td class="text-right">${formatMoney(interes)}</td>
+                        <td class="text-right text-primary">${formatMoney(saldo)}</td>
+                    </tr>
+                `;
+            }
+
+            tbody.innerHTML = rows;
+
+            // Footer
+            tfoot.innerHTML = `
+                <tr>
+                    <td colspan="1" class="text-right"><strong>TOTALES</strong></td>
+                    <td class="text-right"><strong>${formatMoney(totalCuota)}</strong></td>
+                    <td class="text-right"><strong>${formatMoney(totalCapital)}</strong></td>
+                    <td class="text-right"><strong>${formatMoney(totalInteres)}</strong></td>
+                    <td class="text-right">-</td>
+                </tr>
+            `;
+
+            // Mostrar tabla
+            document.getElementById('tabla-title').parentElement.parentElement.style.display = 'block';
+        }
+
+        function limpiarSimulador() {
+            document.getElementById('sim-nombre').value = '';
+            document.getElementById('sim-capital').value = '10000';
+            document.getElementById('sim-interes').value = '2';
+            document.getElementById('sim-plazo').value = '12';
+            document.getElementById('simulador-resultados').classList.add('hidden');
+        }
+
+        function formatMoney(value) {
+            return '$' + parseFloat(value).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // Volver a desembolsos
+        function goToDesembolsos() {
+            loadDesembolsosView();
+        }
+
+        // Cargar vista de desembolsos
+        async function loadDesembolsosView() {
+            const mainContent = document.querySelector('.main-content');
+
+            // Actualizar navegación activa
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.getElementById('nav-desembolsos').classList.add('active');
+
+            mainContent.innerHTML = `
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-money-bill-wave"></i>
+                        Desembolsos Pendientes
+                    </h2>
+                    <span class="section-badge" id="desembolsos-count">0</span>
+                </div>
+
+                <div id="desembolsos-container" class="desembolsos-container">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p>Cargando desembolsos...</p>
+                    </div>
+                </div>
+
+                <div class="switch-version">
+                    <button class="switch-version-btn" onclick="goToDesktop()">
+                        <i class="fas fa-desktop"></i>
+                        Ir a versión completa
+                    </button>
+                </div>
+            `;
+
+            await loadDesembolsosPendientes();
+        }
+
+
+        // NUEVA FUNCIÓN: Vista de Créditos Lite
+        async function loadCreditosView() {
+            const mainContent = document.querySelector('.main-content');
+
+            // Actualizar navegación activa
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            const navCreditos = document.getElementById('nav-creditos');
+            if (navCreditos) navCreditos.classList.add('active');
+
+            mainContent.innerHTML = `
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-hand-holding-usd"></i>
+                        Mis Créditos
+                    </h2>
+                </div>
+
+                <div class="lite-search-wrapper">
+                    <div class="lite-search-container">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="lite-search-creditos" placeholder="Buscar por código, nombre o cédula..." oninput="filterLiteCreditos(this.value)">
+                    </div>
+                </div>
+
+                <div id="lite-creditos-list" class="lite-list-container">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p>Cargando créditos...</p>
+                    </div>
+                </div>
+
+                <div class="switch-version">
+                    <button class="switch-version-btn" onclick="goToDesktopModule('creditos')">
+                        <i class="fas fa-desktop"></i>
+                        Ver gestión completa (PC)
+                    </button>
+                </div>
+            `;
+
+            await fetchLiteCreditos();
+        }
+
+        function goToCreditos() {
+            loadCreditosView();
+        }
+
+        let liteCreditosData = [];
+
+        async function fetchLiteCreditos() {
+            try {
+                const supabase = window.getSupabaseClient();
+                const { data, error } = await supabase
+                    .from('ic_creditos')
+                    .select(`
+                        id_credito, 
+                        codigo_credito, 
+                        capital, 
+                        estado_credito, 
+                        fecha_desembolso,
+                        fecha_primer_pago,
+                        plazo,
+                        cuotas_pagadas,
+                        cuota_con_ahorro,
+                        socio:ic_socios!id_socio (
+                            nombre,
+                            cedula
+                        )
+                    `)
+                    .order('fecha_desembolso', { ascending: false }); // Fetch more for sorting
+
+                if (error) throw error;
+
+                // Lógica de Ordenamiento Priorizado
+                const sortedData = data.sort((a, b) => {
+                    // 1. Priorizar MOROSO
+                    const isAMoroso = a.estado_credito === 'MOROSO' ? 0 : 1;
+                    const isBMoroso = b.estado_credito === 'MOROSO' ? 0 : 1;
+                    if (isAMoroso !== isBMoroso) return isAMoroso - isBMoroso;
+
+                    // 2. Ordenar por próxima fecha de pago
+                    const getNextPayment = (c) => {
+                        if (!c.fecha_primer_pago) return new Date(8640000000000000); // Fecha muy lejana
+                        const baseDate = new Date(c.fecha_primer_pago);
+                        baseDate.setMonth(baseDate.getMonth() + (c.cuotas_pagadas || 0));
+                        return baseDate;
+                    };
+
+                    return getNextPayment(a) - getNextPayment(b);
+                });
+
+                liteCreditosData = sortedData;
+                renderLiteCreditos(sortedData);
+            } catch (error) {
+                console.error('Error fetching lite creditos:', error);
+                document.getElementById('lite-creditos-list').innerHTML = '<p style="text-align:center; padding: 2rem;">Error al cargar créditos.</p>';
+            }
+        }
+
+        function renderLiteCreditos(creditos) {
+            const container = document.getElementById('lite-creditos-list');
+            if (!creditos || creditos.length === 0) {
+                container.innerHTML = '<p style="text-align:center; padding: 2rem; color: var(--text-muted);">No se encontraron créditos.</p>';
+                return;
+            }
+
+            container.innerHTML = creditos.map(c => `
+                <div class="lite-credit-card" onclick="showLiteCreditDetails('${c.id_credito}')">
+                    <div class="lite-credit-header">
+                        <div class="lite-credit-code">
+                            <i class="fas fa-file-invoice-dollar" style="color: var(--gold);"></i>
+                            <span>${c.codigo_credito}</span>
+                        </div>
+                        <div class="lite-credit-amount">$${parseFloat(c.capital).toLocaleString('es-EC', { minimumFractionDigits: 2 })}</div>
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <div style="font-weight: 700; color: var(--text-primary); font-size: 0.9rem;">${c.socio?.nombre || 'Socio No Encontrado'}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">${c.socio?.cedula || '---'}</div>
+                    </div>
+                    <div class="lite-credit-status">
+                         <span class="lite-status-badge badge-${c.estado_credito?.toLowerCase()}">${c.estado_credito}</span>
+                    </div>
+                    <div class="lite-credit-footer">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Desembolsado: ${c.fecha_desembolso ? new Date(c.fecha_desembolso).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterLiteCreditos(term) {
+            const search = term.toLowerCase();
+            const filtered = liteCreditosData.filter(c =>
+                c.codigo_credito.toLowerCase().includes(search) ||
+                (c.socio?.nombre && c.socio.nombre.toLowerCase().includes(search)) ||
+                (c.socio?.cedula && c.socio.cedula.includes(search))
+            );
+            renderLiteCreditos(filtered);
+        }
+
+        // Funciones del Modal Lite
+        function showLiteCreditDetails(id) {
+            const c = liteCreditosData.find(item => item.id_credito === id);
+            if (!c) return;
+
+            document.getElementById('lite-det-codigo').textContent = c.codigo_credito;
+            document.getElementById('lite-det-socio').textContent = c.socio?.nombre || 'Socio No Encontrado';
+
+            // Progreso
+            const cuotasPagadas = c.cuotas_pagadas || 0;
+            const plazo = c.plazo || 1;
+            const pct = Math.round((cuotasPagadas / plazo) * 100);
+
+            document.getElementById('lite-det-cuotas').textContent = `${cuotasPagadas}/${plazo} cuotas`;
+            document.getElementById('lite-det-pct').textContent = `${pct}%`;
+            document.getElementById('lite-progreso-bar').style.width = `${pct}%`;
+
+            // Valores
+            document.getElementById('lite-det-cuota').textContent = `$${parseFloat(c.cuota_con_ahorro || 0).toLocaleString('es-EC', { minimumFractionDigits: 2 })}`;
+            document.getElementById('lite-det-capital').textContent = `$${parseFloat(c.capital || 0).toLocaleString('es-EC', { minimumFractionDigits: 2 })}`;
+
+            // Footer
+            const estadoEl = document.getElementById('lite-det-estado');
+            estadoEl.textContent = c.estado_credito;
+            estadoEl.className = `lite-det-status badge-${c.estado_credito?.toLowerCase()}`;
+
+            document.getElementById('lite-det-fecha').textContent = `Desembolso: ${c.fecha_desembolso ? new Date(c.fecha_desembolso).toLocaleDateString('es-EC') : '--/--/----'}`;
+
+            currentCreditoId = id; // Guardar para "Ver gestión completa"
+
+            const modal = document.getElementById('credito-lite-modal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('active'), 10);
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLiteModal() {
+            const modal = document.getElementById('credito-lite-modal');
+            modal.classList.remove('active');
+            setTimeout(() => modal.style.display = 'none', 300);
+            document.body.style.overflow = '';
+        }
+
+        function goToFullCreditDetails() {
+            if (currentCreditoId) {
+                goToDesktopModule('creditos');
+            }
+        }
+
+        // --- Registro de Pagos Móvil ---
+        let currentLiteCuota = null;
+        let selectedMobileComprobanteFile = null; // Archivo de comprobante seleccionado (móvil)
+
+        // Configuración de compresión
+        const MOBILE_COMPRESSION_CONFIG = {
+            maxWidth: 1200,
+            maxHeight: 1200,
+            quality: 0.75
+        };
+
+        /**
+         * Maneja la selección de comprobante en móvil
+         */
+        function handleMobileComprobanteSelect(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showToast('Seleccione una imagen válida', 'warning');
+                input.value = '';
+                return;
+            }
+
+            selectedMobileComprobanteFile = file;
+
+            // Mostrar preview y ocultar botones
+            const buttons = document.getElementById('comprobante-buttons');
+            const preview = document.getElementById('lite-comprobante-preview');
+            const previewImg = document.getElementById('lite-comprobante-img');
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                if (buttons) buttons.style.display = 'none';
+                if (preview) preview.style.display = 'inline-block';
+            };
+            reader.readAsDataURL(file);
+
+            console.log(`Comprobante móvil seleccionado: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+        }
+
+        /**
+         * Limpia el preview de comprobante móvil
+         */
+        function clearMobileComprobantePreview() {
+            selectedMobileComprobanteFile = null;
+
+            const buttons = document.getElementById('comprobante-buttons');
+            const preview = document.getElementById('lite-comprobante-preview');
+            const previewImg = document.getElementById('lite-comprobante-img');
+            const cameraInput = document.getElementById('lite-pago-comprobante-camera');
+            const galleryInput = document.getElementById('lite-pago-comprobante-gallery');
+
+            if (buttons) buttons.style.display = 'flex';
+            if (preview) preview.style.display = 'none';
+            if (previewImg) previewImg.src = '';
+            if (cameraInput) cameraInput.value = '';
+            if (galleryInput) galleryInput.value = '';
+        }
+
+        /**
+         * Comprime y sube comprobante a Supabase Storage (móvil)
+         */
+        async function uploadMobileReceipt(file, creditoId, cuotaNumero) {
+            try {
+                const supabase = window.getSupabaseClient();
+
+                // Comprimir imagen
+                const compressedBlob = await compressMobileImage(file);
+
+                // Generar nombre único
+                const timestamp = Date.now();
+                const extension = file.type === 'image/png' ? 'png' : 'jpg';
+                const fileName = `pagos/${creditoId}/${timestamp}_cuota${cuotaNumero}_movil.${extension}`;
+
+                console.log(`Subiendo comprobante móvil: ${fileName}`);
+
+                // Subir a Storage
+                const { data, error } = await supabase.storage
+                    .from('inkacorp')
+                    .upload(fileName, compressedBlob, {
+                        cacheControl: '3600',
+                        upsert: false,
+                        contentType: compressedBlob.type || 'image/jpeg'
+                    });
+
+                if (error) throw error;
+
+                // Obtener URL pública
+                const { data: urlData } = supabase.storage
+                    .from('inkacorp')
+                    .getPublicUrl(fileName);
+
+                return { success: true, url: urlData?.publicUrl };
+
+            } catch (error) {
+                console.error('Error uploading mobile receipt:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        /**
+         * Comprime imagen para móvil usando Canvas
+         */
+        async function compressMobileImage(file) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                const reader = new FileReader();
+
+                reader.onload = (e) => {
+                    img.onload = () => {
+                        let { width, height } = img;
+                        const config = MOBILE_COMPRESSION_CONFIG;
+
+                        // Redimensionar manteniendo proporción
+                        if (width > config.maxWidth) {
+                            height = (height * config.maxWidth) / width;
+                            width = config.maxWidth;
+                        }
+                        if (height > config.maxHeight) {
+                            width = (width * config.maxHeight) / height;
+                            height = config.maxHeight;
+                        }
+
+                        // Canvas y compresión
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(0, 0, width, height);
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        canvas.toBlob((blob) => {
+                            // Si compresión aumenta tamaño, usar original
+                            if (blob.size >= file.size) {
+                                console.log('Compresión ineficiente, usando archivo original');
+                                resolve(file);
+                            } else {
+                                const savedPct = Math.round((1 - blob.size / file.size) * 100);
+                                console.log(`Imagen móvil comprimida ${savedPct}%`);
+                                resolve(blob);
+                            }
+                        }, 'image/jpeg', config.quality);
+                    };
+                    img.onerror = () => resolve(file);
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => resolve(file);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function openLitePaymentModal() {
+            if (!currentCreditoId) return;
+
+            try {
+                const supabase = window.getSupabaseClient();
+
+                // Buscar siguiente cuota pendiente
+                const { data: cuotas, error } = await supabase
+                    .from('ic_creditos_amortizacion')
+                    .select('*')
+                    .eq('id_credito', currentCreditoId)
+                    .in('estado_cuota', ['PENDIENTE', 'VENCIDO'])
+                    .order('numero_cuota', { ascending: true })
+                    .limit(1);
+
+                if (error) throw error;
+
+                if (!cuotas || cuotas.length === 0) {
+                    showToast('No hay cuotas pendientes', 'info');
+                    return;
+                }
+
+                currentLiteCuota = cuotas[0];
+
+                // Llenar formulario
+                document.getElementById('lite-pago-sugerido').textContent = `$${parseFloat(currentLiteCuota.cuota_total).toLocaleString('es-EC', { minimumFractionDigits: 2 })}`;
+                document.getElementById('lite-pago-monto').value = currentLiteCuota.cuota_total;
+                document.getElementById('lite-pago-fecha').valueAsDate = new Date();
+                document.getElementById('lite-pago-referencia').value = '';
+                document.getElementById('lite-pago-metodo').value = 'EFECTIVO';
+
+                // Resetear comprobante
+                clearMobileComprobantePreview();
+
+                const modal = document.getElementById('pago-lite-modal');
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('active'), 10);
+
+            } catch (error) {
+                console.error('Error opening payment modal:', error);
+                showToast('Error al cargar datos de pago', 'error');
+            }
+        }
+
+        function closeLitePaymentModal() {
+            const modal = document.getElementById('pago-lite-modal');
+            modal.classList.remove('active');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        async function confirmLitePayment() {
+            if (!currentLiteCuota || !currentCreditoId) return;
+
+            const btn = document.getElementById('btn-confirmar-pago-lite');
+            const monto = parseFloat(document.getElementById('lite-pago-monto').value);
+            const fecha = document.getElementById('lite-pago-fecha').value;
+            const referencia = document.getElementById('lite-pago-referencia').value;
+            const metodo = document.getElementById('lite-pago-metodo').value;
+
+            if (isNaN(monto) || monto <= 0 || !fecha) {
+                showToast('Complete los datos correctamente', 'warning');
+                return;
+            }
+
+            // Validar que el monto coincida con la cuota total
+            if (Math.abs(monto - parseFloat(currentLiteCuota.cuota_total)) > 0.01) {
+                showToast(`El monto debe ser $${parseFloat(currentLiteCuota.cuota_total).toFixed(2)}`, 'warning');
+                return;
+            }
+
+            // Validar comprobante obligatorio
+            if (!selectedMobileComprobanteFile) {
+                showToast('Debe capturar el comprobante de pago', 'warning');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+
+            try {
+                const supabase = window.getSupabaseClient();
+
+                // 1. Obtener usuario actual
+                const { data: { user } } = await supabase.auth.getUser();
+
+                // 2. Subir comprobante a Storage
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo...';
+                const uploadResult = await uploadMobileReceipt(
+                    selectedMobileComprobanteFile,
+                    currentCreditoId,
+                    currentLiteCuota.numero_cuota
+                );
+
+                if (!uploadResult.success) {
+                    showToast('Error al subir comprobante', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Pago';
+                    return;
+                }
+
+                const comprobanteUrl = uploadResult.url;
+                console.log('Comprobante móvil subido:', comprobanteUrl);
+
+                // 3. Registrar el pago
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+                const { error: errorPago } = await supabase
+                    .from('ic_creditos_pagos')
+                    .insert({
+                        id_detalle: currentLiteCuota.id_detalle,
+                        id_credito: currentCreditoId,
+                        fecha_pago: fecha,
+                        monto_pagado: monto,
+                        metodo_pago: metodo,
+                        referencia_pago: referencia,
+                        observaciones: 'Pago registrado desde móvil',
+                        comprobante_url: comprobanteUrl,
+                        cobrado_por: user?.id || null
+                    });
+
+                if (errorPago) throw errorPago;
+
+                // 3. Actualizar cuota amortización
+                const { error: errorCuota } = await supabase
+                    .from('ic_creditos_amortizacion')
+                    .update({
+                        estado_cuota: 'PAGADO',
+                        requiere_cobro: false
+                    })
+                    .eq('id_detalle', currentLiteCuota.id_detalle);
+
+                if (errorCuota) throw errorCuota;
+
+                // 4. Actualizar ahorro
+                const { error: errorAhorro } = await supabase
+                    .from('ic_creditos_ahorro')
+                    .update({ estado: 'ACUMULADO' })
+                    .eq('id_credito', currentCreditoId)
+                    .eq('numero_cuota', currentLiteCuota.numero_cuota);
+
+                // 5. Actualizar cabecera crédito
+                const c = liteCreditosData.find(item => item.id_credito === currentCreditoId);
+                const nuevasCuotas = (c.cuotas_pagadas || 0) + 1;
+                const nuevoEstado = nuevasCuotas >= c.plazo ? 'CANCELADO' : 'ACTIVO';
+
+                const { error: errorCredito } = await supabase
+                    .from('ic_creditos')
+                    .update({
+                        cuotas_pagadas: nuevasCuotas,
+                        estado_credito: nuevoEstado
+                    })
+                    .eq('id_credito', currentCreditoId);
+
+                if (errorCredito) throw errorCredito;
+
+                showToast('Pago registrado exitosamente', 'success');
+                closeLitePaymentModal();
+
+                // Recargar todo
+                await fetchLiteCreditos();
+                showLiteCreditDetails(currentCreditoId); // Actualizar modal de detalle
+
+            } catch (error) {
+                console.error('Error registering payment:', error);
+                showToast('Error al registrar el pago', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Pago';
+            }
+        }
+
+        // NUEVA FUNCIÓN: Vista de Socios Lite
+        async function loadSociosView() {
+            const mainContent = document.querySelector('.main-content');
+
+            // Actualizar navegación (ninguno activo en bottom nav si no es de los 3 principales, o podemos dejar Dashboard si es sub-vista)
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+
+            mainContent.innerHTML = `
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-users"></i>
+                        Gestión de Socios
+                    </h2>
+                </div>
+
+                <div class="lite-search-wrapper">
+                    <div class="lite-search-container">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="lite-search-socios" placeholder="Buscar socio..." oninput="filterLiteSocios(this.value)">
+                    </div>
+                </div>
+
+                <div id="lite-socios-list" class="lite-list-container">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p>Cargando socios...</p>
+                    </div>
+                </div>
+
+                <div class="switch-version">
+                    <button class="switch-version-btn" onclick="goToDesktopModule('socios')">
+                        <i class="fas fa-desktop"></i>
+                        Ver gestión completa (PC)
+                    </button>
+                </div>
+            `;
+
+            await fetchLiteSocios();
+        }
+
+        let liteSociosData = [];
+
+        async function fetchLiteSocios() {
+            try {
+                const supabase = window.getSupabaseClient();
+                const { data, error } = await supabase
+                    .from('ic_socios')
+                    .select('idsocio, nombre, cedula, whatsapp, paisresidencia')
+                    .order('nombre', { ascending: true })
+                    .limit(50); // Lite version only shows first 50
+
+                if (error) throw error;
+                liteSociosData = data;
+                renderLiteSocios(data);
+            } catch (error) {
+                console.error('Error fetching lite socios:', error);
+                document.getElementById('lite-socios-list').innerHTML = '<p style="text-align:center; padding: 2rem;">Error al cargar socios.</p>';
+            }
+        }
+
+        function renderLiteSocios(socios) {
+            const container = document.getElementById('lite-socios-list');
+            if (!socios || socios.length === 0) {
+                container.innerHTML = '<p style="text-align:center; padding: 2rem; color: var(--text-muted);">No se encontraron socios.</p>';
+                return;
+            }
+
+            container.innerHTML = socios.map(s => {
+                const initials = s.nombre.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                return `
+                    <div class="lite-socio-card">
+                        <div class="lite-socio-avatar">${initials}</div>
+                        <div class="lite-socio-info">
+                            <div class="lite-socio-name">${s.nombre}</div>
+                            <div class="lite-socio-meta">
+                                <span><i class="fas fa-id-card"></i> ${s.cedula || '---'}</span>
+                                <span>•</span>
+                                <span><i class="fas fa-globe"></i> ${s.paisresidencia || 'N/A'}</span>
+                            </div>
+                        </div>
+                        ${s.whatsapp ? `
+                            <a href="https://wa.me/${s.whatsapp}" target="_blank" class="lite-socio-whatsapp">
+                                <i class="fab fa-whatsapp"></i>
+                            </a>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterLiteSocios(term) {
+            const filtered = liteSociosData.filter(s =>
+                s.nombre.toLowerCase().includes(term.toLowerCase()) ||
+                (s.cedula && s.cedula.includes(term))
+            );
+            renderLiteSocios(filtered);
+        }
+
+
+        // Ir a un módulo específico en desktop
+        function goToDesktopModule(module) {
+            sessionStorage.setItem('forceDesktop', 'true');
+            window.location.href = 'index.html#' + module;
+        }
+
+        // Ir a versión de escritorio
+        function goToDesktop() {
+            sessionStorage.setItem('forceDesktop', 'true');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+
+</html>

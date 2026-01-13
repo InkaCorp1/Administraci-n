@@ -1,0 +1,681 @@
+/**
+ * INKA CORP - Estilos del Módulo Simulador
+ * Simulador de Créditos y Pólizas
+ */
+
+/* ==========================================
+   HERO SECTION
+   ========================================== */
+.simulador-hero {
+    position: relative;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, #073D27) 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(11, 78, 50, 0.25);
+}
+
+.hero-bg-simulador {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100%;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Ccircle cx='100' cy='100' r='80' fill='%23F2BB3A' opacity='0.1'/%3E%3Ccircle cx='150' cy='50' r='40' fill='%23F2BB3A' opacity='0.08'/%3E%3C/svg%3E") no-repeat center right;
+    background-size: contain;
+}
+
+.hero-content-simulador {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.hero-icon-simulador {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, var(--gold, #F2BB3A) 0%, var(--gold-dark, #D3900D) 100%);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    color: var(--primary-dark, #073D27);
+    box-shadow: 0 4px 15px rgba(242, 187, 58, 0.4);
+}
+
+.hero-title-simulador {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: white;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.hero-subtitle-simulador {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0.25rem 0 0 0;
+}
+
+/* ==========================================
+   TOGGLE SECTION
+   ========================================== */
+.simulador-toggle-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.simulador-toggle {
+    display: inline-flex;
+    background: var(--bg-card, #fff);
+    border-radius: 12px;
+    padding: 0.375rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(11, 78, 50, 0.1);
+}
+
+.toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary, #64748B);
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.toggle-btn i {
+    font-size: 1rem;
+}
+
+.toggle-btn:hover {
+    color: var(--primary, #0B4E32);
+}
+
+.toggle-btn.active {
+    background: linear-gradient(135deg, var(--primary, #0B4E32) 0%, var(--primary-dark, #073D27) 100%);
+    color: var(--gold, #F2BB3A);
+    box-shadow: 0 4px 12px rgba(11, 78, 50, 0.3);
+}
+
+/* ==========================================
+   CARD STYLES
+   ========================================== */
+.simulador-card {
+    background: var(--bg-card, #fff);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(11, 78, 50, 0.08);
+}
+
+.simulador-card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary, #0B4E32);
+    margin: 0 0 1.25rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--gold, #F2BB3A);
+}
+
+.simulador-card-title i {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, rgba(11, 78, 50, 0.1) 0%, rgba(11, 78, 50, 0.05) 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary, #0B4E32);
+    font-size: 0.9rem;
+}
+
+/* ==========================================
+   FORM STYLES
+   ========================================== */
+.simulador-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.simulador-form-grid .form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.simulador-wrapper .form-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary, #64748B);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.simulador-wrapper .form-input,
+.simulador-wrapper .form-select {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 2px solid rgba(11, 78, 50, 0.15);
+    border-radius: 10px;
+    font-size: 1rem;
+    color: var(--text-primary, #0F172A);
+    background: var(--bg-main, #F5F7FA);
+    transition: all 0.2s ease;
+}
+
+.simulador-wrapper .form-input:focus,
+.simulador-wrapper .form-select:focus {
+    outline: none;
+    border-color: var(--primary, #0B4E32);
+    background: white;
+    box-shadow: 0 0 0 4px rgba(11, 78, 50, 0.1);
+}
+
+.simulador-wrapper .form-input::placeholder {
+    color: var(--text-muted, #94A3B8);
+}
+
+/* ==========================================
+   INFO BOX
+   ========================================== */
+.simulador-info-box {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, rgba(11, 78, 50, 0.06) 0%, rgba(11, 78, 50, 0.02) 100%);
+    border: 1px solid rgba(11, 78, 50, 0.12);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #64748B);
+}
+
+.simulador-info-box i {
+    color: var(--primary, #0B4E32);
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
+.simulador-info-box strong {
+    color: var(--primary, #0B4E32);
+}
+
+.simulador-info-box ul {
+    margin: 0.5rem 0 0 0;
+    padding-left: 1.25rem;
+}
+
+.simulador-info-box ul li {
+    margin-bottom: 0.25rem;
+}
+
+.simulador-info-box.success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.02) 100%);
+    border-color: rgba(16, 185, 129, 0.25);
+}
+
+.simulador-info-box.success i {
+    color: #10B981;
+}
+
+.simulador-info-box.success strong {
+    color: #059669;
+}
+
+.simulador-info-box.success p {
+    margin: 0.5rem 0 0 0;
+    color: #047857;
+}
+
+/* ==========================================
+   ACTION BUTTONS
+   ========================================== */
+.simulador-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.simulador-wrapper .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.simulador-wrapper .btn-primary {
+    background: linear-gradient(135deg, var(--primary, #0B4E32) 0%, var(--primary-dark, #073D27) 100%);
+    color: var(--gold, #F2BB3A);
+    box-shadow: 0 4px 15px rgba(11, 78, 50, 0.3);
+}
+
+.simulador-wrapper .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(11, 78, 50, 0.4);
+}
+
+.simulador-wrapper .btn-primary:active {
+    transform: translateY(0);
+}
+
+.simulador-wrapper .btn-secondary {
+    background: var(--bg-main, #F5F7FA);
+    color: var(--text-secondary, #64748B);
+    border: 1px solid rgba(11, 78, 50, 0.15);
+}
+
+.simulador-wrapper .btn-secondary:hover {
+    background: rgba(11, 78, 50, 0.05);
+    color: var(--primary, #0B4E32);
+}
+
+.simulador-wrapper .btn-large {
+    width: 100%;
+    padding: 1.125rem 2rem;
+    font-size: 1rem;
+}
+
+/* ==========================================
+   RESUMEN GRID
+   ========================================== */
+.simulador-resumen-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.resumen-item {
+    background: var(--bg-main, #F5F7FA);
+    padding: 1rem;
+    border-radius: 12px;
+    text-align: center;
+    border-left: 4px solid var(--primary, #0B4E32);
+    transition: all 0.2s ease;
+}
+
+.resumen-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.resumen-item.highlight {
+    background: linear-gradient(135deg, rgba(242, 187, 58, 0.12) 0%, rgba(242, 187, 58, 0.05) 100%);
+    border-left-color: var(--gold, #F2BB3A);
+}
+
+.resumen-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-muted, #94A3B8);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.375rem;
+}
+
+.resumen-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--primary, #0B4E32);
+}
+
+.resumen-item.highlight .resumen-value {
+    color: var(--gold-dark, #D3900D);
+}
+
+.resumen-item.total-neto {
+    background: linear-gradient(135deg, var(--primary, #0B4E32) 0%, var(--primary-dark, #073D27) 100%);
+    border-left-color: var(--gold, #F2BB3A);
+    grid-column: 1 / -1;
+}
+
+.resumen-item.total-neto .resumen-label {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.resumen-item.total-neto .resumen-value {
+    color: var(--gold, #F2BB3A);
+    font-size: 1.5rem;
+}
+
+.resumen-nota {
+    display: block;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 0.25rem;
+    font-weight: 400;
+}
+
+.resumen-subtext {
+    display: block;
+    font-size: 0.65rem;
+    color: var(--text-muted, #94A3B8);
+    margin-top: 0.25rem;
+    font-weight: 400;
+}
+
+/* ==========================================
+   TABLE STYLES
+   ========================================== */
+.simulador-table-container {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid rgba(11, 78, 50, 0.12);
+}
+
+.simulador-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.simulador-table thead th {
+    background: linear-gradient(135deg, var(--primary, #0B4E32) 0%, var(--primary-dark, #073D27) 100%);
+    color: white;
+    padding: 0.875rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.simulador-table thead th:first-child {
+    border-radius: 11px 0 0 0;
+}
+
+.simulador-table thead th:last-child {
+    border-radius: 0 11px 0 0;
+}
+
+.simulador-table tbody td {
+    padding: 0.75rem;
+    border-bottom: 1px solid rgba(11, 78, 50, 0.08);
+    color: var(--text-primary, #0F172A);
+}
+
+.simulador-table tbody tr:nth-child(even) {
+    background: rgba(11, 78, 50, 0.02);
+}
+
+.simulador-table tbody tr:hover {
+    background: rgba(11, 78, 50, 0.05);
+}
+
+.simulador-table tfoot td {
+    background: var(--bg-main, #F5F7FA);
+    font-weight: 700;
+    padding: 0.875rem 0.75rem;
+    color: var(--primary, #0B4E32);
+}
+
+.simulador-table .text-right {
+    text-align: right;
+}
+
+.simulador-table .text-center {
+    text-align: center;
+}
+
+.simulador-table .text-gold {
+    color: var(--gold-dark, #D3900D);
+    font-weight: 600;
+}
+
+.simulador-table .text-primary {
+    color: var(--primary, #0B4E32);
+    font-weight: 600;
+}
+
+/* ==========================================
+   PDF SECTION
+   ========================================== */
+.simulador-pdf-section {
+    text-align: center;
+}
+
+.pdf-disclaimer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+    border: 1px solid #F59E0B;
+    border-radius: 10px;
+    margin-bottom: 1.25rem;
+    font-size: 0.85rem;
+    color: #92400E;
+}
+
+.pdf-disclaimer i {
+    color: #D97706;
+    font-size: 1.25rem;
+}
+
+.pdf-disclaimer strong {
+    color: #B45309;
+}
+
+/* ==========================================
+   VISIBILITY HELPERS
+   ========================================== */
+.hidden {
+    display: none !important;
+}
+
+.credito-field.hidden,
+.poliza-field.hidden,
+.credito-only.hidden,
+.poliza-only.hidden {
+    display: none !important;
+}
+
+/* ==========================================
+   RESPONSIVE STYLES
+   ========================================== */
+@media (max-width: 768px) {
+    .simulador-hero {
+        padding: 1.5rem;
+        border-radius: 12px;
+    }
+
+    .hero-icon-simulador {
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+    }
+
+    .hero-title-simulador {
+        font-size: 1.4rem;
+    }
+
+    .hero-subtitle-simulador {
+        font-size: 0.8rem;
+    }
+
+    .simulador-toggle {
+        width: 100%;
+    }
+
+    .toggle-btn {
+        flex: 1;
+        padding: 0.625rem 1rem;
+        font-size: 0.85rem;
+        justify-content: center;
+    }
+
+    .simulador-card {
+        padding: 1.25rem;
+        border-radius: 12px;
+    }
+
+    .simulador-form-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .simulador-actions {
+        flex-direction: column;
+    }
+
+    .simulador-wrapper .btn {
+        width: 100%;
+    }
+
+    .simulador-resumen-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    .resumen-item {
+        padding: 0.875rem;
+    }
+
+    .resumen-value {
+        font-size: 1.1rem;
+    }
+
+    .simulador-table {
+        font-size: 0.75rem;
+    }
+
+    .simulador-table thead th {
+        padding: 0.625rem 0.5rem;
+        font-size: 0.7rem;
+    }
+
+    .simulador-table tbody td {
+        padding: 0.5rem;
+    }
+
+    .simulador-info-box {
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.875rem;
+        font-size: 0.8rem;
+    }
+
+    .pdf-disclaimer {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+        padding: 0.875rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .simulador-hero {
+        padding: 1.5rem;
+    }
+
+    .hero-content-simulador {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .simulador-wrapper {
+        padding-bottom: 90px;
+    }
+
+    .hero-icon-simulador {
+        margin-bottom: 0.5rem;
+    }
+
+    .simulador-resumen-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .simulador-table-container {
+        margin: 0 -1.25rem;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+}
+
+/* ==========================================
+   ANIMATIONS
+   ========================================== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#simulador-resultados {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+.simulador-card {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+.resumen-item {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+.resumen-item:nth-child(1) {
+    animation-delay: 0.05s;
+}
+
+.resumen-item:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.resumen-item:nth-child(3) {
+    animation-delay: 0.15s;
+}
+
+.resumen-item:nth-child(4) {
+    animation-delay: 0.2s;
+}
+
+.resumen-item:nth-child(5) {
+    animation-delay: 0.25s;
+}
+
+.resumen-item:nth-child(6) {
+    animation-delay: 0.3s;
+}
+
+.resumen-item:nth-child(7) {
+    animation-delay: 0.35s;
+}
+
+.resumen-item:nth-child(8) {
+    animation-delay: 0.4s;
+}

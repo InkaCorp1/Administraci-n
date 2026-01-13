@@ -1,0 +1,1397 @@
+/* ==========================================
+   INKA CORP - Estilos del Módulo Socios
+   Tarjetas elegantes y modal de detalles
+   ========================================== */
+
+.socios-container {
+    /* Variables de compatibilidad para asegurar visibilidad en versión móvil */
+    --gray-900: #EEF1F5;
+    --gray-800: #E2E8F0;
+    --gray-700: #CBD5E1;
+    --gray-600: #94A3B8;
+    --gray-500: #64748B;
+    --gray-400: #475569;
+    --border-color: rgba(11, 78, 50, 0.15);
+    --white: #0F172A;
+}
+
+
+/* ==========================================
+   HERO SECTION
+   ========================================== */
+.socios-hero {
+    position: relative;
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+    border-radius: 1.5rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    overflow: hidden;
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.socios-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(circle at 10% 20%, rgba(11, 78, 50, 0.2) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 20%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.hero-icon-socios {
+    position: relative;
+    z-index: 2;
+    width: 70px;
+    height: 70px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+    box-shadow: var(--shadow-primary);
+    transform: rotate(-5deg);
+}
+
+.hero-icon-socios i {
+    font-size: 2.25rem;
+    color: var(--gold);
+}
+
+.hero-title-socios {
+    position: relative;
+    z-index: 2;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--black);
+    margin: 0 0 0.25rem;
+}
+
+.hero-subtitle-socios {
+    position: relative;
+    z-index: 2;
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.75);
+    margin: 0 0 1.25rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+}
+
+.socios-hero-stats {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.25rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.socios-hero-stat {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    padding: 1.25rem;
+    border-radius: 1rem;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all var(--transition-normal);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100px;
+}
+
+.socios-hero-stat:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.socios-hero-stat.success {
+    background: rgba(34, 197, 94, 0.2);
+}
+
+.socios-hero-stat.warning {
+    background: rgba(245, 158, 11, 0.2);
+}
+
+.socios-hero-value {
+    display: block;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--black);
+    margin-bottom: 0.25rem;
+}
+
+.socios-hero-label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ==========================================
+   TOOLBAR
+   ========================================== */
+.socios-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--gray-800);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+
+/* Botones de la toolbar (faltaban en este módulo) */
+.socios-toolbar .toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.6rem;
+    height: 34px;
+    background: var(--gray-800);
+    color: var(--gray-400);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.socios-toolbar .toolbar-btn:hover {
+    border-color: var(--border-color-hover);
+    color: var(--white);
+    background: rgba(11, 78, 50, 0.08);
+}
+
+.socios-toolbar .toolbar-btn.active {
+    background: rgba(242, 187, 58, 0.12);
+    border-color: var(--gold);
+    color: var(--white);
+}
+
+.socios-toolbar .toolbar-btn.is-disabled,
+.socios-toolbar .toolbar-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.socios-toolbar .toolbar-btn:disabled:hover {
+    border-color: var(--border-color);
+    color: var(--gray-400);
+    background: var(--gray-800);
+}
+
+.socios-toolbar .btn-sync {
+    width: 36px;
+    justify-content: center;
+    padding: 0;
+}
+
+.toolbar-separator {
+    width: 1px;
+    height: 28px;
+    background: var(--border-color);
+    margin: 0 0.25rem;
+}
+
+.toolbar-flag {
+    width: 22px;
+    height: 16px;
+    border-radius: 3px;
+    object-fit: cover;
+}
+
+.globe-emoji {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.toolbar-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 0.75rem;
+    height: 34px;
+    border: 1px solid var(--border-color);
+    border-radius: 2rem;
+    background: var(--gray-800);
+    min-width: 260px;
+    margin-left: 0;
+    flex: 1;
+    min-width: 200px;
+}
+
+.toolbar-search i {
+    color: var(--gray-400);
+}
+
+.toolbar-search input {
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--white);
+    width: 100%;
+}
+
+.toolbar-search input::placeholder {
+    color: var(--gray-500);
+}
+
+.toolbar-search:focus-within {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px rgba(242, 187, 58, 0.10);
+}
+
+/* ==========================================
+   SECCIONES
+   ========================================== */
+.socios-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.socios-section {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04),
+        0 4px 16px rgba(0, 0, 0, 0.02);
+}
+
+.socios-section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: -1.25rem -1.25rem 1rem -1.25rem;
+    padding: 0.875rem 1.25rem;
+    background: linear-gradient(135deg, #f8faf9 0%, #f0f4f2 100%);
+    border-bottom: 1px solid #e8ecef;
+    border-radius: 1rem 1rem 0 0;
+}
+
+.socios-section-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.socios-subsections {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.socios-subsection-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #334155;
+    margin: 0.25rem 0 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.socios-subsection-title .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #94a3b8;
+}
+
+.socios-subsection-title.activo .dot {
+    background: #22c55e;
+}
+
+.socios-subsection-title.moroso .dot {
+    background: #f59e0b;
+}
+
+.socios-subsection-title.pausado .dot {
+    background: #60a5fa;
+}
+
+/* ==========================================
+   GRID DE TARJETAS
+   ========================================== */
+.socios-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+/* ==========================================
+   TARJETA DE SOCIO
+   ========================================== */
+.socio-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06),
+        0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.socio-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary);
+    box-shadow: 0 8px 25px rgba(11, 78, 50, 0.12),
+        0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.socio-card-header {
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #fafbfc 0%, #f8f9fa 100%);
+    border-bottom: 1px solid #f0f2f5;
+}
+
+.socio-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #e8ecf1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #64748b;
+    border: 2px solid #d1d9e6;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.socio-avatar.activo {
+    background: rgba(34, 197, 94, 0.15);
+    color: #16a34a;
+    border-color: #22c55e;
+}
+
+.socio-avatar.moroso {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    border-color: #f59e0b;
+}
+
+.socio-avatar.pausado {
+    background: rgba(96, 165, 250, 0.18);
+    color: rgba(96, 165, 250, 1);
+    border-color: rgba(96, 165, 250, 1);
+}
+
+.socio-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.socio-badge.activo {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+.socio-badge.moroso {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+}
+
+.socio-badge.pausado {
+    background: rgba(96, 165, 250, 0.18);
+    color: rgba(96, 165, 250, 1);
+}
+
+.socio-badge.sin-credito {
+    background: rgba(107, 114, 128, 0.2);
+    color: #9ca3af;
+}
+
+.socio-card-body {
+    padding: 1rem 1.25rem;
+    background: #ffffff;
+}
+
+.socio-nombre {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.socio-cedula {
+    color: #64748b;
+    font-size: 0.85rem;
+    margin: 0 0 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.socio-info-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.socio-pais-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.6rem;
+    background: linear-gradient(135deg, #f0f7f4 0%, #e8f5ed 100%);
+    border: 1px solid rgba(11, 78, 50, 0.2);
+    border-radius: 0.4rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.socio-flag {
+    width: 18px;
+    height: 13px;
+    object-fit: cover;
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.socio-whatsapp-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: rgba(37, 211, 102, 0.12);
+    border: 1px solid rgba(37, 211, 102, 0.3);
+    border-radius: 0.4rem;
+    color: #25D366;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.socio-whatsapp-badge:hover {
+    background: rgba(37, 211, 102, 0.2);
+    transform: scale(1.05);
+}
+
+.socio-card-footer {
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid #f0f2f5;
+    background: #f8f9fb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.socio-creditos {
+    font-size: 0.8rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Badge de días de mora en tarjetas */
+.dias-mora-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.3rem 0.65rem;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.dias-mora-badge i {
+    font-size: 0.65rem;
+}
+
+/* Tarjeta de socio moroso */
+.socio-card-moroso {
+    position: relative;
+}
+
+.socio-card-moroso:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.15);
+}
+
+/* Morosos agrupados por país */
+.morosos-pais-section {
+    margin-bottom: 1.5rem;
+}
+
+.morosos-pais-section:last-child {
+    margin-bottom: 0;
+}
+
+.morosos-pais-title {
+    display: flex;
+    align-items: center;
+    padding: 0.65rem 1rem;
+    background: linear-gradient(135deg, #f8faf9 0%, #f0f4f2 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    border-left: 3px solid var(--gold);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.morosos-pais-count {
+    margin-left: auto;
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+    padding: 0.25rem 0.65rem;
+    border-radius: 1rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+/* Badge moroso con días */
+.socio-badge.moroso {
+    color: white;
+    font-size: 0.65rem;
+    padding: 0.3rem 0.6rem;
+    white-space: nowrap;
+}
+
+/* ==========================================
+   ESTADOS VACÍOS Y ERRORES
+   ========================================== */
+.empty-state,
+.error-state,
+.loading-placeholder {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem;
+    color: var(--gray-400);
+}
+
+.empty-state i,
+.error-state i,
+.loading-placeholder i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.error-state {
+    color: var(--error);
+}
+
+/* ==========================================
+   MODAL DE DETALLES - REDISEÑO ELEGANTE
+   ========================================== */
+
+/* ==========================================
+   HERO CON FOTO DE PERFIL
+   ========================================== */
+.socio-modal-hero {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    height: 180px;
+    border-radius: 1rem;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+}
+
+.socio-hero-photo {
+    width: 180px;
+    height: 100%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    font-size: 3rem;
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.socio-hero-photo .socio-photo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: left center;
+}
+
+.socio-hero-gradient {
+    position: absolute;
+    left: 140px;
+    top: 0;
+    bottom: 0;
+    width: 80px;
+    background: linear-gradient(90deg,
+            transparent 0%,
+            rgba(11, 78, 50, 0.4) 40%,
+            rgba(11, 78, 50, 0.8) 70%,
+            var(--primary-dark) 100%);
+    z-index: 1;
+}
+
+.socio-hero-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 1.25rem 1.5rem;
+    margin: 1rem;
+    gap: 0.6rem;
+    position: relative;
+    z-index: 2;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(8px);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.socio-hero-cedula {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.socio-hero-cedula i {
+    color: var(--gold);
+    font-size: 1.1rem;
+}
+
+.socio-hero-pais {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.socio-hero-pais .modal-flag {
+    width: 24px;
+    height: 16px;
+    object-fit: cover;
+    border-radius: 3px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.socio-hero-info .socio-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: 2rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    width: fit-content;
+    margin-top: 0.25rem;
+}
+
+.socio-hero-info .socio-status-badge.activo {
+    background: rgba(34, 197, 94, 0.25);
+    color: #4ade80;
+    border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.socio-hero-info .socio-status-badge.moroso {
+    background: rgba(245, 158, 11, 0.25);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.socio-hero-info .socio-status-badge.sin-credito {
+    background: rgba(148, 163, 184, 0.2);
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+/* Mantener compatibilidad con el diseño anterior */
+/* Header del modal con avatar */
+.socio-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+    border-radius: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.socio-modal-avatar {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+    flex-shrink: 0;
+    box-shadow: 0 4px 15px rgba(242, 187, 58, 0.3);
+}
+
+.socio-modal-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.socio-modal-cedula {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.socio-modal-cedula i {
+    color: var(--gold);
+}
+
+.socio-modal-pais {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+}
+
+.modal-flag {
+    width: 24px;
+    height: 16px;
+    object-fit: cover;
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.socio-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 2rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    width: fit-content;
+}
+
+.socio-status-badge.activo {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+}
+
+.socio-status-badge.moroso {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.socio-status-badge.sin-credito {
+    background: rgba(148, 163, 184, 0.2);
+    color: #94a3b8;
+}
+
+/* Grid principal del modal */
+.socio-modal-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.socio-modal-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Cards de información */
+.modal-info-card {
+    background: var(--gray-800);
+    border-radius: 0.875rem;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.modal-info-card:hover {
+    border-color: rgba(242, 187, 58, 0.3);
+}
+
+.modal-info-card.highlight {
+    border-color: rgba(37, 211, 102, 0.3);
+    background: linear-gradient(135deg, var(--gray-800) 0%, rgba(37, 211, 102, 0.05) 100%);
+}
+
+.modal-info-card.muted {
+    opacity: 0.6;
+}
+
+.modal-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.875rem 1rem;
+    background: var(--gray-900);
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.modal-card-header i {
+    font-size: 0.9rem;
+}
+
+.modal-card-content {
+    padding: 1rem;
+}
+
+.modal-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.modal-info-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.modal-info-row:first-child {
+    padding-top: 0;
+}
+
+.info-label {
+    font-size: 0.8rem;
+    color: var(--gray-400);
+    font-weight: 500;
+}
+
+.info-value {
+    font-size: 0.9rem;
+    color: var(--white);
+    font-weight: 500;
+    text-align: right;
+    max-width: 60%;
+    word-break: break-word;
+}
+
+.no-data-text {
+    color: var(--gray-500);
+    font-style: italic;
+    font-size: 0.85rem;
+    text-align: center;
+    display: block;
+    padding: 0.5rem 0;
+}
+
+/* Botones de WhatsApp */
+.whatsapp-btn-large {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+}
+
+.whatsapp-btn-large:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+}
+
+.whatsapp-btn-large i {
+    font-size: 1.25rem;
+}
+
+.whatsapp-btn-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #25D366;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.whatsapp-btn-mini:hover {
+    color: #128C7E;
+}
+
+/* Sección de Créditos */
+.modal-creditos-section {
+    background: var(--gray-800);
+    border-radius: 0.875rem;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.modal-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.875rem 1rem;
+    background: var(--gray-900);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.creditos-count {
+    background: var(--primary);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 2rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.modal-creditos-list {
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* Tarjetas de crédito individuales */
+.credito-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.875rem 1rem;
+    background: var(--gray-900);
+    border-radius: 0.625rem;
+    transition: all 0.2s ease;
+}
+
+.credito-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.credito-card-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.credito-indicator {
+    width: 4px;
+    height: 36px;
+    border-radius: 2px;
+    background: var(--gray-600);
+}
+
+.credito-card.activo .credito-indicator {
+    background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+}
+
+.credito-card.moroso .credito-indicator {
+    background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+}
+
+.credito-card.cancelado .credito-indicator {
+    background: linear-gradient(180deg, #6b7280 0%, #4b5563 100%);
+}
+
+.credito-card.precancelado .credito-indicator {
+    background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.credito-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.credito-codigo {
+    font-family: 'SF Mono', 'Monaco', monospace;
+    font-size: 0.8rem;
+    color: var(--gray-400);
+}
+
+.credito-estado-badge {
+    display: inline-flex;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    width: fit-content;
+}
+
+.credito-estado-badge.activo {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+}
+
+.credito-estado-badge.moroso {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+}
+
+.credito-estado-badge.cancelado {
+    background: rgba(107, 114, 128, 0.15);
+    color: #9ca3af;
+}
+
+.credito-estado-badge.precancelado {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+}
+
+.credito-card-right {
+    text-align: right;
+}
+
+.credito-monto {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gold);
+}
+
+/* Estado vacío de créditos */
+.no-creditos {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: var(--gray-500);
+    gap: 0.5rem;
+}
+
+.no-creditos i {
+    font-size: 2rem;
+    opacity: 0.5;
+}
+
+.no-creditos span {
+    font-size: 0.85rem;
+}
+
+/* Scrollbar para lista de créditos */
+.modal-creditos-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.modal-creditos-list::-webkit-scrollbar-track {
+    background: var(--gray-800);
+}
+
+.modal-creditos-list::-webkit-scrollbar-thumb {
+    background: var(--gray-600);
+    border-radius: 2px;
+}
+
+/* Responsive para modal */
+@media (max-width: 768px) {
+    .socio-modal-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Nuevo hero responsive */
+    .socio-modal-hero {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .socio-hero-photo {
+        width: 100%;
+        height: 150px;
+    }
+
+    .socio-hero-gradient {
+        left: 0;
+        top: auto;
+        bottom: 0;
+        width: 100%;
+        height: 60px;
+        background: linear-gradient(180deg,
+                transparent 0%,
+                rgba(11, 78, 50, 0.6) 50%,
+                var(--primary-dark) 100%);
+    }
+
+    .socio-hero-info {
+        padding: 1rem 1.25rem;
+        margin: 0.75rem;
+        align-items: center;
+        text-align: center;
+    }
+
+    /* Diseño anterior responsive */
+    .socio-modal-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .socio-modal-info {
+        align-items: center;
+    }
+
+    .info-value {
+        max-width: 55%;
+    }
+}
+
+/* ==========================================
+   SPINNING ANIMATION
+   ========================================== */
+.btn-sync.spinning i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ==========================================
+   MODAL ESPECÍFICO DE SOCIOS
+   ========================================== */
+.modal-socio-card {
+    max-width: 900px;
+    width: 95%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header-socio {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    padding: 1.25rem 1.5rem;
+    border-bottom: none;
+}
+
+.modal-header-socio .modal-title {
+    color: var(--gold);
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.modal-header-socio .modal-title i {
+    font-size: 1.5rem;
+}
+
+.modal-header-socio .modal-close {
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.1);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.modal-header-socio .modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.modal-body-socio {
+    padding: 1.5rem;
+    overflow-y: auto;
+    background: var(--gray-900);
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+@media (max-width: 768px) {
+    .socios-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .socio-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .socios-hero {
+        padding: 1.25rem 1rem;
+        border-radius: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .hero-title-socios {
+        font-size: 1.5rem;
+    }
+
+    .hero-subtitle-socios {
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+    }
+
+    .socios-hero-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    .socios-hero-stat {
+        padding: 0.75rem;
+        min-height: 80px;
+    }
+
+    .socios-hero-value {
+        font-size: 1.25rem;
+    }
+
+    .socios-hero-label {
+        font-size: 0.65rem;
+    }
+
+    /* Ajustes para la toolbar en móvil */
+    .socios-toolbar {
+        gap: 0.5rem;
+        padding: 0.75rem;
+        justify-content: center;
+    }
+
+    .socios-toolbar .toolbar-btn {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.75rem;
+        height: 38px;
+        flex: 0 0 auto;
+        min-width: unset;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        white-space: nowrap;
+    }
+
+    /* Botones de filtro */
+    .filter-btn {
+        flex: 0 0 auto !important;
+        padding: 0.4rem 0.8rem !important;
+    }
+
+    .filter-btn i {
+        font-size: 0.9rem;
+    }
+
+    .filter-btn span {
+        display: inline !important;
+        /* Asegurar que el texto sea visible */
+    }
+
+    .pais-filter-btn {
+        flex: 0 0 42px !important;
+        padding: 0 !important;
+        justify-content: center;
+    }
+
+    .toolbar-separator {
+        display: none;
+    }
+
+    .toolbar-search {
+        min-width: 100% !important;
+        margin-left: 0 !important;
+        margin-top: 0.5rem;
+        flex: 1 0 100%;
+        height: 42px;
+    }
+
+    /* Ajustes de tarjetas */
+    .socio-card-header {
+        padding: 1rem;
+    }
+
+    .socio-avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 0.9rem;
+    }
+
+    .socio-badge {
+        font-size: 0.6rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    .socio-nombre {
+        font-size: 0.9rem;
+    }
+
+    .socio-cedula {
+        font-size: 0.75rem;
+    }
+
+    .socio-card-footer {
+        padding: 0.6rem 1rem;
+    }
+}
