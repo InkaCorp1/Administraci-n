@@ -1267,7 +1267,7 @@ async function confirmarPago() {
                 }))
             };
 
-            let imageBase64;
+            let image_Base64;
             let message;
 
             if (cantidadCuotas === 1) {
@@ -1278,29 +1278,37 @@ async function confirmarPago() {
                 reciboData.estaEnMora = cuota.estaEnMora;
                 reciboData.estadoCuota = cuota.estaEnMora ? 'EN MORA' : 'A TIEMPO';
 
-                imageBase64 = await generateReceiptCanvas(reciboData);
+                image_Base64 = await generateReceiptCanvas(reciboData);
 
                 let moraTexto = cuota.estaEnMora ? `\n⚠️ *MORA:* ${cuota.diasMora} días × $2 = ${formatMoney(cuota.montoMora)}` : '';
                 message = `¡HOLA ${reciboData.socioNombre.toUpperCase()}! 👋\n\n✅ *PAGO REGISTRADO EXITOSAMENTE*\n\nMuchas gracias por realizar tu pago de cuota ${reciboData.numeroCuota} de ${reciboData.plazo}, te informamos que ha sido registrado correctamente.\n\n📋 *DETALLES DEL PAGO:*\n━━━━━━━━━━━━━━━\n🔢 Cuota: ${reciboData.numeroCuota} de ${reciboData.plazo}\n📊 Estado: ${reciboData.estadoCuota}${moraTexto}\n💰 *TOTAL PAGADO:* ${formatMoney(montoPagado)}\n━━━━━━━━━━━━━━━\n📅 Fecha de pago: ${formatDate(fechaPago)}\n🕐 Registrado: ${fechaRegistro}\n💳 Método: ${metodoPago}\n\n📈 *PROGRESO:* ${nuevasCuotasPagadas}/${reciboData.plazo} cuotas pagadas\n\n🏦 _INKA CORP - Tu confianza, nuestro compromiso_`;
             } else {
-                imageBase64 = await generateMultiQuotaReceiptCanvas(reciboData);
+                image_Base64 = await generateMultiQuotaReceiptCanvas(reciboData);
                 const listaCuotas = cuotasConMora.map(c => `  • Cuota ${c.numero}: ${formatMoney(c.monto + c.montoMora)}`).join('\n');
                 let moraTexto = totalMora > 0 ? `\n⚠️ *MORA TOTAL:* ${formatMoney(totalMora)}` : '';
                 message = `¡HOLA ${reciboData.socioNombre.toUpperCase()}! 👋\n\n✅ *PAGO MÚLTIPLE REGISTRADO*\n\nMuchas gracias por adelantar ${cantidadCuotas} cuotas de tu crédito. Tu pago ha sido registrado correctamente.\n\n📋 *DETALLE DE CUOTAS PAGADAS:*\n━━━━━━━━━━━━━━━\n${listaCuotas}\n━━━━━━━━━━━━━━━\n💵 Subtotal cuotas: ${formatMoney(montoBase)}${moraTexto}\n💰 *TOTAL PAGADO:* ${formatMoney(montoPagado)}\n━━━━━━━━━━━━━━━\n📅 Fecha de pago: ${formatDate(fechaPago)}\n🕐 Registrado: ${fechaRegistro}\n💳 Método: ${metodoPago}\n\n📈 *PROGRESO:* ${nuevasCuotasPagadas}/${reciboData.plazo} cuotas pagadas\n\n🏦 _INKA CORP - Tu confianza, nuestro compromiso_`;
             }
 
             const whatsapp = currentViewingCredito.socio?.whatsapp || '';
-            const socioResult = await sendPaymentWebhook({ image_base64: imageBase64, message: message, whatsapp: whatsapp });
+            const socioResult = await sendPaymentWebhook({ 
+                whatsapp: whatsapp, 
+                image_Base64: image_Base64, 
+                message: message 
+            });
 
             if (socioResult.success) {
-                const noticeImageBase64 = cantidadCuotas === 1 ? await generateNoticeCanvas(reciboData) : await generateMultiQuotaNoticeCanvas(reciboData);
+                const noticeimage_Base64 = cantidadCuotas === 1 ? await generateNoticeCanvas(reciboData) : await generateMultiQuotaNoticeCanvas(reciboData);
                 const detailList = cantidadCuotas === 1 
                     ? `🔢 Cuota: ${reciboData.numeroCuota} de ${reciboData.plazo}\n📊 Estado: ${reciboData.estadoCuota}${totalMora > 0 ? ` (Mora: ${formatMoney(totalMora)})` : ''}`
                     : `🔢 Cuotas pagadas: ${cantidadCuotas}\n💰 Detalle: ${montoBase.toFixed(2)}${totalMora > 0 ? ` + Mora: ${totalMora.toFixed(2)}` : ''}`;
 
                 const ownerMessage = `JOSÉ KLEVER NISHVE CORO se ha registrado el pago de un crédito con los siguientes detalles:\n\n👤 Socio: ${reciboData.socioNombre.toUpperCase()}\n🆔 Cédula: ${reciboData.socioCedula}\n📑 Crédito: ${reciboData.codigoCredito}\n${detailList}\n💵 TOTAL RECIBIDO: ${formatMoney(montoPagado)}\n📅 Fecha Pago: ${formatDate(fechaPago)}\n🕐 Registro: ${fechaRegistro}\n💳 Método: ${metodoPago}\n\nTe comentamos que el socio ya ha sido notificado correctamente vía WhatsApp. ✅`;
 
-                await sendOwnerWebhook({ image_base64: noticeImageBase64, message: ownerMessage, admin_name: "JOSE KLEVER NISHVE CORO" });
+                await sendOwnerWebhook({ 
+                    whatsapp: whatsapp, // Enviamos el whatsapp del socio como referencia o destino si el hook lo requiere
+                    image_Base64: noticeimage_Base64, 
+                    message: ownerMessage 
+                });
                 console.log('Notificaciones de producción enviadas correctamente');
             }
         } catch (errorNotif) {
@@ -1795,7 +1803,7 @@ async function sendPaymentWebhook(payload) {
 
     try {
         console.log('Enviando webhook de pago a:', WEBHOOK_URL);
-        console.log('Payload:', { ...payload, image_base64: '[BASE64_IMAGE]' });
+        console.log('Payload:', { ...payload, image_Base64: '[BASE64_IMAGE]' });
 
         const response = await fetch(WEBHOOK_URL, {
             method: 'POST',

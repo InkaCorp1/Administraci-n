@@ -3351,30 +3351,29 @@
                     const receiptImage = await generateReceiptCanvas(receiptData);
                     const noticeImage = await generateNoticeCanvas(receiptData);
 
-                    // 1. Webhook Socio (Comprobante)
+                    // --- CONSTRUCCIÓN DE MENSAJES (Móvil) ---
+                    const fechaRegistro = formatEcuadorDateTime();
+                    const estadoCuota = receiptData.estaEnMora ? 'EN MORA' : 'A TIEMPO';
+                    const moraTexto = receiptData.estaEnMora ? `\n⚠️ *MORA:* ${receiptData.diasMora} días x $2 = ${formatMoney(receiptData.montoMora)}` : '';
+                    
+                    const messageSocio = `¡HOLA ${receiptData.socioNombre.toUpperCase()}! 👋\n\n✅ *PAGO REGISTRADO DESDE MÓVIL*\n\nMuchas gracias por realizar tu pago de cuota ${receiptData.numeroCuota} de ${receiptData.plazo}, te informamos que ha sido registrado correctamente.\n\n📋 *DETALLES DEL PAGO:*\n━━━━━━━━━━━━━━━\n🔢 Cuota: ${receiptData.numeroCuota} de ${receiptData.plazo}\n📊 Estado: ${estadoCuota}${moraTexto}\n💰 *TOTAL PAGADO:* ${formatMoney(monto)}\n━━━━━━━━━━━━━━━\n📅 Fecha de pago: ${formatDate(fecha)}\n🕐 Registrado: ${fechaRegistro}\n💳 Método: ${metodo}\n\n📈 *PROGRESO:* ${nuevasCuotas}/${receiptData.plazo} cuotas pagadas\n\n🏦 _INKA CORP - Tu confianza, nuestro compromiso_`;
+
+                    const messageOwner = `JOSÉ KLEVER NISHVE CORO se ha registrado el pago de un crédito (VÍA MÓVIL):\n\n👤 Socio: ${receiptData.socioNombre.toUpperCase()}\n🆔 Cédula: ${receiptData.socioCedula}\n📑 Crédito: ${receiptData.codigoCredito}\n🔢 Cuota: ${receiptData.numeroCuota} de ${receiptData.plazo}\n📊 Estado: ${estadoCuota}${moraTexto}\n💵 TOTAL RECIBIDO: ${formatMoney(monto)}\n📅 Fecha Pago: ${formatDate(fecha)}\n🕐 Registro: ${fechaRegistro}\n💳 Método: ${metodo}\n\nEl socio ya ha sido notificado correctamente vía WhatsApp. ✅`;
+
+                    // 1. Webhook Socio (Solo las variables obligatorias)
                     if (c.socio?.whatsapp) {
                         await sendPaymentWebhook({
                             whatsapp: c.socio.whatsapp,
-                            nombre: c.socio.nombre,
-                            monto: monto,
-                            cuota: currentLiteCuota.numero_cuota,
-                            total_cuotas: c.plazo,
-                            credito: c.codigo_credito,
-                            imageBase64: receiptImage
+                            image_Base64: receiptImage,
+                            message: messageSocio
                         });
                     }
 
-                    // 2. Webhook Dueño (Aviso José)
+                    // 2. Webhook Dueño (Aviso José - Solo las variables obligatorias)
                     await sendOwnerWebhook({
-                        socio: c.socio?.nombre || 'Socio',
-                        monto: monto,
-                        cuota: currentLiteCuota.numero_cuota,
-                        total_cuotas: c.plazo,
-                        credito: c.codigo_credito,
-                        metodo: metodo,
-                        referencia: referencia || 'N/A',
-                        imageBase64: noticeImage,
-                        es_movil: true
+                        whatsapp: c.socio?.whatsapp || '',
+                        image_Base64: noticeImage,
+                        message: messageOwner
                     });
                 } catch (err) {
                     console.error('Error en notificaciones móvil:', err);
@@ -3516,6 +3515,19 @@
                 console.error('Error parsing date:', e);
                 return null;
             }
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            try {
+                const date = parseDate(dateString);
+                if (!date) return '-';
+                return date.toLocaleDateString('es-EC', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            } catch (e) { return '-'; }
         }
 
         function getEcuadorNow() {
