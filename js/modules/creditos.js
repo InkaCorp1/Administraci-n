@@ -1176,7 +1176,10 @@ async function confirmarPago() {
 
         // Procesar cada cuota
         for (const infoCuota of cuotasConMora) {
-            const montoFinalCuota = infoCuota.monto + infoCuota.montoMora;
+            // El usuario ingresa un monto total ("Monto a Registrar"). 
+            // Si es una sola cuota, usamos directamente ese monto para el registro.
+            // Si son varias, usamos el monto calculado por cuota (base + mora).
+            const montoParaRegistro = (cantidadCuotas === 1) ? montoPagado : (infoCuota.monto + infoCuota.montoMora);
 
             // 1. Registrar el pago
             const { error: errorPago } = await supabase
@@ -1185,7 +1188,7 @@ async function confirmarPago() {
                     id_detalle: infoCuota.id_detalle,
                     id_credito: currentViewingCredito.id_credito,
                     fecha_pago: fechaPago,
-                    monto_pagado: montoFinalCuota,
+                    monto_pagado: montoParaRegistro,
                     metodo_pago: metodoPago,
                     referencia_pago: referencia,
                     observaciones: obsFinal,
@@ -1201,7 +1204,8 @@ async function confirmarPago() {
                 .update({
                     estado_cuota: 'PAGADO',
                     requiere_cobro: false,
-                    recordatorio_enviado: false
+                    recordatorio_enviado: false,
+                    updated_at: new Date().toISOString()
                 })
                 .eq('id_detalle', infoCuota.id_detalle);
 
@@ -1210,22 +1214,33 @@ async function confirmarPago() {
             // 3. Actualizar ahorro a ACUMULADO
             const { error: errorAhorro } = await supabase
                 .from('ic_creditos_ahorro')
-                .update({ estado: 'ACUMULADO' })
+                .update({ 
+                    estado: 'ACUMULADO',
+                    updated_at: new Date().toISOString()
+                })
                 .eq('id_credito', currentViewingCredito.id_credito)
                 .eq('numero_cuota', infoCuota.numero);
 
             if (errorAhorro) console.error('Error updating ahorro:', errorAhorro);
         }
 
-        // 4. Actualizar contador de cuotas pagadas en el crédito
+        // 4. Actualizar contador de cuotas pagadas y mora en el crédito
         const nuevasCuotasPagadas = (currentViewingCredito.cuotas_pagadas || 0) + cantidadCuotas;
+        
+        // Decrementar el contador de cuotas en mora si las cuotas pagadas estaban vencidas
+        const cuotasPagadasEnMora = cuotasConMora.filter(c => c.estaEnMora).length;
+        const cuotasEnMoraAnterior = currentViewingCredito.cuotas_en_mora || 0;
+        const nuevasCuotasEnMora = Math.max(0, cuotasEnMoraAnterior - cuotasPagadasEnMora);
+
         const nuevoEstadoCredito = nuevasCuotasPagadas >= currentViewingCredito.plazo ? 'CANCELADO' : 'ACTIVO';
 
         const { error: errorCredito } = await supabase
             .from('ic_creditos')
             .update({
                 cuotas_pagadas: nuevasCuotasPagadas,
-                estado_credito: nuevoEstadoCredito
+                cuotas_en_mora: nuevasCuotasEnMora,
+                estado_credito: nuevoEstadoCredito,
+                updated_at: new Date().toISOString()
             })
             .eq('id_credito', currentViewingCredito.id_credito);
 
