@@ -3360,7 +3360,7 @@
                             cuota: currentLiteCuota.numero_cuota,
                             total_cuotas: c.plazo,
                             credito: c.codigo_credito,
-                            imagen: receiptImage
+                            imageBase64: receiptImage
                         });
                     }
 
@@ -3373,7 +3373,7 @@
                         credito: c.codigo_credito,
                         metodo: metodo,
                         referencia: referencia || 'N/A',
-                        imagen: noticeImage,
+                        imageBase64: noticeImage,
                         es_movil: true
                     });
                 } catch (err) {
