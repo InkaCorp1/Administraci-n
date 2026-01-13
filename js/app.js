@@ -1487,14 +1487,22 @@ function formatMoney(value) {
 function parseDate(dateInput) {
     if (!dateInput) return null;
     if (dateInput instanceof Date) return dateInput;
+
     try {
-        if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
-            // Forzamos medianoche en Ecuador (UTC-5)
-            return new Date(dateInput + 'T00:00:00-05:00');
+        let dateStr = String(dateInput).trim();
+
+        // Formato ISO extendido de base de datos (YYYY-MM-DD ...)
+        if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+            // Extraer solo la parte de la fecha YYYY-MM-DD
+            const onlyDate = dateStr.substring(0, 10);
+            // Forzamos medianoche en Ecuador (UTC-5) para fechas lógicas
+            return new Date(onlyDate + 'T00:00:00-05:00');
         }
-        const d = new Date(dateInput);
+
+        const d = new Date(dateStr);
         return isNaN(d.getTime()) ? null : d;
     } catch (e) {
+        console.error('Error parsing date:', e);
         return null;
     }
 }
@@ -1521,6 +1529,17 @@ function formatDate(dateString, options = {}) {
     } catch (e) {
         return '-';
     }
+}
+
+/**
+ * Formatea una fecha a formato corto DD/MM/YY
+ */
+function formatDateShort(dateString) {
+    return formatDate(dateString, { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: '2-digit' 
+    });
 }
 
 /**

@@ -117,7 +117,7 @@ function filterAndSortPolizas() {
         if (currentSortPolizas === 'alfabetico') {
             return (a.socio?.nombre || '').localeCompare(b.socio?.nombre || '');
         } else if (currentSortPolizas === 'fecha') {
-            return new Date(b.fecha_vencimiento) - new Date(a.fecha_vencimiento);
+            return parseDate(b.fecha_vencimiento) - parseDate(a.fecha_vencimiento);
         } else if (currentSortPolizas === 'valor') {
             return b.valor - a.valor;
         }
@@ -135,7 +135,7 @@ function renderPolizasStats() {
     const proximoMes = new Date();
     proximoMes.setDate(hoy.getDate() + 30);
     const porVencer = statsActivos.filter(p => {
-        const venc = new Date(p.fecha_vencimiento);
+        const venc = parseDate(p.fecha_vencimiento);
         return venc >= hoy && venc <= proximoMes;
     }).length;
 
@@ -386,7 +386,8 @@ function getEstadoBadgePoliza(estado) {
 
 function isCloseToVencimiento(fechaVenc) {
     const hoy = new Date();
-    const venc = new Date(fechaVenc);
+    const venc = parseDate(fechaVenc);
+    if (!venc) return false;
     const diffTime = venc - hoy;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays >= 0 && diffDays <= 15;

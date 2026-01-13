@@ -457,7 +457,7 @@ function applySorting() {
                 break;
             case 'fecha':
                 // Por fecha de otorgamiento (ascendente = más antiguo primero)
-                compare = new Date(a.fecha_desembolso) - new Date(b.fecha_desembolso);
+                compare = parseDate(a.fecha_desembolso) - parseDate(b.fecha_desembolso);
                 break;
         }
 
@@ -961,6 +961,58 @@ async function openPaymentModal(detalleId) {
             detalleId
         );
 
+        // Llenar info del crédito y socio (nuevos campos)
+        const codigoElem = document.getElementById('pago-credito-codigo');
+        const socioElem = document.getElementById('pago-socio-nombre');
+        if (codigoElem) codigoElem.textContent = currentViewingCredito.codigo_credito || '-';
+        if (socioElem) socioElem.textContent = currentViewingCredito.socio?.nombre || 'Socio';
+
+        // Función para actualizar mora y total
+        const actualizarMoraYTotal = () => {
+            const fechaPagoInput = document.getElementById('pago-fecha').value;
+            const count = parseInt(document.getElementById('pago-cuotas-select').value) || 1;
+            const cuotasSeleccionadas = currentUnpaidInstallments.slice(0, count);
+
+            // Calcular monto base
+            const montoBase = cuotasSeleccionadas.reduce(
+                (sum, c) => sum + parseFloat(c.cuota_total), 0
+            );
+
+            // Calcular mora total
+            const { totalMora, cuotasConMora } = calcularMoraMultiple(cuotasSeleccionadas, fechaPagoInput);
+
+            // Actualizar UI de mora
+            const moraRow = document.getElementById('pago-mora-row');
+            const diasMoraElem = document.getElementById('pago-dias-mora');
+            const montoMoraElem = document.getElementById('pago-monto-mora');
+
+            if (totalMora > 0) {
+                if (moraRow) moraRow.style.display = 'flex';
+                const totalDias = cuotasConMora.reduce((sum, c) => sum + c.diasMora, 0);
+                if (diasMoraElem) diasMoraElem.textContent = totalDias;
+                if (montoMoraElem) montoMoraElem.textContent = formatMoney(totalMora);
+            } else {
+                if (moraRow) moraRow.style.display = 'none';
+            }
+
+            // Actualizar total
+            const totalFinal = montoBase + totalMora;
+            const totalElem = document.getElementById('pago-total-final');
+            if (totalElem) totalElem.textContent = formatMoney(totalFinal);
+
+            // Actualizar cuota base
+            const montoCuotaElem = document.getElementById('pago-monto-cuota');
+            if (montoCuotaElem) montoCuotaElem.textContent = formatMoney(montoBase);
+
+            // Actualizar monto en el input (incluye mora)
+            document.getElementById('pago-monto').value = totalFinal.toFixed(2);
+
+            // Actualizar fecha de vencimiento (última cuota seleccionada)
+            const lastCuota = cuotasSeleccionadas[cuotasSeleccionadas.length - 1];
+            const fechaVencElem = document.getElementById('pago-fecha-vencimiento');
+            if (fechaVencElem) fechaVencElem.textContent = formatDate(lastCuota.fecha_vencimiento);
+        };
+
         // Poblar el dropdown de selección de cuotas
         const select = document.getElementById('pago-cuotas-select');
         select.innerHTML = currentUnpaidInstallments.map((_, idx) => {
@@ -973,34 +1025,30 @@ async function openPaymentModal(detalleId) {
             if (count === 1) {
                 return `<option value="${count}">Cuota #${currentUnpaidInstallments[0].numero_cuota} - ${formatMoney(total)}</option>`;
             } else {
-                return `<option value="${count}">Cuotas #${currentUnpaidInstallments[0].numero_cuota} - #${endNum} (${count} cuotas) - ${formatMoney(total)}</option>`;
+                return `<option value="${count}">Cuotas #${currentUnpaidInstallments[0].numero_cuota} - #${endNum} (${count}) - ${formatMoney(total)}</option>`;
             }
         }).join('');
 
-        // Configurar listener para cambio de selección
-        select.onchange = () => {
-            const count = parseInt(select.value);
-            const total = currentUnpaidInstallments.slice(0, count).reduce(
-                (sum, c) => sum + parseFloat(c.cuota_total), 0
-            );
-            document.getElementById('pago-monto-cuota').textContent = formatMoney(total);
-            document.getElementById('pago-monto').value = total.toFixed(2);
+        // Configurar listener para cambio de selección de cuotas
+        select.onchange = actualizarMoraYTotal;
 
-            // Actualizar fecha de vencimiento (última cuota seleccionada)
-            const lastCuota = currentUnpaidInstallments[count - 1];
-            document.getElementById('pago-fecha-vencimiento').textContent = formatDate(lastCuota.fecha_vencimiento);
-        };
+        // Configurar listener para cambio de fecha de pago
+        const fechaInput = document.getElementById('pago-fecha');
+        fechaInput.onchange = actualizarMoraYTotal;
+
+        // Establecer fecha de pago inicial (fecha de Ecuador)
+        const ecuadorDate = getEcuadorDateString();
+        fechaInput.value = ecuadorDate;
 
         // Llenar información inicial
-        document.getElementById('pago-fecha-vencimiento').textContent = formatDate(cuota.fecha_vencimiento);
-        document.getElementById('pago-monto-cuota').textContent = formatMoney(cuota.cuota_total);
-        document.getElementById('pago-monto').value = cuota.cuota_total.toFixed(2);
-        document.getElementById('pago-fecha').valueAsDate = new Date();
         document.getElementById('pago-referencia').value = '';
         document.getElementById('pago-observaciones').value = '';
 
         // Resetear comprobante
         clearComprobantePreview();
+
+        // Calcular mora inicial
+        actualizarMoraYTotal();
 
         // Configurar botón confirmar
         const btnConfirmar = document.getElementById('btn-confirmar-pago');
@@ -1068,7 +1116,7 @@ async function confirmarPago() {
         if (!fechaPago || isNaN(montoPagado) || montoPagado <= 0) {
             showToast('Por favor complete los datos del pago', 'warning');
             btnConfirmar.disabled = false;
-            btnConfirmar.innerHTML = '<i class="fas fa-check"></i> Confirmar Pago';
+            btnConfirmar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Pago';
             return;
         }
 
@@ -1076,7 +1124,7 @@ async function confirmarPago() {
         if (!selectedComprobanteFile) {
             showToast('Debe subir el comprobante de pago', 'warning');
             btnConfirmar.disabled = false;
-            btnConfirmar.innerHTML = '<i class="fas fa-check"></i> Confirmar Pago';
+            btnConfirmar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Pago';
             return;
         }
 
@@ -1084,13 +1132,28 @@ async function confirmarPago() {
         const cantidadCuotas = parseInt(document.getElementById('pago-cuotas-select').value);
         const cuotasAPagar = currentUnpaidInstallments.slice(0, cantidadCuotas);
 
-        // Validar que el monto coincida
-        const totalEsperado = cuotasAPagar.reduce((sum, c) => sum + parseFloat(c.cuota_total), 0);
+        // Calcular mora total para la validación (usando la fecha de pago seleccionada)
+        const { totalMora, cuotasConMora } = calcularMoraMultiple(cuotasAPagar, fechaPago);
+
+        // Validar que el monto coincida (Base + Mora)
+        const montoBase = cuotasAPagar.reduce((sum, c) => sum + parseFloat(c.cuota_total), 0);
+        const totalEsperado = montoBase + totalMora;
+
         if (Math.abs(montoPagado - totalEsperado) > 0.01) {
-            showToast('El monto no coincide. Esperado: ' + formatMoney(totalEsperado), 'warning');
+            showToast('El monto no coincide. Esperado: ' + formatMoney(totalEsperado) + ' (Base: ' + formatMoney(montoBase) + ' + Mora: ' + formatMoney(totalMora) + ')', 'warning');
             btnConfirmar.disabled = false;
-            btnConfirmar.innerHTML = '<i class="fas fa-check"></i> Confirmar Pago';
+            btnConfirmar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Pago';
             return;
+        }
+
+        // Preparar observaciones con detalle de mora si existe
+        let obsFinal = observaciones;
+        if (totalMora > 0) {
+            const detalleMora = cuotasConMora
+                .filter(c => c.estaEnMora)
+                .map(c => `Cuota #${c.numero}: ${c.diasMora}d x $2 = $${c.montoMora.toFixed(2)}`)
+                .join(', ');
+            obsFinal = `${observaciones} | MORA TOTAL: $${totalMora.toFixed(2)} (${detalleMora})`.trim();
         }
 
         // Subir comprobante a Storage (una sola vez para todos los pagos)
@@ -1104,7 +1167,7 @@ async function confirmarPago() {
         if (!uploadResult.success) {
             showToast('Error al subir comprobante: ' + uploadResult.error, 'error');
             btnConfirmar.disabled = false;
-            btnConfirmar.innerHTML = '<i class="fas fa-check"></i> Confirmar Pago';
+            btnConfirmar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Pago';
             return;
         }
 
@@ -1112,19 +1175,21 @@ async function confirmarPago() {
         console.log('Comprobante subido:', comprobanteUrl);
 
         // Procesar cada cuota
-        for (const cuota of cuotasAPagar) {
+        for (const infoCuota of cuotasConMora) {
+            const montoFinalCuota = infoCuota.monto + infoCuota.montoMora;
+
             // 1. Registrar el pago
             const { error: errorPago } = await supabase
                 .from('ic_creditos_pagos')
                 .insert({
-                    id_detalle: cuota.id_detalle,
+                    id_detalle: infoCuota.id_detalle,
                     id_credito: currentViewingCredito.id_credito,
                     fecha_pago: fechaPago,
-                    monto_pagado: parseFloat(cuota.cuota_total),
+                    monto_pagado: montoFinalCuota,
                     metodo_pago: metodoPago,
                     referencia_pago: referencia,
-                    observaciones: `${observaciones} (Pago de ${cantidadCuotas} cuotas)`,
-                    comprobante_url: comprobanteUrl, // URL del comprobante (misma para todas las cuotas)
+                    observaciones: obsFinal,
+                    comprobante_url: comprobanteUrl,
                     cobrado_por: currentUser?.id || null
                 });
 
@@ -1138,7 +1203,7 @@ async function confirmarPago() {
                     requiere_cobro: false,
                     recordatorio_enviado: false
                 })
-                .eq('id_detalle', cuota.id_detalle);
+                .eq('id_detalle', infoCuota.id_detalle);
 
             if (errorCuota) throw errorCuota;
 
@@ -1147,7 +1212,7 @@ async function confirmarPago() {
                 .from('ic_creditos_ahorro')
                 .update({ estado: 'ACUMULADO' })
                 .eq('id_credito', currentViewingCredito.id_credito)
-                .eq('numero_cuota', cuota.numero_cuota);
+                .eq('numero_cuota', infoCuota.numero);
 
             if (errorAhorro) console.error('Error updating ahorro:', errorAhorro);
         }
@@ -1165,6 +1230,83 @@ async function confirmarPago() {
             .eq('id_credito', currentViewingCredito.id_credito);
 
         if (errorCredito) throw errorCredito;
+
+        // ==========================================
+        // NOTIFICACIONES (SISTEMA DE PRODUCCIÓN)
+        // ==========================================
+        try {
+            console.log('Iniciando sistema de notificaciones...');
+            
+            // Reusar la lógica de construcción de datos para el recibo
+            const fechaRegistro = formatEcuadorDateTime();
+            const cuotasPagadasActualizado = nuevasCuotasPagadas - cantidadCuotas; // Estado previo al commit de hoy
+
+            const reciboData = {
+                socioNombre: currentViewingCredito.socio?.nombre || 'Socio',
+                socioCedula: currentViewingCredito.socio?.cedula || 'N/A',
+                codigoCredito: currentViewingCredito.codigo_credito,
+                capitalTotal: currentViewingCredito.capital,
+                plazo: currentViewingCredito.plazo,
+                montoBase: montoBase,
+                totalMora: totalMora,
+                montoPagado: montoPagado,
+                fechaPago: fechaPago,
+                fechaRegistro: fechaRegistro,
+                metodoPago: metodoPago,
+                cantidadCuotas: cantidadCuotas,
+                cuotasPagadasAntes: cuotasPagadasActualizado,
+                estaEnMora: totalMora > 0,
+                cuotas: cuotasConMora.map(c => ({
+                    numero: c.numero,
+                    monto: parseFloat(c.monto),
+                    estado: c.estaEnMora ? 'EN MORA' : 'A TIEMPO',
+                    fechaVencimiento: c.fecha_vencimiento,
+                    diasMora: c.diasMora,
+                    montoMora: c.montoMora,
+                    estaEnMora: c.estaEnMora
+                }))
+            };
+
+            let imageBase64;
+            let message;
+
+            if (cantidadCuotas === 1) {
+                const cuota = cuotasConMora[0];
+                reciboData.numeroCuota = cuota.numero;
+                reciboData.fechaVencimiento = cuota.fecha_vencimiento;
+                reciboData.diasMora = cuota.diasMora;
+                reciboData.estaEnMora = cuota.estaEnMora;
+                reciboData.estadoCuota = cuota.estaEnMora ? 'EN MORA' : 'A TIEMPO';
+
+                imageBase64 = await generateReceiptCanvas(reciboData);
+
+                let moraTexto = cuota.estaEnMora ? `\n⚠️ *MORA:* ${cuota.diasMora} días × $2 = ${formatMoney(cuota.montoMora)}` : '';
+                message = `¡HOLA ${reciboData.socioNombre.toUpperCase()}! 👋\n\n✅ *PAGO REGISTRADO EXITOSAMENTE*\n\nMuchas gracias por realizar tu pago de cuota ${reciboData.numeroCuota} de ${reciboData.plazo}, te informamos que ha sido registrado correctamente.\n\n📋 *DETALLES DEL PAGO:*\n━━━━━━━━━━━━━━━\n🔢 Cuota: ${reciboData.numeroCuota} de ${reciboData.plazo}\n📊 Estado: ${reciboData.estadoCuota}${moraTexto}\n💰 *TOTAL PAGADO:* ${formatMoney(montoPagado)}\n━━━━━━━━━━━━━━━\n📅 Fecha de pago: ${formatDate(fechaPago)}\n🕐 Registrado: ${fechaRegistro}\n💳 Método: ${metodoPago}\n\n📈 *PROGRESO:* ${nuevasCuotasPagadas}/${reciboData.plazo} cuotas pagadas\n\n🏦 _INKA CORP - Tu confianza, nuestro compromiso_`;
+            } else {
+                imageBase64 = await generateMultiQuotaReceiptCanvas(reciboData);
+                const listaCuotas = cuotasConMora.map(c => `  • Cuota ${c.numero}: ${formatMoney(c.monto + c.montoMora)}`).join('\n');
+                let moraTexto = totalMora > 0 ? `\n⚠️ *MORA TOTAL:* ${formatMoney(totalMora)}` : '';
+                message = `¡HOLA ${reciboData.socioNombre.toUpperCase()}! 👋\n\n✅ *PAGO MÚLTIPLE REGISTRADO*\n\nMuchas gracias por adelantar ${cantidadCuotas} cuotas de tu crédito. Tu pago ha sido registrado correctamente.\n\n📋 *DETALLE DE CUOTAS PAGADAS:*\n━━━━━━━━━━━━━━━\n${listaCuotas}\n━━━━━━━━━━━━━━━\n💵 Subtotal cuotas: ${formatMoney(montoBase)}${moraTexto}\n💰 *TOTAL PAGADO:* ${formatMoney(montoPagado)}\n━━━━━━━━━━━━━━━\n📅 Fecha de pago: ${formatDate(fechaPago)}\n🕐 Registrado: ${fechaRegistro}\n💳 Método: ${metodoPago}\n\n📈 *PROGRESO:* ${nuevasCuotasPagadas}/${reciboData.plazo} cuotas pagadas\n\n🏦 _INKA CORP - Tu confianza, nuestro compromiso_`;
+            }
+
+            const whatsapp = currentViewingCredito.socio?.whatsapp || '';
+            const socioResult = await sendPaymentWebhook({ image_base64: imageBase64, message: message, whatsapp: whatsapp });
+
+            if (socioResult.success) {
+                const noticeImageBase64 = cantidadCuotas === 1 ? await generateNoticeCanvas(reciboData) : await generateMultiQuotaNoticeCanvas(reciboData);
+                const detailList = cantidadCuotas === 1 
+                    ? `🔢 Cuota: ${reciboData.numeroCuota} de ${reciboData.plazo}\n📊 Estado: ${reciboData.estadoCuota}${totalMora > 0 ? ` (Mora: ${formatMoney(totalMora)})` : ''}`
+                    : `🔢 Cuotas pagadas: ${cantidadCuotas}\n💰 Detalle: ${montoBase.toFixed(2)}${totalMora > 0 ? ` + Mora: ${totalMora.toFixed(2)}` : ''}`;
+
+                const ownerMessage = `JOSÉ KLEVER NISHVE CORO se ha registrado el pago de un crédito con los siguientes detalles:\n\n👤 Socio: ${reciboData.socioNombre.toUpperCase()}\n🆔 Cédula: ${reciboData.socioCedula}\n📑 Crédito: ${reciboData.codigoCredito}\n${detailList}\n💵 TOTAL RECIBIDO: ${formatMoney(montoPagado)}\n📅 Fecha Pago: ${formatDate(fechaPago)}\n🕐 Registro: ${fechaRegistro}\n💳 Método: ${metodoPago}\n\nTe comentamos que el socio ya ha sido notificado correctamente vía WhatsApp. ✅`;
+
+                await sendOwnerWebhook({ image_base64: noticeImageBase64, message: ownerMessage, admin_name: "JOSE KLEVER NISHVE CORO" });
+                console.log('Notificaciones de producción enviadas correctamente');
+            }
+        } catch (errorNotif) {
+            console.error('Error en el sistema de notificaciones:', errorNotif);
+            // No bloqueamos el flujo principal si fallan las notificaciones
+        }
 
         // Cerrar modal y recargar
         closeCreditosModal('registrar-pago-modal');
@@ -1195,7 +1337,7 @@ async function confirmarPago() {
         console.error('Error al registrar pago:', error);
         showAlert('Error al registrar el pago: ' + (error.message || error), 'Error', 'error');
         btnConfirmar.disabled = false;
-        btnConfirmar.innerHTML = '<i class="fas fa-check"></i> Confirmar Pago';
+        btnConfirmar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Pago';
     }
 }
 
@@ -1204,21 +1346,6 @@ async function confirmarPago() {
 // ==========================================
 function formatMoney(amount) {
     return '$' + parseFloat(amount || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
-
-function formatDate(dateStr) {
-    if (!dateStr) return '-';
-    const date = parseDate(dateStr);
-    if (!date) return '-';
-    const options = { year: 'numeric', month: 'short', day: '2-digit', timeZone: 'America/Guayaquil' };
-    return date.toLocaleDateString('es-EC', options);
-}
-
-function formatDateShort(dateStr) {
-    if (!dateStr) return '-';
-    const date = parseDate(dateStr);
-    if (!date) return '-';
-    return date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'America/Guayaquil' });
 }
 
 function showErrorMessage(message) {
@@ -1237,6 +1364,106 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
     };
+}
+
+/**
+ * Obtiene la fecha/hora actual en zona horaria Ecuador
+ * @returns {Date} Fecha actual en Ecuador
+ */
+function getEcuadorNow() {
+    return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
+}
+
+/**
+ * Obtiene la fecha actual de Ecuador como string YYYY-MM-DD
+ * @returns {string} Fecha en formato YYYY-MM-DD
+ */
+function getEcuadorDateString() {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-CA', { // format yyyy-mm-dd
+        timeZone: 'America/Guayaquil',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+    return formatter.format(now);
+}
+
+/**
+ * Formatea fecha/hora actual de Ecuador para mostrar
+ * @returns {string} Fecha y hora formateada
+ */
+function formatEcuadorDateTime() {
+    return new Date().toLocaleString('es-EC', {
+        timeZone: 'America/Guayaquil',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+}
+
+/**
+ * Calcula la mora para una cuota vencida
+ * @param {string} fechaVencimiento - Fecha de vencimiento de la cuota (YYYY-MM-DD)
+ * @param {string} fechaPago - Fecha en que se realiza el pago (YYYY-MM-DD). Si es null, usa fecha actual.
+ * @param {number} costoPorDia - Costo por día de mora (default: $2)
+ * @returns {Object} { diasMora, montoMora, estaEnMora }
+ */
+function calcularMora(fechaVencimiento, fechaPago = null, costoPorDia = 2) {
+    if (!fechaVencimiento) {
+        return { diasMora: 0, montoMora: 0, estaEnMora: false };
+    }
+
+    // Fecha de pago (o fecha actual si no se especifica)
+    const fechaPagoDate = fechaPago
+        ? parseDate(fechaPago)
+        : getEcuadorNow();
+
+    // Fecha de vencimiento
+    const fechaVencDate = parseDate(fechaVencimiento);
+
+    if (!fechaPagoDate || !fechaVencDate) {
+        return { diasMora: 0, montoMora: 0, estaEnMora: false };
+    }
+
+    // Calcular diferencia en días
+    const diffTime = fechaPagoDate.getTime() - fechaVencDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays <= 0) {
+        // Pago a tiempo o anticipado
+        return { diasMora: 0, montoMora: 0, estaEnMora: false };
+    }
+
+    return {
+        diasMora: diffDays,
+        montoMora: diffDays * costoPorDia,
+        estaEnMora: true
+    };
+}
+
+/**
+ * Calcula mora total para múltiples cuotas
+ * @param {Array} cuotas - Array de cuotas con fecha_vencimiento
+ * @param {string} fechaPago - Fecha de pago
+ * @param {number} costoPorDia - Costo por día de mora
+ * @returns {Object} { totalMora, cuotasConMora }
+ */
+function calcularMoraMultiple(cuotas, fechaPago = null, costoPorDia = 2) {
+    let totalMora = 0;
+    const cuotasConMora = cuotas.map(cuota => {
+        const mora = calcularMora(cuota.fecha_vencimiento, fechaPago, costoPorDia);
+        totalMora += mora.montoMora;
+        return {
+            ...cuota,
+            ...mora
+        };
+    });
+
+    return { totalMora, cuotasConMora };
 }
 
 // ==========================================
@@ -1261,16 +1488,16 @@ function handleComprobanteSelect(input) {
     selectedComprobanteFile = file;
 
     // Mostrar preview
-    const placeholder = document.getElementById('comprobante-placeholder');
-    const preview = document.getElementById('comprobante-preview');
-    const previewImg = document.getElementById('comprobante-preview-img');
+    const controls = document.getElementById('pago-upload-controls');
+    const previewWrapper = document.getElementById('pago-preview-wrapper');
+    const previewImg = document.getElementById('pago-comprobante-preview');
 
-    if (placeholder && preview && previewImg) {
+    if (controls && previewWrapper && previewImg) {
         const reader = new FileReader();
         reader.onload = (e) => {
             previewImg.src = e.target.result;
-            placeholder.style.display = 'none';
-            preview.style.display = 'inline-block';
+            controls.classList.add('hidden');
+            previewWrapper.classList.remove('hidden');
         };
         reader.readAsDataURL(file);
     }
@@ -1284,15 +1511,816 @@ function handleComprobanteSelect(input) {
 function clearComprobantePreview() {
     selectedComprobanteFile = null;
 
-    const placeholder = document.getElementById('comprobante-placeholder');
-    const preview = document.getElementById('comprobante-preview');
-    const previewImg = document.getElementById('comprobante-preview-img');
+    const controls = document.getElementById('pago-upload-controls');
+    const previewWrapper = document.getElementById('pago-preview-wrapper');
+    const previewImg = document.getElementById('pago-comprobante-preview');
     const cameraInput = document.getElementById('pago-comprobante-camera');
     const galleryInput = document.getElementById('pago-comprobante-gallery');
 
-    if (placeholder) placeholder.style.display = 'flex';
-    if (preview) preview.style.display = 'none';
+    if (controls) controls.classList.remove('hidden');
+    if (previewWrapper) previewWrapper.classList.add('hidden');
     if (previewImg) previewImg.src = '';
     if (cameraInput) cameraInput.value = '';
     if (galleryInput) galleryInput.value = '';
 }
+
+// ==========================================
+// WEBHOOK DE PAGO CON RECIBO CANVAS
+// ==========================================
+
+/**
+ * Genera una imagen de recibo de pago usando Canvas
+ * @param {Object} data - Datos del pago
+ * @returns {Promise<string>} - Imagen en formato base64
+ */
+async function generateReceiptCanvas(data) {
+    return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Dimensiones del recibo
+        canvas.width = 600;
+        canvas.height = 750;
+
+        // Cargar logo
+        const logo = new Image();
+        logo.crossOrigin = 'anonymous';
+        logo.src = 'https://i.ibb.co/3mC22Hc4/inka-corp.png';
+
+        logo.onload = () => {
+            // Fondo blanco
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Barra superior verde
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+            gradient.addColorStop(0, '#0B4E32');
+            gradient.addColorStop(1, '#146E3A');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, 110);
+
+            // Dibujar logo (izquierda del encabezado)
+            const logoSize = 60;
+            const logoX = 30;
+            const logoY = 25;
+            ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+
+            // Título INKA CORP (al lado del logo)
+            ctx.fillStyle = '#F2BB3A';
+            ctx.font = 'bold 32px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('INKA CORP', logoX + logoSize + 15, 55);
+
+            // Subtítulo
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '13px Arial';
+            ctx.fillText('COMPROBANTE DE PAGO', logoX + logoSize + 15, 80);
+
+            finishDrawing();
+        };
+
+        logo.onerror = () => {
+            // Si falla la carga del logo, dibujar sin él
+            console.warn('No se pudo cargar el logo, dibujando sin él');
+
+            // Fondo blanco
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Barra superior verde
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+            gradient.addColorStop(0, '#0B4E32');
+            gradient.addColorStop(1, '#146E3A');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, 100);
+
+            // Título INKA CORP (centrado si no hay logo)
+            ctx.fillStyle = '#F2BB3A';
+            ctx.font = 'bold 36px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('INKA CORP', canvas.width / 2, 55);
+
+            // Subtítulo
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '14px Arial';
+            ctx.fillText('COMPROBANTE DE PAGO', canvas.width / 2, 80);
+
+            finishDrawing();
+        };
+
+        function finishDrawing() {
+
+            // Fecha y hora
+            const now = new Date();
+            ctx.fillStyle = '#64748B';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'right';
+            ctx.fillText(now.toLocaleString('es-EC', {
+                timeZone: 'America/Guayaquil',
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit'
+            }), canvas.width - 30, 130);
+
+            // Línea decorativa
+            ctx.strokeStyle = '#E2E8F0';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(30, 150);
+            ctx.lineTo(canvas.width - 30, 150);
+            ctx.stroke();
+
+            // Sección SOCIO
+            ctx.fillStyle = '#0B4E32';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('SOCIO', 30, 180);
+
+            ctx.fillStyle = '#0F172A';
+            ctx.font = 'bold 22px Arial';
+            ctx.fillText(data.socioNombre || 'N/A', 30, 210);
+
+            ctx.fillStyle = '#64748B';
+            ctx.font = '14px Arial';
+            ctx.fillText('Cédula: ' + (data.socioCedula || 'N/A'), 30, 235);
+
+            // Línea
+            ctx.strokeStyle = '#E2E8F0';
+            ctx.beginPath();
+            ctx.moveTo(30, 260);
+            ctx.lineTo(canvas.width - 30, 260);
+            ctx.stroke();
+
+            // Sección CRÉDITO
+            ctx.fillStyle = '#0B4E32';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText('CRÉDITO', 30, 290);
+
+            ctx.fillStyle = '#0F172A';
+            ctx.font = 'bold 18px Arial';
+            ctx.fillText(data.codigoCredito || 'N/A', 30, 318);
+
+            // Grid de información
+            const infoY = 350;
+            const colWidth = (canvas.width - 60) / 2;
+
+            // Columna 1: Capital
+            ctx.fillStyle = '#64748B';
+            ctx.font = '12px Arial';
+            ctx.fillText('CAPITAL TOTAL', 30, infoY);
+            ctx.fillStyle = '#0F172A';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(formatMoney(data.capitalTotal), 30, infoY + 22);
+
+            // Columna 2: Plazo
+            ctx.fillStyle = '#64748B';
+            ctx.font = '12px Arial';
+            ctx.fillText('PLAZO', 30 + colWidth, infoY);
+            ctx.fillStyle = '#0F172A';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(data.plazo + ' meses', 30 + colWidth, infoY + 22);
+
+            // Línea
+            ctx.strokeStyle = '#E2E8F0';
+            ctx.beginPath();
+            ctx.moveTo(30, infoY + 50);
+            ctx.lineTo(canvas.width - 30, infoY + 50);
+            ctx.stroke();
+
+            // Sección DETALLES DEL PAGO (caja destacada)
+            const pagoBoxY = infoY + 70;
+            const boxHeight = data.estaEnMora ? 240 : 200;
+            ctx.fillStyle = 'rgba(11, 78, 50, 0.08)';
+            ctx.beginPath();
+            ctx.roundRect(30, pagoBoxY, canvas.width - 60, boxHeight, 15);
+            ctx.fill();
+
+            ctx.fillStyle = '#0B4E32';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('DETALLES DEL PAGO', 50, pagoBoxY + 30);
+
+            // Cuota
+            ctx.fillStyle = '#64748B';
+            ctx.font = '12px Arial';
+            ctx.fillText('CUOTA', 50, pagoBoxY + 60);
+            ctx.fillStyle = '#0F172A';
+            ctx.font = 'bold 18px Arial';
+            ctx.fillText(`${data.numeroCuota} de ${data.plazo}`, 50, pagoBoxY + 82);
+
+            // Estado
+            ctx.fillStyle = '#64748B';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'right';
+            ctx.fillText('ESTADO', canvas.width - 50, pagoBoxY + 60);
+
+            // Badge de estado (basado en mora)
+            const estadoColor = data.estaEnMora ? '#EF4444' : '#10B981';
+            const estadoText = data.estaEnMora ? `MORA (${data.diasMora}d)` : 'A TIEMPO';
+            ctx.fillStyle = estadoColor;
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText(estadoText, canvas.width - 50, pagoBoxY + 82);
+
+            // Si hay mora, mostrar detalle
+            let yOffset = 0;
+            if (data.estaEnMora && data.totalMora > 0) {
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#EF4444';
+                ctx.font = '12px Arial';
+                ctx.fillText(`⚠️ Mora: ${data.diasMora} días × $2 = ${formatMoney(data.totalMora)}`, canvas.width / 2, pagoBoxY + 105);
+                yOffset = 25;
+            }
+
+            // Monto pagado (grande y destacado)
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#64748B';
+            ctx.font = '12px Arial';
+            ctx.fillText('TOTAL PAGADO', canvas.width / 2, pagoBoxY + 120 + yOffset);
+
+            ctx.fillStyle = '#0B4E32';
+            ctx.font = 'bold 42px Arial';
+            ctx.fillText(formatMoney(data.montoPagado), canvas.width / 2, pagoBoxY + 170 + yOffset);
+
+            // Información adicional (fechas y método)
+            const adicionalY = pagoBoxY + boxHeight + 20;
+            ctx.textAlign = 'left';
+
+            // Fila 1: Fechas
+            const col3Width = (canvas.width - 60) / 3;
+
+            // Fecha de pago
+            ctx.fillStyle = '#64748B';
+            ctx.font = '11px Arial';
+            ctx.fillText('FECHA DE PAGO', 30, adicionalY);
+            ctx.fillStyle = '#0F172A';
+            ctx.font = '13px Arial';
+            ctx.fillText(formatDate(data.fechaPago), 30, adicionalY + 16);
+
+            // Fecha de registro
+            ctx.fillStyle = '#64748B';
+            ctx.font = '11px Arial';
+            ctx.fillText('REGISTRADO', 30 + col3Width, adicionalY);
+            ctx.fillStyle = '#0F172A';
+            ctx.font = '12px Arial';
+            ctx.fillText(data.fechaRegistro || formatEcuadorDateTime(), 30 + col3Width, adicionalY + 16);
+
+            // Método
+            ctx.fillStyle = '#64748B';
+            ctx.font = '11px Arial';
+            ctx.fillText('MÉTODO', 30 + col3Width * 2, adicionalY);
+            ctx.fillStyle = '#0F172A';
+            ctx.font = '13px Arial';
+            ctx.fillText(data.metodoPago || 'N/A', 30 + col3Width * 2, adicionalY + 16);
+
+            // Pie de página
+            ctx.fillStyle = '#94A3B8';
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Este comprobante fue generado automáticamente por INKA CORP', canvas.width / 2, canvas.height - 40);
+            ctx.fillText('Guarda este comprobante como respaldo de tu pago', canvas.width / 2, canvas.height - 22);
+
+            // Convertir a base64
+            const base64 = canvas.toDataURL('image/png');
+            console.log('Recibo generado como imagen base64');
+            resolve(base64);
+        }
+    });
+}
+
+/**
+ * Envía el webhook de notificación de pago
+ * @param {Object} payload - Datos a enviar
+ */
+async function sendPaymentWebhook(payload) {
+    const WEBHOOK_URL = 'https://lpwebhook.luispinta.com/webhook/recibosocios';
+
+    try {
+        console.log('Enviando webhook de pago a:', WEBHOOK_URL);
+        console.log('Payload:', { ...payload, image_base64: '[BASE64_IMAGE]' });
+
+        const response = await fetch(WEBHOOK_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.text();
+        console.log('Webhook enviado exitosamente. Respuesta:', result);
+        return { success: true, response: result };
+
+    } catch (error) {
+        console.error('Error enviando webhook:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+
+/**
+ * Genera un recibo para pago de múltiples cuotas usando Canvas
+ * @param {Object} data - Datos del pago con múltiples cuotas
+ * @returns {Promise<string>} - Imagen en formato base64
+ */
+async function generateMultiQuotaReceiptCanvas(data) {
+    return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Altura dinámica según cantidad de cuotas
+        const baseHeight = 650;
+        const cuotaRowHeight = 35;
+        const extraHeight = Math.max(0, (data.cuotas.length - 3) * cuotaRowHeight);
+        canvas.width = 600;
+        canvas.height = baseHeight + extraHeight;
+
+        // Cargar logo
+        const logo = new Image();
+        logo.crossOrigin = 'anonymous';
+        logo.src = 'https://i.ibb.co/3mC22Hc4/inka-corp.png';
+
+        logo.onload = () => {
+            drawReceipt(true);
+        };
+
+        logo.onerror = () => {
+            console.warn('No se pudo cargar el logo');
+            drawReceipt(false);
+        };
+
+        function drawReceipt(withLogo) {
+            // Fondo blanco
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Barra superior verde
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+            gradient.addColorStop(0, '#0B4E32');
+            gradient.addColorStop(1, '#146E3A');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, 110);
+
+            if (withLogo) {
+                ctx.drawImage(logo, 30, 25, 60, 60);
+                ctx.fillStyle = '#F2BB3A';
+                ctx.font = 'bold 32px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText('INKA CORP', 105, 55);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = '13px Arial';
+                ctx.fillText('PAGO DE MÚLTIPLES CUOTAS', 105, 80);
+            } else {
+                ctx.fillStyle = '#F2BB3A';
+                ctx.font = 'bold 36px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('INKA CORP', canvas.width / 2, 55);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = '14px Arial';
+                ctx.fillText('PAGO DE MÚLTIPLES CUOTAS', canvas.width / 2, 80);
+            }
+
+            // Badge de cantidad de cuotas
+            ctx.fillStyle = '#F2BB3A';
+            ctx.beginPath();
+            ctx.roundRect(canvas.width - 100, 35, 70, 40, 10);
+            ctx.fill();
+            ctx.fillStyle = '#0B4E32';
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${data.cantidadCuotas}`, canvas.width - 65, 55);
+            ctx.font = 'bold 11px Arial';
+            ctx.fillText('CUOTAS', canvas.width - 65, 68);
+
+            // Fecha y hora
+            const now = new Date();
+            ctx.fillStyle = '#64748B';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'right';
+            ctx.fillText(now.toLocaleString('es-EC', {
+                timeZone: 'America/Guayaquil',
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit'
+            }), canvas.width - 30, 130);
+
+            // Línea
+            ctx.strokeStyle = '#E2E8F0';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(30, 145);
+            ctx.lineTo(canvas.width - 30, 145);
+            ctx.stroke();
+
+            // Sección SOCIO
+            ctx.fillStyle = '#0B4E32';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('SOCIO', 30, 170);
+            ctx.fillStyle = '#0F172A';
+            ctx.font = 'bold 20px Arial';
+            ctx.fillText(data.socioNombre || 'N/A', 30, 195);
+            ctx.fillStyle = '#64748B';
+            ctx.font = '13px Arial';
+            ctx.fillText('Cédula: ' + (data.socioCedula || 'N/A') + '  |  Crédito: ' + (data.codigoCredito || 'N/A'), 30, 218);
+
+            // Línea
+            ctx.strokeStyle = '#E2E8F0';
+            ctx.beginPath();
+            ctx.moveTo(30, 235);
+            ctx.lineTo(canvas.width - 30, 235);
+            ctx.stroke();
+
+            // Tabla de cuotas
+            let tableY = 255;
+
+            // Header de tabla (añadir columna MORA)
+            ctx.fillStyle = 'rgba(11, 78, 50, 0.1)';
+            ctx.fillRect(30, tableY, canvas.width - 60, 30);
+            ctx.fillStyle = '#0B4E32';
+            ctx.font = 'bold 11px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('CUOTA', 50, tableY + 20);
+            ctx.textAlign = 'center';
+            ctx.fillText('ESTADO', canvas.width * 0.4, tableY + 20);
+            ctx.fillText('MORA', canvas.width * 0.6, tableY + 20);
+            ctx.textAlign = 'right';
+            ctx.fillText('SUBTOTAL', canvas.width - 50, tableY + 20);
+
+            tableY += 35;
+
+            // Filas de cuotas (con mora)
+            ctx.font = '12px Arial';
+            data.cuotas.forEach((cuota, idx) => {
+                // Fondo alternado
+                if (idx % 2 === 0) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.02)';
+                    ctx.fillRect(30, tableY - 5, canvas.width - 60, cuotaRowHeight);
+                }
+
+                // Cuota
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#0F172A';
+                ctx.font = 'bold 12px Arial';
+                ctx.fillText(`Cuota ${cuota.numero}`, 50, tableY + 15);
+
+                // Estado con color (basado en mora)
+                ctx.textAlign = 'center';
+                const estadoColor = cuota.estaEnMora ? '#EF4444' : '#10B981';
+                const estadoTexto = cuota.estaEnMora ? `Mora ${cuota.diasMora}d` : 'A tiempo';
+                ctx.fillStyle = estadoColor;
+                ctx.font = 'bold 11px Arial';
+                ctx.fillText(estadoTexto, canvas.width * 0.4, tableY + 15);
+
+                // Mora
+                ctx.fillStyle = cuota.estaEnMora ? '#EF4444' : '#64748B';
+                ctx.font = '11px Arial';
+                const moraText = cuota.estaEnMora ? formatMoney(cuota.montoMora) : '$0.00';
+                ctx.fillText(moraText, canvas.width * 0.6, tableY + 15);
+
+                // Subtotal (cuota + mora)
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#0F172A';
+                ctx.font = '12px Arial';
+                const subtotal = cuota.monto + (cuota.montoMora || 0);
+                ctx.fillText(formatMoney(subtotal), canvas.width - 50, tableY + 15);
+
+                tableY += cuotaRowHeight;
+            });
+
+            // Línea antes del total
+            ctx.strokeStyle = '#0B4E32';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(30, tableY + 5);
+            ctx.lineTo(canvas.width - 30, tableY + 5);
+            ctx.stroke();
+
+            // Si hay mora, mostrar subtotal + mora = total
+            if (data.totalMora > 0) {
+                tableY += 20;
+
+                // Subtotal cuotas
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#64748B';
+                ctx.font = '12px Arial';
+                ctx.fillText('Subtotal cuotas:', 50, tableY + 10);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#0F172A';
+                ctx.fillText(formatMoney(data.montoBase), canvas.width - 50, tableY + 10);
+
+                tableY += 20;
+
+                // Total mora
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#EF4444';
+                ctx.font = 'bold 12px Arial';
+                ctx.fillText('⚠️ Total mora:', 50, tableY + 10);
+                ctx.textAlign = 'right';
+                ctx.fillText(formatMoney(data.totalMora), canvas.width - 50, tableY + 10);
+
+                tableY += 15;
+            }
+
+            // TOTAL
+            tableY += 20;
+            ctx.fillStyle = 'rgba(11, 78, 50, 0.08)';
+            ctx.beginPath();
+            ctx.roundRect(30, tableY, canvas.width - 60, 50, 10);
+            ctx.fill();
+
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#0B4E32';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText('TOTAL PAGADO', 50, tableY + 32);
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#0B4E32';
+            ctx.font = 'bold 28px Arial';
+            ctx.fillText(formatMoney(data.montoPagado), canvas.width - 50, tableY + 35);
+
+            // Información adicional (3 columnas: Fecha pago, Registrado, Método)
+            tableY += 70;
+            const col3Width = (canvas.width - 60) / 3;
+            ctx.textAlign = 'left';
+
+            // Fecha de pago
+            ctx.fillStyle = '#64748B';
+            ctx.font = '11px Arial';
+            ctx.fillText('FECHA DE PAGO', 30, tableY);
+            ctx.fillStyle = '#0F172A';
+            ctx.font = '13px Arial';
+            ctx.fillText(formatDate(data.fechaPago), 30, tableY + 16);
+
+            // Fecha de registro
+            ctx.fillStyle = '#64748B';
+            ctx.font = '11px Arial';
+            ctx.fillText('REGISTRADO', 30 + col3Width, tableY);
+            ctx.fillStyle = '#0F172A';
+            ctx.font = '11px Arial';
+            ctx.fillText(data.fechaRegistro || formatEcuadorDateTime(), 30 + col3Width, tableY + 16);
+
+            // Método
+            ctx.fillStyle = '#64748B';
+            ctx.font = '11px Arial';
+            ctx.fillText('MÉTODO', 30 + col3Width * 2, tableY);
+            ctx.fillStyle = '#0F172A';
+            ctx.font = '13px Arial';
+            ctx.fillText(data.metodoPago || 'N/A', 30 + col3Width * 2, tableY + 16);
+
+            // Pie de página
+            ctx.fillStyle = '#94A3B8';
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Este comprobante fue generado automáticamente por INKA CORP', canvas.width / 2, canvas.height - 30);
+            ctx.fillText('Guarda este comprobante como respaldo de tu pago', canvas.width / 2, canvas.height - 14);
+
+            // Convertir a base64
+            const base64 = canvas.toDataURL('image/png');
+            console.log('Recibo multicuota generado como imagen base64');
+            resolve(base64);
+        }
+    });
+}
+
+/**
+ * Genera una imagen de aviso de pago para el administrador
+ */
+async function generateNoticeCanvas(data) {
+    return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 600;
+        canvas.height = 750;
+
+        const logo = new Image();
+        logo.crossOrigin = 'anonymous';
+        logo.src = 'https://i.ibb.co/3mC22Hc4/inka-corp.png';
+
+        logo.onload = () => { draw('withLogo'); };
+        logo.onerror = () => { draw('noLogo'); };
+
+        function draw(mode) {
+            // Fondo blanco con borde verde
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#0B4E32';
+            ctx.lineWidth = 15;
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+            // Barra superior de "AVISO"
+            ctx.fillStyle = '#C2410C'; // Color naranja fuerte para aviso
+            ctx.fillRect(15, 15, canvas.width - 30, 90);
+
+            if (mode === 'withLogo') {
+                ctx.drawImage(logo, 40, 30, 60, 60);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 36px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText('AVISO DE PAGO', 120, 65);
+                ctx.font = '14px Arial';
+                ctx.fillText('NOTIFICACIÓN DE REGISTRO', 120, 85);
+            } else {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 40px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('AVISO DE PAGO', canvas.width / 2, 70);
+            }
+
+            // Datos del socio
+            ctx.fillStyle = '#0F172A';
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 24px Arial';
+            ctx.fillText(data.socioNombre.toUpperCase(), canvas.width / 2, 160);
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#475569';
+            ctx.fillText('Ha registrado el pago de una cuota', canvas.width / 2, 190);
+
+            // Caja de detalles
+            ctx.fillStyle = '#F8FAFC';
+            ctx.beginPath();
+            ctx.roundRect(50, 220, canvas.width - 100, 380, 20);
+            ctx.fill();
+            ctx.strokeStyle = '#E2E8F0';
+            ctx.stroke();
+
+            // Detalles
+            const startY = 270;
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#64748B';
+            ctx.font = '14px Arial';
+
+            const fields = [
+                { label: 'CÓDIGO CRÉDITO:', value: data.codigoCredito },
+                { label: 'NÚMERO CUOTA:', value: `${data.numeroCuota} de ${data.plazo}` },
+                { label: 'ESTADO:', value: data.estaEnMora ? 'CON MORA' : 'A TIEMPO' },
+                { label: 'MONTO BASE:', value: formatMoney(data.montoBase) },
+                { label: 'MORA:', value: formatMoney(data.totalMora) },
+                { label: 'MONTO PAGADO:', value: formatMoney(data.montoPagado), color: '#0B4E32', size: 'bold 22px' },
+                { label: 'FECHA PAGO:', value: formatDate(data.fechaPago) },
+                { label: 'MÉTODO:', value: data.metodoPago }
+            ];
+
+            fields.forEach((f, i) => {
+                ctx.fillStyle = '#64748B';
+                ctx.font = 'bold 13px Arial';
+                ctx.fillText(f.label, 80, startY + (i * 45));
+                
+                ctx.fillStyle = f.color || '#0F172A';
+                ctx.font = f.size || 'bold 16px Arial';
+                ctx.fillText(f.value, 250, startY + (i * 45));
+            });
+
+            // Footer aviso
+            ctx.fillStyle = '#0B4E32';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('El socio ya ha sido notificado vía WhatsApp', canvas.width / 2, 650);
+
+            ctx.fillStyle = '#94A3B8';
+            ctx.font = 'italic 12px Arial';
+            ctx.fillText('Generado por el sistema de INKA CORP', canvas.width / 2, 710);
+
+            resolve(canvas.toDataURL('image/png'));
+        }
+    });
+}
+
+/**
+ * Genera una imagen de aviso de multicuota para el administrador
+ */
+async function generateMultiQuotaNoticeCanvas(data) {
+    return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 600;
+        canvas.height = 850;
+
+        const logo = new Image();
+        logo.crossOrigin = 'anonymous';
+        logo.src = 'https://i.ibb.co/3mC22Hc4/inka-corp.png';
+
+        logo.onload = () => { draw('withLogo'); };
+        logo.onerror = () => { draw('noLogo'); };
+
+        function draw(mode) {
+            // Fondo blanco con borde verde
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#0B4E32';
+            ctx.lineWidth = 15;
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+            // Barra superior de "AVISO"
+            ctx.fillStyle = '#C2410C'; 
+            ctx.fillRect(15, 15, canvas.width - 30, 90);
+
+            if (mode === 'withLogo') {
+                ctx.drawImage(logo, 40, 30, 60, 60);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 36px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText('AVISO MULTIPAGO', 120, 65);
+                ctx.font = '14px Arial';
+                ctx.fillText('REPORTE DE MULTICUOTAS', 120, 85);
+            }
+
+            ctx.fillStyle = '#0F172A';
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 24px Arial';
+            ctx.fillText(data.socioNombre.toUpperCase(), canvas.width / 2, 160);
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#475569';
+            ctx.fillText(`Ha registrado el pago de ${data.cantidadCuotas} cuotas`, canvas.width / 2, 190);
+
+            // Caja de detalles
+            ctx.fillStyle = '#F8FAFC';
+            ctx.beginPath();
+            ctx.roundRect(50, 220, canvas.width - 100, 520, 20);
+            ctx.fill();
+
+            // Lista resumida de cuotas
+            let y = 260;
+            ctx.textAlign = 'left';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillStyle = '#0B4E32';
+            ctx.fillText('RESUMEN DE CUOTAS:', 80, y);
+            y += 30;
+
+            const cuotasAMostrar = data.cuotas.slice(0, 8);
+            cuotasAMostrar.forEach((c, i) => {
+                ctx.fillStyle = '#475569';
+                ctx.font = '13px Arial';
+                const moraPart = c.estaEnMora ? ` (+ mora ${formatMoney(c.montoMora)})` : '';
+                ctx.fillText(`• Cuota ${c.numero}: ${formatMoney(c.monto)}${moraPart}`, 80, y + (i * 25));
+            });
+
+            if (data.cuotas.length > 8) {
+                ctx.fillText(`... y ${data.cuotas.length - 8} cuotas más`, 80, y + (8 * 25));
+            }
+
+            // Totales
+            const totalsY = 530;
+            ctx.strokeStyle = '#E2E8F0';
+            ctx.beginPath();
+            ctx.moveTo(80, totalsY);
+            ctx.lineTo(520, totalsY);
+            ctx.stroke();
+
+            const finalFields = [
+                { label: 'MONTO BASE:', value: formatMoney(data.montoBase) },
+                { label: 'MORA TOTAL:', value: formatMoney(data.totalMora) },
+                { label: 'TOTAL PAGADO:', value: formatMoney(data.montoPagado), color: '#0B4E32', size: 'bold 24px' },
+                { label: 'FECHA PAGO:', value: formatDate(data.fechaPago) },
+                { label: 'REGISTRADO:', value: data.fechaRegistro }
+            ];
+
+            finalFields.forEach((f, i) => {
+                ctx.fillStyle = '#64748B';
+                ctx.font = 'bold 13px Arial';
+                ctx.fillText(f.label, 80, totalsY + 30 + (i * 40));
+                ctx.fillStyle = f.color || '#0F172A';
+                ctx.font = f.size || 'bold 16px Arial';
+                ctx.fillText(f.value, 250, totalsY + 30 + (i * 40));
+            });
+
+            ctx.fillStyle = '#0B4E32';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('El socio ya ha sido notificado vía WhatsApp', canvas.width / 2, 780);
+
+            resolve(canvas.toDataURL('image/png'));
+        }
+    });
+}
+
+/**
+ * Envía el segundo webhook al administrador (Jose)
+ */
+async function sendOwnerWebhook(payload) {
+    const WEBHOOK_URL_OWNER = 'https://lpwebhook.luispinta.com/webhook/recibosociosJose';
+
+    try {
+        console.log('Enviando aviso al administrador:', WEBHOOK_URL_OWNER);
+        const response = await fetch(WEBHOOK_URL_OWNER, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return { success: true };
+    } catch (error) {
+        console.error('Error enviando aviso al admin:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// Exponer función al scope global
+
+// Exponer funciones necesarias al scope global
+window.generateReceiptCanvas = generateReceiptCanvas;
+window.generateNoticeCanvas = generateNoticeCanvas;
+window.sendPaymentWebhook = sendPaymentWebhook;
+window.sendOwnerWebhook = sendOwnerWebhook;
+

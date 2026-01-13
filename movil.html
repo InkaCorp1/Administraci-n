@@ -2867,7 +2867,8 @@
                         cuota_con_ahorro,
                         socio:ic_socios!id_socio (
                             nombre,
-                            cedula
+                            cedula,
+                            whatsapp
                         )
                     `)
                     .order('fecha_desembolso', { ascending: false }); // Fetch more for sorting
@@ -3298,6 +3299,56 @@
 
                 if (errorCredito) throw errorCredito;
 
+                // --- NOTIFICACIONES (PRODUCCIÓN) ---
+                try {
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Notificando...';
+                    const c = liteCreditosData.find(item => item.id_credito === currentCreditoId);
+                    
+                    const receiptData = {
+                        socioNombre: c.socio?.nombre || 'Socio',
+                        socioCedula: c.socio?.cedula || '',
+                        codigoCredito: c.codigo_credito,
+                        capitalTotal: c.capital,
+                        plazo: c.plazo,
+                        numeroCuota: currentLiteCuota.numero_cuota,
+                        montoPagado: monto,
+                        fechaPago: fecha,
+                        metodoPago: metodo
+                    };
+
+                    const receiptImage = await generateReceiptCanvas(receiptData);
+                    const noticeImage = await generateNoticeCanvas(receiptData);
+
+                    // 1. Webhook Socio (Comprobante)
+                    if (c.socio?.whatsapp) {
+                        await sendPaymentWebhook({
+                            whatsapp: c.socio.whatsapp,
+                            nombre: c.socio.nombre,
+                            monto: monto,
+                            cuota: currentLiteCuota.numero_cuota,
+                            total_cuotas: c.plazo,
+                            credito: c.codigo_credito,
+                            imagen: receiptImage
+                        });
+                    }
+
+                    // 2. Webhook Dueño (Aviso José)
+                    await sendOwnerWebhook({
+                        socio: c.socio?.nombre || 'Socio',
+                        monto: monto,
+                        cuota: currentLiteCuota.numero_cuota,
+                        total_cuotas: c.plazo,
+                        credito: c.codigo_credito,
+                        metodo: metodo,
+                        referencia: referencia || 'N/A',
+                        imagen: noticeImage,
+                        es_movil: true
+                    });
+                } catch (err) {
+                    console.error('Error en notificaciones móvil:', err);
+                    // No bloqueamos el flujo principal por error en notificaciones
+                }
+
                 showToast('Pago registrado exitosamente', 'success');
                 closeLitePaymentModal();
 
@@ -3410,6 +3461,129 @@
                 (s.cedula && s.cedula.includes(term))
             );
             renderLiteSocios(filtered);
+        }
+
+        /* ==========================================
+           SISTEMA DE NOTIFICACIONES (PRODUCCIÓN)
+           ========================================== */
+        function formatEcuadorDateTime() {
+            return new Date().toLocaleString('es-EC', {
+                timeZone: 'America/Guayaquil',
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit'
+            });
+        }
+
+        async function sendPaymentWebhook(payload) {
+            const URL = 'https://lpwebhook.luispinta.com/webhook/recibosocios';
+            try {
+                const res = await fetch(URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                return { success: res.ok };
+            } catch (e) { return { success: false, error: e.message }; }
+        }
+
+        async function sendOwnerWebhook(payload) {
+            const URL = 'https://lpwebhook.luispinta.com/webhook/recibosociosJose';
+            try {
+                const res = await fetch(URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                return { success: res.ok };
+            } catch (e) { return { success: false, error: e.message }; }
+        }
+
+        async function generateReceiptCanvas(data) {
+            return new Promise((resolve) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 600; canvas.height = 750;
+                const logo = new Image();
+                logo.crossOrigin = 'anonymous';
+                logo.src = 'https://i.ibb.co/3mC22Hc4/inka-corp.png';
+                logo.onload = () => draw(); logo.onerror = () => draw();
+                function draw() {
+                    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    const grad = ctx.createLinearGradient(0, 0, canvas.width, 0);
+                    grad.addColorStop(0, '#0B4E32'); grad.addColorStop(1, '#146E3A');
+                    ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, 110);
+                    ctx.drawImage(logo, 30, 25, 60, 60);
+                    ctx.fillStyle = '#F2BB3A'; ctx.font = 'bold 32px Arial'; ctx.textAlign = 'left';
+                    ctx.fillText('INKA CORP', 105, 55);
+                    ctx.fillStyle = '#FFFFFF'; ctx.font = '13px Arial';
+                    ctx.fillText('COMPROBANTE DE PAGO', 105, 80);
+                    ctx.fillStyle = '#64748B'; ctx.font = '12px Arial'; ctx.textAlign = 'right';
+                    ctx.fillText(formatEcuadorDateTime(), canvas.width - 30, 130);
+                    ctx.strokeStyle = '#E2E8F0'; ctx.beginPath(); ctx.moveTo(30, 150); ctx.lineTo(canvas.width - 30, 150); ctx.stroke();
+                    ctx.fillStyle = '#0B4E32'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'left';
+                    ctx.fillText('SOCIO', 30, 180);
+                    ctx.fillStyle = '#0F172A'; ctx.font = 'bold 22px Arial';
+                    ctx.fillText(data.socioNombre || 'N/A', 30, 210);
+                    ctx.fillStyle = '#64748B'; ctx.font = '14px Arial';
+                    ctx.fillText('Cédula: ' + (data.socioCedula || 'N/A'), 30, 235);
+                    ctx.strokeStyle = '#E2E8F0'; ctx.beginPath(); ctx.moveTo(30, 260); ctx.lineTo(canvas.width - 30, 260); ctx.stroke();
+                    ctx.fillStyle = '#0B4E32'; ctx.font = 'bold 14px Arial'; ctx.fillText('CRÉDITO', 30, 290);
+                    ctx.fillStyle = '#0F172A'; ctx.font = 'bold 18px Arial'; ctx.fillText(data.codigoCredito || 'N/A', 30, 318);
+                    const infoY = 350;
+                    ctx.fillStyle = '#64748B'; ctx.font = '12px Arial'; ctx.fillText('CAPITAL TOTAL', 30, infoY);
+                    ctx.fillStyle = '#0F172A'; ctx.font = 'bold 16px Arial'; ctx.fillText(formatMoney(data.capitalTotal), 30, infoY + 22);
+                    ctx.fillStyle = '#64748B'; ctx.font = '12px Arial'; ctx.fillText('PLAZO', 330, infoY);
+                    ctx.fillStyle = '#0F172A'; ctx.font = 'bold 16px Arial'; ctx.fillText(data.plazo + ' meses', 330, infoY + 22);
+                    const boxY = infoY + 70;
+                    ctx.fillStyle = 'rgba(11, 78, 50, 0.08)'; ctx.beginPath(); ctx.roundRect(30, boxY, canvas.width - 60, 200, 15); ctx.fill();
+                    ctx.fillStyle = '#0B4E32'; ctx.font = 'bold 14px Arial'; ctx.fillText('DETALLES DEL PAGO', 50, boxY + 30);
+                    ctx.fillStyle = '#64748B'; ctx.font = '12px Arial'; ctx.fillText('CUOTA', 50, boxY + 60);
+                    ctx.fillStyle = '#0F172A'; ctx.font = 'bold 18px Arial'; ctx.fillText(`${data.numeroCuota} de ${data.plazo}`, 50, boxY + 82);
+                    ctx.textAlign = 'right'; ctx.fillStyle = '#64748B'; ctx.fillText('ESTADO', canvas.width - 50, boxY + 60);
+                    ctx.fillStyle = '#10B981'; ctx.font = 'bold 14px Arial'; ctx.fillText('A TIEMPO', canvas.width - 50, boxY + 82);
+                    ctx.fillStyle = '#0B4E32'; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'left'; ctx.fillText('TOTAL PAGADO', 50, boxY + 145);
+                    ctx.textAlign = 'right'; ctx.font = 'bold 28px Arial'; ctx.fillText(formatMoney(data.montoPagado), canvas.width - 50, boxY + 148);
+                    ctx.textAlign = 'center'; ctx.fillStyle = '#94A3B8'; ctx.font = '11px Arial';
+                    ctx.fillText('Generado automáticamente por INKA CORP', canvas.width / 2, canvas.height - 30);
+                    resolve(canvas.toDataURL('image/png'));
+                }
+            });
+        }
+
+        async function generateNoticeCanvas(data) {
+            return new Promise((resolve) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 600; canvas.height = 700;
+                const logo = new Image();
+                logo.crossOrigin = 'anonymous';
+                logo.src = 'https://i.ibb.co/3mC22Hc4/inka-corp.png';
+                logo.onload = () => draw(); logo.onerror = () => draw();
+                function draw() {
+                    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.strokeStyle = '#0B4E32'; ctx.lineWidth = 15; ctx.strokeRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#C2410C'; ctx.fillRect(15, 15, canvas.width - 30, 90);
+                    ctx.drawImage(logo, 40, 30, 60, 60);
+                    ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 36px Arial'; ctx.textAlign = 'left';
+                    ctx.fillText('AVISO DE PAGO (MÓVIL)', 120, 65);
+                    ctx.fillStyle = '#0F172A'; ctx.textAlign = 'center'; ctx.font = 'bold 24px Arial';
+                    ctx.fillText(data.socioNombre.toUpperCase(), canvas.width / 2, 160);
+                    ctx.font = '16px Arial'; ctx.fillStyle = '#475569';
+                    ctx.fillText('Ha registrado el pago de una cuota', canvas.width / 2, 190);
+                    ctx.fillStyle = '#F8FAFC'; ctx.beginPath(); ctx.roundRect(50, 220, canvas.width - 100, 380, 20); ctx.fill();
+                    ctx.textAlign = 'left'; ctx.fillStyle = '#64748B'; ctx.font = 'bold 13px Arial';
+                    const y = 270;
+                    ctx.fillText('CÓDIGO CRÉDITO:', 80, y); ctx.fillText(data.codigoCredito, 250, y);
+                    ctx.fillText('NÚMERO CUOTA:', 80, y + 45); ctx.fillText(`${data.numeroCuota} de ${data.plazo}`, 250, y + 45);
+                    ctx.fillText('MONTO PAGADO:', 80, y + 90); ctx.fillStyle = '#0B4E32'; ctx.font = 'bold 22px Arial'; ctx.fillText(formatMoney(data.montoPagado), 250, y + 90);
+                    ctx.fillStyle = '#64748B'; ctx.font = 'bold 13px Arial';
+                    ctx.fillText('FECHA PAGO:', 80, y + 135); ctx.fillText(data.fechaPago, 250, y + 135);
+                    ctx.fillText('MÉTODO:', 80, y + 180); ctx.fillText(data.metodoPago, 250, y + 180);
+                    ctx.fillStyle = '#0B4E32'; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'center';
+                    ctx.fillText('El socio ya ha sido notificado correctamente', canvas.width / 2, 640);
+                    resolve(canvas.toDataURL('image/png'));
+                }
+            });
         }
 
 

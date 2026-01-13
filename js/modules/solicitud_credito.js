@@ -4630,33 +4630,33 @@ function numeroALetras(num) {
 function formatearFecha(fechaStr, formato = 'corto') {
     if (!fechaStr) return '-';
     
-    // Asegurar que la fecha se trate como local
-    const fecha = new Date(fechaStr + 'T00:00:00');
+    // Usar el parser centralizado que ya maneja la zona horaria de Ecuador
+    const fecha = parseDate(fechaStr);
+    if (!fecha) return '-';
+    
+    const tz = 'America/Guayaquil';
     
     if (formato === 'largo' || formato === 'completo') {
-        const meses = [
-            'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-            'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
-        ];
-        const diasSemana = [
-            'domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'
-        ];
-        
-        const diaSemana = diasSemana[fecha.getDay()];
-        const dia = fecha.getDate();
-        const mes = meses[fecha.getMonth()];
-        const anio = fecha.getFullYear();
+        const opciones = {
+            timeZone: tz,
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        };
         
         if (formato === 'completo') {
-            return `${diaSemana}, ${dia} de ${mes} del ${anio}`;
+            opciones.weekday = 'long';
         }
-        return `${dia} de ${mes} del ${anio}`;
+        
+        return fecha.toLocaleDateString('es-EC', opciones);
     }
     
-    const dia = fecha.getDate().toString().padStart(2, '0');
-    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
-    const anio = fecha.getFullYear();
-    return `${dia}/${mes}/${anio}`;
+    return fecha.toLocaleDateString('es-EC', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        timeZone: tz 
+    });
 }
 
 // ==========================================

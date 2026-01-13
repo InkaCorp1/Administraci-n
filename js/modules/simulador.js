@@ -1116,19 +1116,6 @@ function formatMoney(amount) {
     return '$' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-function formatDate(date) {
-    if (!date) return '-';
-    const d = new Date(date);
-    const options = { year: 'numeric', month: 'short', day: '2-digit' };
-    return d.toLocaleDateString('es-ES', options);
-}
-
-function formatDateShort(date) {
-    if (!date) return '-';
-    const d = new Date(date);
-    return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
-}
-
 function limpiarSimulador() {
     document.getElementById('sim-nombre').value = '';
     document.getElementById('sim-capital').value = '10000';

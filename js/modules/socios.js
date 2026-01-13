@@ -217,7 +217,8 @@ function processSociosData(socios) {
                 if (!credito.amortizacion) return;
                 credito.amortizacion.forEach(cuota => {
                     if (cuota.estado_cuota === 'VENCIDO') {
-                        const fechaVenc = new Date(cuota.fecha_vencimiento);
+                        const fechaVenc = parseDate(cuota.fecha_vencimiento);
+                        if (!fechaVenc) return;
                         fechaVenc.setHours(0, 0, 0, 0);
                         const dias = Math.floor((hoy - fechaVenc) / (1000 * 60 * 60 * 24));
                         if (dias > diasMoraMax) diasMoraMax = dias;

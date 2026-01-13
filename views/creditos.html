@@ -296,53 +296,134 @@
         </div>
     </div>
 
-    <!-- Modal Registrar Pago -->
+    <!-- Modal Registrar Pago (Rediseñado) -->
     <div id="registrar-pago-modal" class="modal hidden">
         <div class="modal-backdrop" data-close-modal></div>
-        <div class="modal-card" style="max-width: 500px;">
+        <div class="modal-card modal-pago-redesign">
             <div class="modal-header">
-                <h2 class="modal-title">
-                    <i class="fas fa-money-bill-wave"></i>
-                    Registrar Pago
-                </h2>
+                <div class="modal-header-title">
+                    <div class="header-icon-green">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <h2>Registrar Pago</h2>
+                </div>
                 <button class="modal-close" data-close-modal>
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="modal-body">
-                <form id="form-registrar-pago">
-                    <div class="pago-info-box">
-                        <div class="pago-info-row">
-                            <span>Pagar</span>
-                            <select id="pago-cuotas-select" class="form-select cuotas-select">
-                                <!-- Se llena dinámicamente -->
-                            </select>
+
+            <div class="modal-body modal-pago-body">
+                <!-- Panel Izquierdo -->
+                <div class="pago-panel-left">
+                    <div class="luxury-credit-card">
+                        <div class="card-chip">
+                            <i class="fas fa-microchip"></i>
                         </div>
-                        <div class="pago-info-row">
-                            <span>Fecha Vencimiento</span>
-                            <strong id="pago-fecha-vencimiento">-</strong>
+                        <div class="card-content">
+                            <div class="card-section">
+                                <label>CÓDIGO DE CRÉDITO</label>
+                                <div class="card-value gold-text" id="pago-credito-codigo">-</div>
+                            </div>
+                            <div class="card-section">
+                                <label>CLIENTE</label>
+                                <div class="card-user">
+                                    <div class="user-icon-circle">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <span class="card-value" id="pago-socio-nombre">-</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="pago-info-row highlight">
-                            <span>Monto a Pagar</span>
-                            <strong id="pago-monto-cuota">$0.00</strong>
+                        <i class="fas fa-credit-card card-type-icon"></i>
+                    </div>
+
+                    <div class="selection-box">
+                        <label class="section-label">SELECCIONAR CUOTAS</label>
+                        <select id="pago-cuotas-select" class="custom-select-light">
+                            <!-- Se llena dinámicamente -->
+                        </select>
+                    </div>
+
+                    <div class="summary-card-light">
+                        <div class="summary-item">
+                            <div class="summary-label">
+                                <i class="fas fa-calendar-alt"></i> Vencimiento
+                            </div>
+                            <div class="summary-value" id="pago-fecha-vencimiento">-</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">
+                                <i class="fas fa-receipt"></i> Cuota Base
+                            </div>
+                            <div class="summary-value" id="pago-monto-cuota">$0.00</div>
+                        </div>
+
+                        <!-- Mora Alert Box -->
+                        <div id="pago-mora-row" class="mora-alert-box" style="display: none;">
+                            <div class="mora-info">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span>MORA (<span id="pago-dias-mora">0</span> DÍAS × $2)</span>
+                            </div>
+                            <div class="mora-amount" id="pago-monto-mora">$0.00</div>
+                        </div>
+
+                        <div class="summary-total-box">
+                            <span class="total-label">TOTAL A PAGAR</span>
+                            <span class="total-amount" id="pago-total-final">$0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Comprobante Section -->
+                    <div class="attachment-section">
+                        <label class="section-label"><i class="fas fa-camera"></i> COMPROBANTE</label>
+                        <div class="comprobante-drop-zone" id="pago-comprobante-dropzone">
+                            <div id="pago-upload-controls" class="upload-controls">
+                                <button type="button" class="upload-btn camera"
+                                    onclick="document.getElementById('pago-comprobante-camera').click()">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                                <button type="button" class="upload-btn gallery"
+                                    onclick="document.getElementById('pago-comprobante-gallery').click()">
+                                    <i class="fas fa-image"></i>
+                                </button>
+                            </div>
+                            <div id="pago-preview-wrapper" class="preview-wrapper hidden">
+                                <img id="pago-comprobante-preview" src="" alt="Vista previa">
+                                <button type="button" class="remove-btn" onclick="clearComprobantePreview()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <!-- Inputs ocultos -->
+                            <input type="file" id="pago-comprobante-camera" accept="image/*" capture="environment"
+                                class="hidden" onchange="handleComprobanteSelect(this)">
+                            <input type="file" id="pago-comprobante-gallery" accept="image/*" class="hidden"
+                                onchange="handleComprobanteSelect(this)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel Derecho -->
+                <div class="pago-panel-right">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label-light"><i class="fas fa-calendar-day"></i> Fecha de Pago *</label>
+                            <input type="date" id="pago-fecha" class="input-light">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label-light"><i class="fas fa-money-bill-alt"></i> Monto a Registrar
+                                *</label>
+                            <div class="input-with-symbol">
+                                <span class="prefix">$</span>
+                                <input type="number" id="pago-monto" class="input-light highlight-text" step="0.01">
+                            </div>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label required">Fecha de Pago</label>
-                        <input type="date" id="pago-fecha" class="form-input" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label required">Monto Pagado</label>
-                        <input type="number" id="pago-monto" class="form-input" step="0.01" min="0" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label required">Método de Pago</label>
-                        <select id="pago-metodo" class="form-select" required>
+                        <label class="form-label-light"><i class="fas fa-credit-card"></i> Método de Pago *</label>
+                        <select id="pago-metodo" class="select-light">
                             <option value="EFECTIVO">Efectivo</option>
-                            <option value="TRANSFERENCIA">Transferencia</option>
+                            <option value="TRANSFERENCIA">Transferencia Bancaria</option>
                             <option value="DEPOSITO">Depósito</option>
                             <option value="CHEQUE">Cheque</option>
                             <option value="OTRO">Otro</option>
@@ -350,59 +431,24 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Referencia / Comprobante</label>
-                        <input type="text" id="pago-referencia" class="form-input"
-                            placeholder="Número de transacción...">
+                        <label class="form-label-light"><i class="fas fa-hashtag"></i> Referencia</label>
+                        <input type="text" id="pago-referencia" class="input-light" placeholder="# de transacción">
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Observaciones</label>
-                        <textarea id="pago-observaciones" class="form-input" rows="2"></textarea>
+                        <label class="form-label-light"><i class="fas fa-pen"></i> Observaciones</label>
+                        <textarea id="pago-observaciones" class="textarea-light" rows="4"
+                            placeholder="Notas adicionales..."></textarea>
                     </div>
-
-                    <!-- Campo de Comprobante de Pago (OBLIGATORIO) -->
-                    <div class="form-group">
-                        <label class="form-label required">Comprobante de Pago</label>
-                        <div class="comprobante-upload-area" id="comprobante-upload-area">
-                            <!-- Input para cámara (móvil) -->
-                            <input type="file" id="pago-comprobante-camera" accept="image/*" capture="environment"
-                                style="display: none" onchange="handleComprobanteSelect(this)">
-                            <!-- Input para galería -->
-                            <input type="file" id="pago-comprobante-gallery" accept="image/*" style="display: none"
-                                onchange="handleComprobanteSelect(this)">
-
-                            <div class="upload-placeholder" id="comprobante-placeholder">
-                                <div class="upload-options">
-                                    <button type="button" class="upload-option-btn camera-btn"
-                                        onclick="document.getElementById('pago-comprobante-camera').click()">
-                                        <i class="fas fa-camera"></i>
-                                        <span>Tomar Foto</span>
-                                    </button>
-                                    <span class="upload-divider">o</span>
-                                    <button type="button" class="upload-option-btn gallery-btn"
-                                        onclick="document.getElementById('pago-comprobante-gallery').click()">
-                                        <i class="fas fa-images"></i>
-                                        <span>Galería</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="upload-preview" id="comprobante-preview" style="display: none">
-                                <img id="comprobante-preview-img" alt="Preview">
-                                <button type="button" class="btn-clear-preview" onclick="clearComprobantePreview()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <small class="form-hint">Obligatorio. La imagen se comprimirá automáticamente.</small>
-                    </div>
-                </form>
-
+                </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" data-close-modal>Cancelar</button>
-                <button id="btn-confirmar-pago" class="btn btn-success">
-                    <i class="fas fa-check"></i>
-                    Confirmar Pago
+
+            <div class="modal-footer footer-light">
+                <button class="btn-light-secondary" data-close-modal>
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button id="btn-confirmar-pago" class="btn-light-success">
+                    <i class="fas fa-check-circle"></i> Confirmar Pago
                 </button>
             </div>
         </div>
@@ -1891,6 +1937,486 @@
             .creditos-hero-stats {
                 grid-template-columns: 1fr 1fr;
                 gap: 1rem;
+            }
+        }
+
+        /* ==========================================
+         * MODAL DE PAGO REDISEÑADO - PC
+         * ========================================== */
+        .modal-pago-redesign {
+            max-width: 900px !important;
+            width: 95%;
+            background: #ffffff;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        /* Header con Estilo */
+        .modal-pago-redesign .modal-header {
+            background: #ffffff;
+            border-bottom: 1px solid #f1f5f9;
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-icon-green {
+            width: 40px;
+            height: 40px;
+            background: #ecfdf5;
+            color: #10b981;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-size: 1.2rem;
+        }
+
+        .modal-header-title h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        /* Cuerpo del Modal */
+        .modal-pago-body {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 2.5rem;
+            padding: 2rem;
+            background: #fdfdfd;
+        }
+
+        /* Panel Izquierdo */
+        .pago-panel-left {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Tarjeta de Crédito de Lujo */
+        .luxury-credit-card {
+            background: #1e2a3b;
+            border-radius: 18px;
+            padding: 1.5rem;
+            color: #ffffff;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(30, 42, 59, 0.3);
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .luxury-credit-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 80%;
+            height: 200%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
+            transform: rotate(25deg);
+        }
+
+        .card-chip {
+            color: #94a3b8;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-section label {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: #94a3b8;
+            margin-bottom: 0.25rem;
+        }
+
+        .gold-text {
+            color: #f2bb3a;
+        }
+
+        .card-user {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .user-icon-circle {
+            width: 32px;
+            height: 32px;
+            background: #334155;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+        }
+
+        .card-type-icon {
+            position: absolute;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            font-size: 2rem;
+            opacity: 0.2;
+        }
+
+        /* Selector de Cuotas */
+        .section-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #64748b;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.75rem;
+        }
+
+        .custom-select-light {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e293b;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .custom-select-light:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+        }
+
+        /* Resumen de Pago */
+        .summary-card-light {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 1.25rem;
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f8fafc;
+        }
+
+        .summary-item:last-of-type {
+            border-bottom: none;
+        }
+
+        .summary-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .summary-label i {
+            width: 20px;
+            text-align: center;
+            color: #94a3b8;
+        }
+
+        .summary-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        /* Alerta de Mora */
+        .mora-alert-box {
+            background: #fff1f2;
+            border: 1px solid #ffe4e6;
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 1rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mora-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #e11d48;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .mora-amount {
+            color: #e11d48;
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+
+        /* Total con Estilo */
+        .summary-total-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            margin-top: 0.5rem;
+            border-top: 2px dashed #f1f5f9;
+        }
+
+        .total-label {
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: #10b981;
+        }
+
+        .total-amount {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #10b981;
+        }
+
+        /* Panel Derecho */
+        .pago-panel-right {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+        }
+
+        .form-label-light {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 0.6rem;
+        }
+
+        .form-label-light i {
+            color: #f2bb3a;
+            margin-right: 0.5rem;
+            width: 18px;
+            text-align: center;
+        }
+
+        .input-light,
+        .select-light,
+        .textarea-light {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            font-size: 1rem;
+            color: #1e293b;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .input-light:focus,
+        .select-light:focus,
+        .textarea-light:focus {
+            outline: none;
+            border-color: #f2bb3a;
+            box-shadow: 0 0 0 3px rgba(242, 187, 58, 0.1);
+        }
+
+        .input-with-symbol {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .prefix {
+            position: absolute;
+            left: 1rem;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .input-with-symbol input {
+            padding-left: 2rem;
+        }
+
+        .highlight-text {
+            color: #f2bb3a !important;
+            font-weight: 700 !important;
+            font-size: 1.25rem !important;
+        }
+
+        /* Comprobante Drop Zone */
+        .attachment-section {
+            margin-top: 0.5rem;
+        }
+
+        .comprobante-drop-zone {
+            background: #f8fafc;
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .upload-controls {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .upload-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+        }
+
+        .upload-btn.camera {
+            background: #fef9c3;
+            color: #ca8a04;
+        }
+
+        .upload-btn.gallery {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .upload-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .preview-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 5px;
+            border-radius: 12px;
+            background: white;
+            z-index: 5;
+        }
+
+        .preview-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 24px;
+            height: 24px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Footer del Modal (Light) */
+        .footer-light {
+            background: #f8fafc;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .btn-light-secondary,
+        .btn-light-warning,
+        .btn-light-success {
+            padding: 0.85rem 2rem;
+            border-radius: 12px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .btn-light-secondary {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .btn-light-warning {
+            background: #f2bb3a;
+            color: #ffffff;
+        }
+
+        .btn-light-success {
+            background: #10b981;
+            color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-light-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-light-warning:hover {
+            background: #eab308;
+        }
+
+        .btn-light-success:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 850px) {
+            .modal-pago-body {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .modal-pago-redesign {
+                width: 100%;
+                height: 100%;
+                border-radius: 0;
+                max-width: none !important;
             }
         }
     </style>
