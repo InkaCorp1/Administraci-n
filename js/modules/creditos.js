@@ -1151,7 +1151,7 @@ async function confirmarPago() {
         if (totalMora > 0) {
             const detalleMora = cuotasConMora
                 .filter(c => c.estaEnMora)
-                .map(c => `Cuota #${c.numero}: ${c.diasMora}d x $2 = $${c.montoMora.toFixed(2)}`)
+                .map(c => `Cuota #${c.numero_cuota}: ${c.diasMora}d x $2 = $${c.montoMora.toFixed(2)}`)
                 .join(', ');
             obsFinal = `${observaciones} | MORA TOTAL: $${totalMora.toFixed(2)} (${detalleMora})`.trim();
         }
@@ -1179,7 +1179,7 @@ async function confirmarPago() {
             // El usuario ingresa un monto total ("Monto a Registrar"). 
             // Si es una sola cuota, usamos directamente ese monto para el registro.
             // Si son varias, usamos el monto calculado por cuota (base + mora).
-            const montoParaRegistro = (cantidadCuotas === 1) ? montoPagado : (infoCuota.monto + infoCuota.montoMora);
+            const montoParaRegistro = (cantidadCuotas === 1) ? montoPagado : (infoCuota.cuota_total + infoCuota.montoMora);
 
             // 1. Registrar el pago
             const { error: errorPago } = await supabase
@@ -1219,7 +1219,7 @@ async function confirmarPago() {
                     updated_at: new Date().toISOString()
                 })
                 .eq('id_credito', currentViewingCredito.id_credito)
-                .eq('numero_cuota', infoCuota.numero);
+                .eq('numero_cuota', infoCuota.numero_cuota);
 
             if (errorAhorro) console.error('Error updating ahorro:', errorAhorro);
         }
@@ -1272,8 +1272,8 @@ async function confirmarPago() {
                 cuotasPagadasAntes: cuotasPagadasActualizado,
                 estaEnMora: totalMora > 0,
                 cuotas: cuotasConMora.map(c => ({
-                    numero: c.numero,
-                    monto: parseFloat(c.monto),
+                    numero: c.numero_cuota,
+                    monto: parseFloat(c.cuota_total),
                     estado: c.estaEnMora ? 'EN MORA' : 'A TIEMPO',
                     fechaVencimiento: c.fecha_vencimiento,
                     diasMora: c.diasMora,
@@ -1287,7 +1287,7 @@ async function confirmarPago() {
 
             if (cantidadCuotas === 1) {
                 const cuota = cuotasConMora[0];
-                reciboData.numeroCuota = cuota.numero;
+                reciboData.numeroCuota = cuota.numero_cuota;
                 reciboData.fechaVencimiento = cuota.fecha_vencimiento;
                 reciboData.diasMora = cuota.diasMora;
                 reciboData.estaEnMora = cuota.estaEnMora;
@@ -1299,7 +1299,7 @@ async function confirmarPago() {
                 message = `¡HOLA ${reciboData.socioNombre.toUpperCase()}! 👋\n\n✅ *PAGO REGISTRADO EXITOSAMENTE*\n\nMuchas gracias por realizar tu pago de cuota ${reciboData.numeroCuota} de ${reciboData.plazo}, te informamos que ha sido registrado correctamente.\n\n📋 *DETALLES DEL PAGO:*\n━━━━━━━━━━━━━━━\n🔢 Cuota: ${reciboData.numeroCuota} de ${reciboData.plazo}\n📊 Estado: ${reciboData.estadoCuota}${moraTexto}\n💰 *TOTAL PAGADO:* ${formatMoney(montoPagado)}\n━━━━━━━━━━━━━━━\n📅 Fecha de pago: ${formatDate(fechaPago)}\n🕐 Registrado: ${fechaRegistro}\n💳 Método: ${metodoPago}\n\n📈 *PROGRESO:* ${nuevasCuotasPagadas}/${reciboData.plazo} cuotas pagadas\n\n🏦 _INKA CORP - Tu confianza, nuestro compromiso_`;
             } else {
                 image_base64 = await generateMultiQuotaReceiptCanvas(reciboData);
-                const listaCuotas = cuotasConMora.map(c => `  • Cuota ${c.numero}: ${formatMoney(c.monto + c.montoMora)}`).join('\n');
+                const listaCuotas = cuotasConMora.map(c => `  • Cuota ${c.numero_cuota}: ${formatMoney(c.cuota_total + c.montoMora)}`).join('\n');
                 let moraTexto = totalMora > 0 ? `\n⚠️ *MORA TOTAL:* ${formatMoney(totalMora)}` : '';
                 message = `¡HOLA ${reciboData.socioNombre.toUpperCase()}! 👋\n\n✅ *PAGO MÚLTIPLE REGISTRADO*\n\nMuchas gracias por adelantar ${cantidadCuotas} cuotas de tu crédito. Tu pago ha sido registrado correctamente.\n\n📋 *DETALLE DE CUOTAS PAGADAS:*\n━━━━━━━━━━━━━━━\n${listaCuotas}\n━━━━━━━━━━━━━━━\n💵 Subtotal cuotas: ${formatMoney(montoBase)}${moraTexto}\n💰 *TOTAL PAGADO:* ${formatMoney(montoPagado)}\n━━━━━━━━━━━━━━━\n📅 Fecha de pago: ${formatDate(fechaPago)}\n🕐 Registrado: ${fechaRegistro}\n💳 Método: ${metodoPago}\n\n📈 *PROGRESO:* ${nuevasCuotasPagadas}/${reciboData.plazo} cuotas pagadas\n\n🏦 _INKA CORP - Tu confianza, nuestro compromiso_`;
             }
