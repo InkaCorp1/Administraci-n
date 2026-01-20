@@ -1,0 +1,401 @@
+<!-- Vista Situación Bancaria - INKA CORP -->
+<div class="content-wrapper bancos-wrapper">
+    <!-- Hero Header del Módulo -->
+    <div class="bancos-hero">
+        <div class="hero-bg-bancos"></div>
+        <div class="hero-content-bancos">
+            <div class="hero-icon-bancos">
+                <i class="fas fa-university"></i>
+            </div>
+            <h1 class="hero-title-bancos">Situación Bancaria</h1>
+            <p class="hero-subtitle-bancos">Monitoreo de créditos bancarios activos</p>
+        </div>
+
+        <!-- Stats integrados en hero -->
+        <div class="bancos-hero-stats">
+            <div class="bancos-hero-stat">
+                <span class="bancos-hero-value" id="stat-bancos-activos">0</span>
+                <span class="bancos-hero-label">Créditos Activos</span>
+            </div>
+            <div class="bancos-hero-stat highlight">
+                <span class="bancos-hero-value" id="stat-bancos-deuda-total">$0.00</span>
+                <span class="bancos-hero-label">Deuda Total</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros y Búsqueda -->
+    <div class="bancos-toolbar">
+        <div class="search-wrapper">
+            <i class="fas fa-search" style="color: var(--gray-400);"></i>
+            <input type="text" id="search-bancos" class="search-input" placeholder="Buscar...">
+        </div>
+        <button class="btn btn-primary" id="btn-nuevo-banco" title="Agregar Nuevo Crédito/Póliza">
+            <i class="fas fa-plus"></i> <span class="desktop-only">Agregar</span>
+        </button>
+        <button class="btn-history-toggle" id="toggle-history-bancos" title="Ver Historial Pagados">
+            <i class="fas fa-history"></i>
+        </button>
+        <button class="btn btn-sync" id="refresh-bancos" title="Sincronizar datos">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
+
+    <!-- Contenedor de Tarjetas de Bancos -->
+    <div id="bancos-grid" class="bancos-grid">
+        <!-- Las tarjetas se generan dinámicamente -->
+        <div class="loading-placeholder">
+            <div class="spinner"></div>
+            <span>Cargando créditos bancarios...</span>
+        </div>
+    </div>
+
+    <!-- Mensaje cuando no hay resultados -->
+    <div id="bancos-empty" class="hidden" style="text-align: center; padding: 3rem;">
+        <i class="fas fa-university" style="font-size: 3rem; color: var(--gray-600); margin-bottom: 1rem;"></i>
+        <p style="color: var(--gray-400);">No se encontraron créditos bancarios registrados</p>
+    </div>
+</div>
+
+<!-- Modal Detalle de Crédito Bancario -->
+<div id="modal-detalle-banco" class="modal-premium hidden">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card-premium">
+        <div class="modal-header-premium">
+            <div class="bank-info-header">
+                <div class="bank-logo-container">
+                    <img id="modal-bank-logo" src="" alt="Banco">
+                </div>
+                <div class="bank-title-group">
+                    <h2 id="modal-bank-name" class="modal-title-premium">Nombre del Banco</h2>
+                    <span id="modal-credit-id" class="credit-badge">ID: -------</span>
+                </div>
+            </div>
+            <button class="modal-close-premium" data-close-modal>
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="modal-body-premium">
+            <div class="split-view">
+                <!-- Columna Izquierda: Información -->
+                <div class="info-column">
+                    <div class="detail-section">
+                        <h3 class="section-title"><i class="fas fa-info-circle"></i> Datos del Crédito</h3>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <label>Solicitado</label>
+                                <span id="det-banco-monto">$0.00</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Cuotas</label>
+                                <span id="det-banco-plazo">-- meses</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Mensualidad</label>
+                                <span id="det-banco-cuota">$0.00</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Interés</label>
+                                <span id="det-banco-interes">--%</span>
+                            </div>
+                            <div class="detail-item full">
+                                <label>Deudor</label>
+                                <span id="det-banco-deudor">---</span>
+                            </div>
+                            <div class="detail-item full">
+                                <label>Motivo</label>
+                                <span id="det-banco-motivo">---</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3 class="section-title"><i class="fas fa-chart-pie"></i> Resumen de Pagos</h3>
+                        <div class="resumen-pago">
+                            <div class="progress-container">
+                                <div class="progress-info">
+                                    <span id="det-banco-progreso-text">0 de -- cuotas</span>
+                                    <span id="det-banco-progreso-pct">0%</span>
+                                </div>
+                                <div class="progress-bar-premium">
+                                    <div id="det-banco-barra" class="progress-fill"></div>
+                                </div>
+                            </div>
+                            <div class="values-grid">
+                                <div class="value-item">
+                                    <label>Pagado</label>
+                                    <span id="det-banco-pagado" class="text-success">$0.00</span>
+                                </div>
+                                <div class="value-item">
+                                    <label>Pendiente</label>
+                                    <span id="det-banco-pendiente" class="text-error">$0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Tabla Amortización -->
+                <div class="table-column">
+                    <h3 class="section-title"><i class="fas fa-table"></i> Tabla de Amortización</h3>
+                    <div class="amortizacion-scroll">
+                        <table class="premium-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Vencimiento</th>
+                                    <th>Valor</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-amortizacion-banco">
+                                <!-- Filas dinámicas -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer-premium">
+            <button id="btn-generar-reporte-pagos" class="btn btn-primary">
+                <i class="fas fa-file-pdf"></i> Generar Estado Pagos
+            </button>
+            <button class="btn btn-secondary" data-close-modal>Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Registrar Pago Bancario -->
+<div id="modal-pago-banco" class="modal-premium hidden">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card-premium small">
+        <div class="modal-header-premium">
+            <h2 class="modal-title-premium">Registrar Pago Cuota <span id="pago-banco-cuota-num">#</span></h2>
+            <button class="modal-close-premium" data-close-modal>
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body-premium">
+            <form id="form-pago-banco" class="premium-form">
+                <input type="hidden" id="pago-banco-id-detalle">
+
+                <div class="form-group-premium">
+                    <label><i class="fas fa-calendar-alt"></i> Fecha de Pago real</label>
+                    <input type="date" id="pago-banco-fecha" required class="input-premium">
+                </div>
+
+                <div class="form-group-premium">
+                    <label><i class="fas fa-money-bill-alt"></i> Valor Pagado</label>
+                    <input type="number" id="pago-banco-valor" step="0.01" readonly class="input-premium readonly">
+                </div>
+
+                <div class="form-group-premium">
+                    <label><i class="fas fa-camera"></i> Comprobante de Pago</label>
+                    <div class="upload-area-premium" id="pago-banco-dropzone">
+                        <div id="pago-banco-upload-placeholder">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Toca para subir o tomar foto</p>
+                            <div class="upload-buttons">
+                                <button type="button" class="btn-icon"
+                                    onclick="document.getElementById('banco-camera').click()">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                                <button type="button" class="btn-icon"
+                                    onclick="document.getElementById('banco-gallery').click()">
+                                    <i class="fas fa-image"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="pago-banco-preview-container" class="hidden">
+                            <img id="pago-banco-preview" src="" alt="Comprobante">
+                            <button type="button" class="btn-remove-preview" id="remove-banco-preview">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <input type="file" id="banco-camera" accept="image/*" capture="environment" class="hidden">
+                        <input type="file" id="banco-gallery" accept="image/*" class="hidden">
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer-premium">
+            <button class="btn btn-secondary" data-close-modal>Cerrar</button>
+            <button type="submit" form="form-pago-banco" class="btn btn-primary" id="btn-guardar-pago-banco">
+                <i class="fas fa-save"></i> Guardar Pago
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ver Comprobante Bancario -->
+<div id="modal-comprobante-banco" class="modal-premium hidden">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card-premium small">
+        <div class="modal-header-premium">
+            <h2 class="modal-title-premium">Comprobante de Pago</h2>
+            <button class="modal-close-premium" data-close-modal>
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body-premium centering">
+            <div class="comprobante-viewer">
+                <img id="viewer-img-banco" src="" alt="Comprobante">
+            </div>
+            <div class="comprobante-info-footer">
+                <p>Pagado el: <span id="viewer-fecha-banco">--/--/----</span></p>
+            </div>
+        </div>
+        <div class="modal-footer-premium">
+            <button class="btn btn-secondary" data-close-modal>Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nuevo Crédito/Póliza -->
+<div id="modal-nuevo-banco" class="modal-premium hidden">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card-premium medium">
+        <div class="modal-header-premium">
+            <h2 class="modal-title-premium">Registrar Nuevo Movimiento Bancario</h2>
+            <button class="modal-close-premium" data-close-modal>
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body-premium">
+            <div class="split-view reverse-mobile">
+                <!-- Columna Izquierda: Formulario -->
+                <div class="form-column">
+                    <form id="form-nuevo-banco" class="premium-form">
+
+                        <div class="form-row">
+                            <div class="form-group-premium grow">
+                                <label><i class="fas fa-university"></i> Banco</label>
+                                <select id="new-banco-nombre" required class="input-premium">
+                                    <option value="">Seleccione Banco...</option>
+                                    <!-- Options loaded from DB -->
+                                </select>
+                            </div>
+                            <div class="form-group-premium">
+                                <label><i class="fas fa-tag"></i> Tipo</label>
+                                <select id="new-banco-tipo" required class="input-premium">
+                                    <option value="CREDITO">Crédito</option>
+                                    <option value="POLIZA">Póliza</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group-premium">
+                                <label>Periodicidad</label>
+                                <select id="new-banco-periodicidad" class="input-premium">
+                                    <option value="MENSUAL">Mensual</option>
+                                    <option value="ANUAL">Anual</option>
+                                </select>
+                            </div>
+                            <div class="form-group-premium">
+                                <label>Plazo (Meses)</label>
+                                <input type="number" id="new-banco-plazo" min="1" required class="input-premium">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group-premium">
+                                <label id="lbl-monto">Monto Solicitado</label>
+                                <input type="number" id="new-banco-monto" step="0.01" required class="input-premium">
+                            </div>
+                            <div class="form-group-premium">
+                                <label>Interés (%)</label>
+                                <input type="number" id="new-banco-interes" step="0.01" required class="input-premium">
+                            </div>
+                        </div>
+
+                        <div class="form-group-premium">
+                            <label>Monto Total a Pagar</label>
+                            <input type="number" id="new-banco-total" step="0.01" class="input-premium">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group-premium">
+                                <label>Fecha Transacción</label>
+                                <input type="date" id="new-banco-fecha" required class="input-premium">
+                            </div>
+                            <div class="form-group-premium hidden" id="group-primer-pago">
+                                <label>Fecha Primer Pago</label>
+                                <input type="date" id="new-banco-primer-pago" class="input-premium">
+                            </div>
+                            <div class="form-group-premium hidden" id="group-valor-recibir">
+                                <label>Valor Mensual a Recibir</label>
+                                <input type="number" id="new-banco-valor-recibir" step="0.01" class="input-premium">
+                            </div>
+                        </div>
+
+                        <div class="form-group-premium">
+                            <label>A Nombre De</label>
+                            <input type="text" id="new-banco-deudor" required class="input-premium">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group-premium grow">
+                                <label>Motivo</label>
+                                <input type="text" id="new-banco-motivo" required class="input-premium">
+                            </div>
+                            <div class="form-group-premium">
+                                <label>Valor Recibido (Cash)</label>
+                                <input type="number" id="new-banco-recibido" step="0.01" class="input-premium">
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+
+                <!-- Columna Derecha: Previsualización -->
+                <div class="preview-column">
+                    <h3 class="section-title"><i class="fas fa-eye"></i> Previsualización</h3>
+                    <div class="preview-container">
+                        <div id="new-banco-preview-card" class="bank-card preview-card">
+                            <!-- Card Content renders here -->
+                            <div class="bank-card-header">
+                                <span class="bank-name-label">Nombre Banco</span>
+                                <div class="bank-progress-circle">0/0</div>
+                            </div>
+                            <div class="bank-card-progress">
+                                <div class="progress-label-group">
+                                    <span>Progreso</span>
+                                    <span class="progress-percentage">0%</span>
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar-fill" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="bank-card-amounts">
+                                <div class="amount-item">
+                                    <span class="amount-label">Cuota</span>
+                                    <span class="amount-value">$0.00</span>
+                                </div>
+                                <div class="amount-item">
+                                    <span class="amount-label">Total</span>
+                                    <span class="amount-value">$0.00</span>
+                                </div>
+                            </div>
+                            <div class="bank-card-footer">
+                                <span class="debtor-label">DEUDOR</span>
+                                <span class="debtor-name">Nombre...</span>
+                            </div>
+                        </div>
+                        <div class="preview-note">
+                            <p><i class="fas fa-info-circle"></i> Los valores se calculan automáticamente.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer-premium">
+            <button class="btn btn-secondary" data-close-modal>Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btn-save-new-banco">
+                <i class="fas fa-save"></i> Guardar y Crear
+            </button>
+        </div>
+    </div>
+</div>

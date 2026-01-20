@@ -21,8 +21,12 @@
     <link rel="stylesheet" href="css/socios.css">
     <link rel="stylesheet" href="css/solicitud_credito.css">
     <link rel="stylesheet" href="css/simulador.css">
+    <link rel="stylesheet" href="css/aportes.css">
+    <link rel="stylesheet" href="css/bancos.css">
+    <link rel="stylesheet" href="css/ahorros.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- jsPDF para generación de fichas PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- QRious para códigos QR en PDF -->
@@ -126,9 +130,24 @@
                     <span>Ahorros</span>
                 </a>
 
+                <a href="#polizas" class="nav-item" data-view="polizas" data-module="polizas">
+                    <i class="fas fa-certificate"></i>
+                    <span>Pólizas</span>
+                </a>
+
                 <a href="#simulador" class="nav-item" data-view="simulador" data-module="simulador">
                     <i class="fas fa-calculator"></i>
                     <span>Simulador</span>
+                </a>
+
+                <a href="#aportes" class="nav-item" data-view="aportes" data-module="aportes">
+                    <i class="fas fa-hand-holding-usd"></i>
+                    <span>Aportes Semanales</span>
+                </a>
+
+                <a href="#bancos" class="nav-item" data-view="bancos" data-module="bancos">
+                    <i class="fas fa-university"></i>
+                    <span>Situación Bancaria</span>
                 </a>
 
                 <div class="nav-section-title" style="margin-top: 1rem;">Configuración</div>
@@ -174,9 +193,12 @@
     <script src="js/modules/solicitud_credito.js"></script>
     <script src="js/image-utils.js"></script>
     <script src="js/modules/creditos.js"></script>
+    <script src="js/modules/polizas.js"></script>
     <script src="js/modules/precancelaciones.js"></script>
     <script src="js/modules/ahorros.js"></script>
     <script src="js/modules/simulador.js"></script>
+    <script src="js/modules/aportes.js"></script>
+    <script src="js/modules/bancos.js"></script>
 
     <!-- Registro de Service Worker PWA -->
     <script>

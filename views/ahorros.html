@@ -18,10 +18,6 @@
                 <span class="ahorros-hero-value" id="stat-total-acumulado">$0</span>
                 <span class="ahorros-hero-label">Acumulado</span>
             </div>
-            <div class="ahorros-hero-stat warning">
-                <span class="ahorros-hero-value" id="stat-pendiente-devolucion">0</span>
-                <span class="ahorros-hero-label">Por Devolver</span>
-            </div>
         </div>
     </div>
 
@@ -33,21 +29,13 @@
 
         <div class="toolbar-separator"></div>
 
-        <!-- Filtros de Estado -->
-        <button class="toolbar-btn filter-btn active" data-estado="" onclick="filterAhorrosByEstado('')">
-            <span>Todos</span>
+        <!-- Filtros de Ahorro Programado -->
+        <button class="toolbar-btn filter-btn active" onclick="filterAhorrosByEstado('')">
+            <i class="fas fa-piggy-bank"></i>
+            <span>Créditos con Ahorro Programado</span>
             <span class="filter-count" id="count-ahorros-all">0</span>
         </button>
-        <button class="toolbar-btn filter-btn" data-estado="ACTIVO" onclick="filterAhorrosByEstado('ACTIVO')">
-            <span>Activos</span>
-            <span class="filter-count" id="count-ahorros-activo">0</span>
-        </button>
-        <button class="toolbar-btn filter-btn" data-estado="CANCELADO" onclick="filterAhorrosByEstado('CANCELADO')">
-            <span>Cancelados</span>
-            <span class="filter-count" id="count-ahorros-cancelado">0</span>
-        </button>
 
-        <!-- Búsqueda -->
         <div class="toolbar-search">
             <i class="fas fa-search"></i>
             <input type="text" id="search-ahorros" placeholder="Buscar por socio o código...">
@@ -55,8 +43,15 @@
     </div>
 
     <!-- Tabla de Ahorros -->
-    <div class="table-container ahorros-table-container">
-        <div class="table-responsive">
+    <div class="ahorros-section">
+        <div class="section-sticky-header">
+            <div class="section-header-content">
+                <i class="fas fa-piggy-bank" style="color: var(--gold);"></i>
+                <span class="section-title">Créditos con Ahorro Programado</span>
+                <span class="section-count" id="count-ahorros-table">0</span>
+            </div>
+        </div>
+        <div class="section-table-container ahorros-table-container">
             <table>
                 <thead>
                     <tr>
@@ -79,15 +74,20 @@
             </table>
         </div>
     </div>
+
+    <!-- Mensaje cuando no hay resultados -->
+    <div id="ahorros-empty" class="hidden" style="text-align: center; padding: 3rem;">
+        <i class="fas fa-search" style="font-size: 3rem; color: var(--gray-600); margin-bottom: 1rem;"></i>
+        <p style="color: var(--gray-400);">No se encontraron ahorros que coincidan con la búsqueda</p>
+    </div>
 </div>
 
 <!-- Modal Ver Detalle de Ahorro -->
 <div id="ver-ahorro-modal" class="modal hidden">
     <div class="modal-backdrop" data-close-modal></div>
-    <div class="modal-card">
-        <div class="modal-header"
-            style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
-            <h2 class="modal-title" style="color: var(--gold);">
+    <div class="modal-card modal-detalle-ahorro">
+        <div class="modal-header">
+            <h2 class="modal-title">
                 <i class="fas fa-piggy-bank"></i>
                 <span id="modal-codigo-ahorro">Detalle de Ahorro</span>
             </h2>
@@ -95,64 +95,72 @@
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <div class="modal-body">
-            <!-- Info del Socio -->
-            <div class="ahorro-detail-section">
-                <h3 class="section-title"><i class="fas fa-user"></i> Información del Socio</h3>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <label>Nombre</label>
-                        <span id="ahorro-det-nombre">-</span>
+        <div class="modal-body modal-body-horizontal">
+            <!-- Columna Izquierda: Información y Resumen -->
+            <div class="ahorro-detail-sidebar">
+                
+                <div class="ahorro-summary-vertical">
+                    <div class="summary-item-modern">
+                        <div class="summary-icon-box cuota"><i class="fas fa-coins"></i></div>
+                        <div class="summary-text">
+                            <span class="summary-label">Ahorro / Cuota</span>
+                            <span class="summary-value" id="ahorro-det-cuota">$0.00</span>
+                        </div>
                     </div>
-                    <div class="detail-item">
-                        <label>Crédito</label>
-                        <span id="ahorro-det-credito">-</span>
+                    
+                    <div class="summary-item-modern featured">
+                        <div class="summary-icon-box total"><i class="fas fa-piggy-bank"></i></div>
+                        <div class="summary-text">
+                            <span class="summary-label">Total Acumulado</span>
+                            <span class="summary-value" id="ahorro-det-acumulado">$0.00</span>
+                        </div>
                     </div>
+
+                    <div class="summary-item-modern">
+                        <div class="summary-icon-box pagadas"><i class="fas fa-calendar-check"></i></div>
+                        <div class="summary-text">
+                            <span class="summary-label">Cuotas Pagadas</span>
+                            <span class="summary-value" id="ahorro-det-cuotas-pagadas">0/0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-footer-info">
+                    <p><i class="fas fa-info-circle"></i> Los ahorros se acumulan automáticamente con cada pago de cuota.</p>
                 </div>
             </div>
 
-            <!-- Resumen del Ahorro -->
-            <div class="ahorro-detail-section">
-                <h3 class="section-title"><i class="fas fa-coins"></i> Resumen del Ahorro</h3>
-                <div class="ahorro-summary-grid">
-                    <div class="ahorro-summary-item">
-                        <span class="ahorro-summary-label">Ahorro/Cuota</span>
-                        <span class="ahorro-summary-value" id="ahorro-det-cuota">$0.00</span>
-                    </div>
-                    <div class="ahorro-summary-item highlight">
-                        <span class="ahorro-summary-label">Total Acumulado</span>
-                        <span class="ahorro-summary-value" id="ahorro-det-acumulado">$0.00</span>
-                    </div>
-                    <div class="ahorro-summary-item">
-                        <span class="ahorro-summary-label">Cuotas Pagadas</span>
-                        <span class="ahorro-summary-value" id="ahorro-det-cuotas-pagadas">0/0</span>
-                    </div>
+            <!-- Columna Derecha: Tabla de Historial -->
+            <div class="ahorro-detail-main">
+                <div class="table-header-modern">
+                    <h3 class="table-title"><i class="fas fa-history"></i> Historial de Ahorros</h3>
+                    <span class="table-subtitle">Detalle por número de cuota</span>
                 </div>
-            </div>
-
-            <!-- Detalle de cuotas -->
-            <div class="ahorro-detail-section">
-                <h3 class="section-title"><i class="fas fa-table"></i> Detalle de Cuotas</h3>
-                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
-                    <table class="ahorro-detalle-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Ahorro</th>
-                                <th>Estado</th>
-                                <th>Devolución</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ahorro-detalle-body">
-                            <!-- Se llena dinámicamente -->
-                        </tbody>
-                    </table>
+                
+                <div class="table-container-modern">
+                    <div class="table-responsive-modern">
+                        <table class="ahorro-detalle-table-modern">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">Cuota</th>
+                                    <th class="text-right">Monto</th>
+                                    <th>Estado</th>
+                                    <th class="text-center">Devolución</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ahorro-detalle-body">
+                                <!-- Se llena dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" data-close-modal>Cerrar</button>
-            <button id="btn-devolver-ahorro" class="btn btn-success">
+            <button class="btn-elegant btn-cancel" data-close-modal>
+                Cerrar Ventana
+            </button>
+            <button id="btn-devolver-ahorro" class="btn-elegant btn-success" style="display: none;">
                 <i class="fas fa-hand-holding-usd"></i>
                 Registrar Devolución
             </button>
@@ -163,32 +171,46 @@
 <!-- Modal Devolución -->
 <div id="devolucion-modal" class="modal hidden">
     <div class="modal-backdrop" data-close-modal></div>
-    <div class="modal-card" style="max-width: 450px;">
-        <div class="modal-header">
-            <h2 class="modal-title">
+    <div class="modal-card modal-devolucion-ahorro">
+        <div class="modal-header" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%);">
+            <h2 class="modal-title" style="color: white;">
                 <i class="fas fa-hand-holding-usd"></i>
-                Devolución de Ahorro
+                Confirmar Devolución
             </h2>
-            <button class="modal-close" data-close-modal>
+            <button class="modal-close" data-close-modal style="color: white; opacity: 0.8;">
                 <i class="fas fa-times"></i>
             </button>
         </div>
         <div class="modal-body">
-            <div class="devolucion-info-box">
-                <p>Se registrará la devolución del ahorro acumulado:</p>
-                <div class="devolucion-monto" id="devolucion-monto">$0.00</div>
+            <div class="devolucion-elegant-card">
+                <div class="devolucion-icon-wrap">
+                    <i class="fas fa-coins"></i>
+                </div>
+                <div class="devolucion-content">
+                    <span class="devolucion-hint">Monto Total a Devolver</span>
+                    <div class="devolucion-monto-display" id="devolucion-monto">$0.00</div>
+                    <p class="devolucion-warning">
+                        <i class="fas fa-info-circle"></i>
+                        Esta acción marcará todos los ahorros acumulados de este crédito como devueltos.
+                    </p>
+                </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Observaciones</label>
-                <textarea id="devolucion-observaciones" class="form-input" rows="3"
-                    placeholder="Notas sobre la devolución..."></textarea>
+
+            <div class="form-group-elegant">
+                <label class="form-label-elegant">
+                    <i class="fas fa-comment-alt"></i> Observaciones (Opcional)
+                </label>
+                <textarea id="devolucion-observaciones" class="form-textarea-elegant" 
+                    placeholder="Ej: Devolución por cancelación de crédito..."></textarea>
             </div>
         </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" data-close-modal>Cancelar</button>
-            <button id="btn-confirmar-devolucion" class="btn btn-success">
-                <i class="fas fa-check"></i>
-                Confirmar
+        <div class="modal-footer" style="background: var(--bg-secondary); border-top: 1px solid var(--border-color);">
+            <button class="btn-elegant btn-cancel" data-close-modal>
+                Cancelar
+            </button>
+            <button id="btn-confirmar-devolucion" class="btn-elegant btn-confirm">
+                <i class="fas fa-check-circle"></i>
+                Confirmar Devolución
             </button>
         </div>
     </div>
@@ -196,7 +218,410 @@
 
 <style>
     /* ==========================================
-       AHORROS - Estilos consistentes con Socios
+       ESTILOS COMPARTIDOS - DISEÑO ELEGANTE
+       ========================================== */
+    .btn-elegant {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
+    }
+
+    .btn-elegant.btn-cancel {
+        background: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--gray-400);
+    }
+
+    .btn-elegant.btn-cancel:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--white);
+    }
+
+    .btn-elegant.btn-confirm, 
+    .btn-elegant.btn-success {
+        background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-elegant.btn-confirm:hover, 
+    .btn-elegant.btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    }
+
+    /* ==========================================
+       ESTILOS EXCLUSIVOS - MODAL DETALLE (HORIZONTAL)
+       ========================================== */
+    /* ==========================================
+       ESTILOS EXCLUSIVOS - MODAL DETALLE (LIGHT)
+       ========================================== */
+    .modal-detalle-ahorro {
+        max-width: 950px;
+        width: 95%;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        background: #ffffff;
+        color: #1e293b;
+    }
+
+    .modal-body-horizontal {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 0;
+        padding: 0 !important;
+        background: #ffffff;
+    }
+
+    /* Columna Izquierda (Sidebar) */
+    .ahorro-detail-sidebar {
+        background: #f8fafc;
+        border-right: 1px solid #e2e8f0;
+        padding: 1.25rem 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .ahorro-info-card-modern {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid var(--gold);
+        border-radius: 1rem;
+        padding: 1.25rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .info-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .info-header i {
+        font-size: 2.5rem;
+        color: var(--gold);
+    }
+
+    .info-title {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+    }
+
+    .info-label {
+        font-size: 0.7rem;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 700;
+    }
+
+    .info-value {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #1e293b;
+        line-height: 1.2;
+    }
+
+    .info-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        padding-top: 1rem;
+        border-top: 1px solid #f1f5f9;
+        margin-top: 0.5rem;
+    }
+
+    .row-label {
+        font-size: 0.65rem;
+        color: #94a3b8;
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+
+    .row-value {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #1e293b;
+    }
+
+    .row-value.highlight {
+        color: #b59410; /* Oro más contrastado para fondo claro */
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* Resumen Vertical */
+    .ahorro-summary-vertical {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .summary-item-modern {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        transition: all 0.2s ease;
+    }
+
+    .summary-item-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border-color: #cbd5e1;
+    }
+
+    .summary-item-modern.featured {
+        background: #fffcf0;
+        border: 1px solid #fde68a;
+    }
+
+    .summary-icon-box {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .summary-icon-box.cuota { background: #eff6ff; color: #3b82f6; }
+    .summary-icon-box.total { background: #fef3c7; color: #d97706; }
+    .summary-icon-box.pagadas { background: #f0fdf4; color: #22c55e; }
+
+    .summary-text {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .summary-label {
+        font-size: 0.65rem;
+        color: #64748b;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .summary-value {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #1e293b;
+    }
+
+    .sidebar-footer-info {
+        margin-top: 0.5rem;
+        padding: 0.75rem 1rem;
+        background: #f1f5f9;
+        border: 1px dotted #cbd5e1;
+        border-radius: 0.75rem;
+        color: #64748b;
+        font-size: 0.7rem;
+        line-height: 1.4;
+    }
+
+    /* Columna Derecha (Main) */
+    .ahorro-detail-main {
+        padding: 1rem 3rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        background: #ffffff;
+    }
+
+    .table-header-modern {
+        display: flex;
+        flex-direction: column;
+        border-left: 5px solid var(--gold);
+        padding-left: 1.25rem;
+    }
+
+    .table-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin: 0;
+        letter-spacing: -0.5px;
+    }
+
+    .table-subtitle {
+        font-size: 0.85rem;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .table-container-modern {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+
+    .table-responsive-modern {
+        max-height: 480px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 transparent;
+    }
+
+    .ahorro-detalle-table-modern thead th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: #f8fafc;
+        padding: 1.1rem 1rem;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: #475569;
+        font-weight: 800;
+        text-align: left;
+        border-bottom: 2px solid #e2e8f0;
+        letter-spacing: 1px;
+    }
+
+    .ahorro-detalle-table-modern tbody td {
+        padding: 1rem;
+        font-size: 0.95rem;
+        color: #334155;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .ahorro-detalle-table-modern tbody tr:hover td {
+        background: #f1f5f9;
+    }
+
+    /* Badges Light */
+    .badge {
+        padding: 0.35rem 0.7rem;
+        border-radius: 0.5rem;
+        font-size: 0.7rem;
+        font-weight: 800;
+    }
+
+    .badge-acumulado { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    .badge-devuelto { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+    .badge-pendiente { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+    /* Modal Generics Override */
+    .modal-detalle-ahorro .modal-header {
+        background: #ffffff;
+        border-bottom: 1px solid #f1f5f9;
+        padding: 1rem 3rem;
+    }
+
+    .modal-detalle-ahorro .modal-title {
+        color: #1e293b !important;
+        font-weight: 800;
+        font-size: 1.35rem;
+    }
+
+    .modal-detalle-ahorro .modal-title i {
+        color: var(--gold);
+    }
+
+    .modal-detalle-ahorro .modal-footer {
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+        padding: 1.25rem 3rem;
+    }
+
+    .modal-close {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .modal-close:hover {
+        background: #fee2e2;
+        color: #ef4444;
+    }
+    
+    .btn-elegant.btn-cancel {
+        background: #ffffff;
+        border: 1px solid #d1d5db;
+        color: #4b5563;
+    }
+
+    .btn-elegant.btn-cancel:hover {
+        background: #f9fafb;
+        border-color: #9ca3af;
+        color: #111827;
+    }
+
+    /* Estilos para el otro modal de devolución en light mode */
+    .modal-devolucion-ahorro {
+        max-width: 450px;
+        background: #ffffff;
+        border-radius: 1.5rem;
+    }
+    .modal-devolucion-ahorro .modal-header {
+        background: #eff6ff;
+        border-bottom: 1px solid #dbeafe;
+    }
+    .modal-devolucion-ahorro .modal-title {
+        color: #1e40af !important;
+    }
+    .devolucion-elegant-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+    .devolucion-hint { color: #64748b; }
+    .devolucion-monto-display { color: #1e293b; }
+    .devolucion-warning { background: #fffbeb; color: #92400e; border: 1px solid #fef3c7; }
+    .form-textarea-elegant { 
+        background: #ffffff; 
+        border: 1px solid #d1d5db; 
+        color: #1e293b;
+    }
+    .form-textarea-elegant:focus { background: #fff; border-color: #3b82f6; }
+
+    .form-label-elegant {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--gray-400);
+        margin-bottom: 0.75rem;
+    }
+
+    .form-label-elegant i {
+        color: var(--gold);
+        margin-right: 0.5rem;
+    }
+
+    .form-textarea-elegant {
+        width: 100%;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        color: var(--white);
+        font-family: inherit;
+        font-size: 0.95rem;
+        resize: none;
+        height: 100px;
+        transition: all 0.3s ease;
+    }
+
+    .form-textarea-elegant:focus {
+        border-color: #10B981;
+        background: rgba(16, 185, 129, 0.05);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+
+    /* ==========================================
+       AHORROS - Estilos generales del módulo
        ========================================== */
 
     /* Hero Section */
@@ -261,14 +686,18 @@
     .ahorros-hero-stats {
         position: relative;
         z-index: 2;
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
         gap: 1.25rem;
         max-width: 800px;
         margin: 0 auto;
     }
 
     .ahorros-hero-stat {
+        flex: 1;
+        min-width: 200px;
+        max-width: 280px;
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(10px);
         padding: 1.25rem;
@@ -616,11 +1045,15 @@
         }
 
         .ahorros-hero-stats {
-            grid-template-columns: repeat(3, 1fr);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             gap: 0.75rem;
         }
 
         .ahorros-hero-stat {
+            width: 100%;
+            max-width: none;
             padding: 0.75rem;
             min-height: auto;
         }

@@ -11,6 +11,10 @@ let filteredAhorros = [];
 let currentFilterAhorro = '';
 let currentViewingAhorro = null;
 
+// Variables para Sticky Header (Pila de clones como en Créditos)
+let stickyAhorrosHeaderClone = null;
+let currentAhorrosStickyHeader = null;
+
 // ==========================================
 // UTILIDADES DE MODALES
 // ==========================================
@@ -45,6 +49,7 @@ function closeModal(modalId) {
 function initAhorrosModule() {
     loadAhorros();
     setupAhorrosEventListeners();
+    setupAhorrosStickyHeaders();
 }
 
 function setupAhorrosEventListeners() {
@@ -59,19 +64,23 @@ function setupAhorrosEventListeners() {
     // Modal close handlers
     setupModalCloseHandlers('ver-ahorro-modal');
     setupModalCloseHandlers('devolucion-modal');
+
+    // Botón para abrir modal de devolución desde el detalle
+    const btnDevolver = document.getElementById('btn-devolver-ahorro');
+    if (btnDevolver) {
+        btnDevolver.onclick = () => openDevolucionModal();
+    }
 }
 
 // Función para filtrar por estado desde toolbar
 function filterAhorrosByEstado(estado) {
-    // Actualizar botones activos
+    // Ya no hay múltiples estados, pero mantenemos la firma por compatibilidad con el HTML
+    // y para resaltar que estamos viendo "Créditos con Ahorro"
     document.querySelectorAll('.ahorros-toolbar .filter-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.dataset.estado === estado) {
-            btn.classList.add('active');
-        }
+        btn.classList.add('active');
     });
     
-    currentFilterAhorro = estado;
+    currentFilterAhorro = ''; // Siempre mostramos todos los que pasaron el filtro inicial
     filterAhorros();
 }
 
@@ -147,17 +156,24 @@ async function loadAhorros(forceRefresh = false) {
 
 // Procesar ahorros desde datos de créditos
 function processAhorrosFromCreditos(creditos) {
-    allAhorros = (creditos || []).map(credito => {
-        const acumulado = (credito.ahorro_programado_cuota || 0) * (credito.cuotas_pagadas || 0);
-        const total = credito.ahorro_programado_total || 0;
-        const pendiente = total - acumulado;
+    allAhorros = (creditos || [])
+        .filter(credito => {
+            // Solo créditos vigentes (ACTIVO o MOROSO) con cuota de ahorro mayor a 0
+            const isVigente = credito.estado_credito === 'ACTIVO' || credito.estado_credito === 'MOROSO';
+            const tieneAhorro = (credito.ahorro_programado_cuota || 0) > 0;
+            return isVigente && tieneAhorro;
+        })
+        .map(credito => {
+            const acumulado = (credito.ahorro_programado_cuota || 0) * (credito.cuotas_pagadas || 0);
+            const total = credito.ahorro_programado_total || 0;
+            const pendiente = total - acumulado;
 
-        return {
-            ...credito,
-            ahorro_acumulado: acumulado,
-            ahorro_pendiente: pendiente > 0 ? pendiente : 0
-        };
-    });
+            return {
+                ...credito,
+                ahorro_acumulado: acumulado,
+                ahorro_pendiente: pendiente > 0 ? pendiente : 0
+            };
+        });
 
     filteredAhorros = [...allAhorros];
     updateAhorrosStats();
@@ -168,41 +184,34 @@ function processAhorrosFromCreditos(creditos) {
 // ESTADÍSTICAS
 // ==========================================
 function updateAhorrosStats() {
-    let totalCreditos = 0;
+    let totalCreditosWithAhorro = allAhorros.length;
     let totalAcumulado = 0;
-    let pendienteDevolucion = 0;
-
-    // Contadores para tabs
-    let countActivos = 0;
-    let countCancelados = 0;
+    let pendienteDevolucion = 0; // Esto podría referirse a otra cosa ahora, pero mantengamos el cálculo básico
 
     allAhorros.forEach(ahorro => {
-        totalCreditos++;
+        totalAcumulado += ahorro.ahorro_acumulado || 0;
         
-        if (ahorro.estado_credito === 'ACTIVO' || ahorro.estado_credito === 'MOROSO') {
-            totalAcumulado += ahorro.ahorro_acumulado || 0;
-            countActivos++;
-        }
-        
-        // Pendientes de devolución: créditos cancelados/precancelados con ahorro acumulado
-        if ((ahorro.estado_credito === 'CANCELADO' || ahorro.estado_credito === 'PRECANCELADO')) {
-            countCancelados++;
-            // Verificar si tiene ahorro pendiente de devolver (no devuelto aún)
-            if (ahorro.ahorro_acumulado > 0) {
-                pendienteDevolucion++;
-            }
-        }
+        // Si por alguna razón necesitamos rastrear algo que no es activo aquí, 
+        // pero por ahora allAhorros ya está filtrado
     });
 
     // Actualizar stats del hero
-    document.getElementById('stat-total-ahorros').textContent = totalCreditos;
+    document.getElementById('stat-total-ahorros').textContent = totalCreditosWithAhorro;
     document.getElementById('stat-total-acumulado').textContent = formatMoney(totalAcumulado);
-    document.getElementById('stat-pendiente-devolucion').textContent = pendienteDevolucion;
+    
+    // El stat de "Por Devolver" lo ocultamos o lo ponemos en 0 si ya no mostramos cancelados
+    const statPorDevolver = document.getElementById('stat-pendiente-devolucion');
+    if (statPorDevolver) {
+        statPorDevolver.textContent = '0';
+        // Podríamos incluso ocultar esta tarjeta si el usuario no la quiere
+    }
 
-    // Actualizar contadores de tabs
-    document.getElementById('count-ahorros-all').textContent = totalCreditos;
-    document.getElementById('count-ahorros-activo').textContent = countActivos;
-    document.getElementById('count-ahorros-cancelado').textContent = countCancelados;
+    // Actualizar contadores de toolbar
+    const countAll = document.getElementById('count-ahorros-all');
+    if (countAll) countAll.textContent = totalCreditosWithAhorro;
+
+    const countTable = document.getElementById('count-ahorros-table');
+    if (countTable) countTable.textContent = totalCreditosWithAhorro;
 }
 
 // ==========================================
@@ -212,17 +221,6 @@ function filterAhorros() {
     const searchTerm = document.getElementById('search-ahorros')?.value?.toLowerCase() || '';
 
     filteredAhorros = allAhorros.filter(ahorro => {
-        // Filtro por estado del crédito
-        if (currentFilterAhorro) {
-            if (currentFilterAhorro === 'ACTIVO') {
-                // Mostrar activos y morosos (créditos vigentes)
-                if (ahorro.estado_credito !== 'ACTIVO' && ahorro.estado_credito !== 'MOROSO') return false;
-            } else if (currentFilterAhorro === 'CANCELADO') {
-                // Mostrar cancelados y precancelados
-                if (ahorro.estado_credito !== 'CANCELADO' && ahorro.estado_credito !== 'PRECANCELADO') return false;
-            }
-        }
-
         // Filtro por búsqueda
         if (searchTerm) {
             const codigo = (ahorro.codigo_credito || '').toLowerCase();
@@ -307,14 +305,19 @@ async function viewAhorroDetail(creditoId) {
     currentViewingAhorro = ahorro;
 
     // Llenar información del modal
-    document.getElementById('modal-codigo-ahorro').innerHTML = `
-        <i class="fas fa-piggy-bank"></i>
-        Ahorro - ${ahorro.codigo_credito}
-    `;
+    const codigoSpan = document.getElementById('modal-codigo-ahorro');
+    if (codigoSpan) {
+        const nombreSocio = ahorro.socio?.nombre || 'Socio';
+        const codigoCredito = ahorro.codigo_credito || '-';
+        codigoSpan.innerHTML = `${nombreSocio} <span style="color: #b59410; margin-left: 8px;">- ${codigoCredito}</span>`;
+    }
     
-    // Info del socio
-    document.getElementById('ahorro-det-nombre').textContent = ahorro.socio?.nombre || '-';
-    document.getElementById('ahorro-det-credito').textContent = ahorro.codigo_credito;
+    // Info del socio (IDs que ya no existen en el HTML se ignoran)
+    const detNombre = document.getElementById('ahorro-det-nombre');
+    if (detNombre) detNombre.textContent = ahorro.socio?.nombre || '-';
+    
+    const detCredito = document.getElementById('ahorro-det-credito');
+    if (detCredito) detCredito.textContent = ahorro.codigo_credito;
 
     // Resumen del ahorro
     document.getElementById('ahorro-det-cuota').textContent = formatMoney(ahorro.ahorro_programado_cuota);
@@ -336,6 +339,11 @@ async function viewAhorroDetail(creditoId) {
     // Abrir modal
     const modal = document.getElementById('ver-ahorro-modal');
     modal.classList.remove('hidden');
+    
+    // Reset scroll del contenedor de tabla
+    const tableContainer = modal.querySelector('.table-responsive-modern');
+    if (tableContainer) tableContainer.scrollTop = 0;
+
     document.body.style.overflow = 'hidden';
 }
 
@@ -364,10 +372,10 @@ async function loadAhorroDetalle(creditoId) {
 
             return `
                 <tr>
-                    <td class="text-center">${item.numero_cuota}</td>
-                    <td class="text-right">${formatMoney(item.monto)}</td>
+                    <td class="text-center" style="font-weight: 600; color: var(--gray-500);">${item.numero_cuota}</td>
+                    <td class="text-right" style="font-weight: 700; color: var(--white);">${formatMoney(item.monto)}</td>
                     <td>${estadoBadge}</td>
-                    <td class="text-center">${fechaDevolucion}</td>
+                    <td class="text-center">${fechaDevolucion || '-'}</td>
                 </tr>
             `;
         }).join('');
@@ -381,7 +389,7 @@ async function loadAhorroDetalle(creditoId) {
 function getEstadoAhorroBadge(estado) {
     const badges = {
         'PENDIENTE': '<span class="badge badge-pendiente">Pendiente</span>',
-        'ACUMULADO': '<span class="badge badge-acumulado">Acumulado</span>',
+        'ACUMULADO': '<span class="badge badge-acumulado">Pagado</span>',
         'DEVUELTO': '<span class="badge badge-devuelto">Devuelto</span>'
     };
     return badges[estado] || `<span class="badge">${estado}</span>`;
@@ -444,7 +452,7 @@ async function confirmarDevolucion() {
         showAlert('Error al devolver el ahorro: ' + (error.message || 'Error desconocido'), 'Error', 'error');
     } finally {
         btnConfirmar.disabled = false;
-        btnConfirmar.innerHTML = '<i class="fas fa-check"></i> Confirmar';
+        btnConfirmar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Devolución';
     }
 }
 
@@ -487,3 +495,141 @@ window.initAhorrosModule = initAhorrosModule;
 window.viewAhorroDetail = viewAhorroDetail;
 window.filterAhorrosByEstado = filterAhorrosByEstado;
 window.refreshAhorros = refreshAhorros;
+window.confirmarDevolucion = confirmarDevolucion;
+window.openDevolucionModal = openDevolucionModal;
+window.cleanupAhorrosStickyHeaders = cleanupAhorrosStickyHeaders;
+
+// ==========================================
+// STICKY HEADERS (Lógica clonada de Créditos)
+// ==========================================
+function setupAhorrosStickyHeaders() {
+    window.addEventListener('scroll', handleAhorrosScroll, { passive: true });
+}
+
+function cleanupAhorrosStickyHeaders() {
+    hideFixedAhorrosHeader();
+    window.removeEventListener('scroll', handleAhorrosScroll);
+}
+
+function handleAhorrosScroll() {
+    const sections = document.querySelectorAll('.ahorros-section');
+    if (sections.length === 0) return;
+
+    const scrollTop = window.scrollY;
+    let activeSection = null;
+
+    // Solo tenemos una sección usualmente en ahorros, pero mantenemos la lógica robusta
+    sections.forEach(section => {
+        const rect = section.getBoundingClientRect();
+        const sectionTop = rect.top + scrollTop;
+        const sectionBottom = sectionTop + section.offsetHeight;
+
+        // Si el scroll está dentro de esta sección
+        if (scrollTop >= sectionTop - 60 && scrollTop < sectionBottom - 100) {
+            activeSection = section;
+        }
+    });
+
+    if (activeSection) {
+        const header = activeSection.querySelector('.section-sticky-header');
+        if (!header) return;
+        
+        const headerRect = header.getBoundingClientRect();
+
+        // Si el header original está fuera del viewport (arriba)
+        if (headerRect.top < 0) {
+            showFixedAhorrosHeader(header, activeSection);
+        } else {
+            hideFixedAhorrosHeader();
+        }
+    } else {
+        hideFixedAhorrosHeader();
+    }
+}
+
+function showFixedAhorrosHeader(originalHeader, section) {
+    if (stickyAhorrosHeaderClone && currentAhorrosStickyHeader === originalHeader) {
+        return;
+    }
+
+    hideFixedAhorrosHeader();
+
+    const originalTable = section.querySelector('table');
+    const originalThead = originalTable ? originalTable.querySelector('thead') : null;
+
+    // Crear contenedor para el header fijo
+    stickyAhorrosHeaderClone = document.createElement('div');
+    stickyAhorrosHeaderClone.classList.add('fixed-header-clone'); 
+    // Usamos la clase de créditos ya que tiene los estilos base adecuados
+    stickyAhorrosHeaderClone.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: var(--card-bg);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        animation: slideDown 0.2s ease;
+    `;
+
+    // Clonar el header de sección
+    const headerClone = originalHeader.cloneNode(true);
+    headerClone.style.cssText = `
+        margin: 0;
+        border-radius: 0;
+        padding: 1rem 1.5rem;
+    `;
+    stickyAhorrosHeaderClone.appendChild(headerClone);
+
+    // Clonar el thead de la tabla
+    if (originalThead && originalTable) {
+        const originalThs = originalTable.querySelectorAll('thead th');
+        const columnWidths = Array.from(originalThs).map(th => th.offsetWidth);
+
+        const tableClone = document.createElement('table');
+        tableClone.style.cssText = `
+            width: ${originalTable.offsetWidth}px;
+            margin: 0;
+            border-collapse: collapse;
+            table-layout: fixed;
+            background: var(--bg-secondary);
+        `;
+
+        const colgroup = document.createElement('colgroup');
+        columnWidths.forEach(width => {
+            const col = document.createElement('col');
+            col.style.width = `${width}px`;
+            colgroup.appendChild(col);
+        });
+        tableClone.appendChild(colgroup);
+
+        const theadClone = originalThead.cloneNode(true);
+        // Quitar position sticky del clone para que no haga cosas raras
+        theadClone.querySelectorAll('th').forEach(th => {
+            th.style.position = 'static';
+            th.style.background = 'transparent';
+        });
+        tableClone.appendChild(theadClone);
+
+        const tableWrapper = document.createElement('div');
+        tableWrapper.style.cssText = `
+            padding: 0;
+            background: var(--bg-secondary);
+            overflow: hidden;
+            border-bottom: 1px solid var(--border-color);
+        `;
+        tableWrapper.appendChild(tableClone);
+        stickyAhorrosHeaderClone.appendChild(tableWrapper);
+    }
+
+    document.body.appendChild(stickyAhorrosHeaderClone);
+    currentAhorrosStickyHeader = originalHeader;
+}
+
+function hideFixedAhorrosHeader() {
+    if (stickyAhorrosHeaderClone) {
+        stickyAhorrosHeaderClone.remove();
+        stickyAhorrosHeaderClone = null;
+        currentAhorrosStickyHeader = null;
+    }
+}

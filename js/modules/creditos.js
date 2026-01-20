@@ -189,7 +189,7 @@ function showFixedHeader(originalHeader, section) {
         top: 0;
         left: 0;
         right: 0;
-        z-index: 100;
+        z-index: 1000;
         background: var(--card-bg, #1a1f2e);
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         animation: slideDown 0.2s ease;

@@ -70,16 +70,39 @@
 
     <!-- Main Content Grid -->
     <div class="dashboard-content-grid">
-        <!-- Desembolsos Pendientes (solo visible cuando hay) -->
-        <div id="desembolsos-pendientes-section" class="desembolsos-section hidden">
-            <div class="section-header">
-                <h3 class="section-title warning"><i class="fas fa-money-bill-wave"></i> Desembolsos Pendientes</h3>
-                <span id="desembolsos-count" class="section-badge warning">0</span>
+        <!-- Contenedor De Alertas Prioritarias (Desembolsos y Pólizas) -->
+        <div id="priority-alerts-container" class="priority-alerts-layout">
+            <!-- Skeleton Loader (visible mientras carga) -->
+            <div id="priority-alerts-skeleton" class="priority-alerts-skeleton">
+                <i class="fas fa-circle-notch fa-spin"></i>
+                <span>Verificando alertas prioritarias...</span>
             </div>
-            <div id="desembolsos-pendientes-list" class="desembolsos-list">
-                <div class="activity-empty">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <p>Cargando...</p>
+
+            <!-- Pólizas por Vencer (solo visible cuando hay) -->
+            <div id="polizas-vencimiento-section" class="desembolsos-section hidden">
+                <div class="section-header" style="background: linear-gradient(135deg, rgba(242, 187, 58, 0.1) 0%, rgba(211, 144, 13, 0.05) 100%);">
+                    <h3 class="section-title" style="color: var(--gold-dark);"><i class="fas fa-clock"></i> Pólizas por Vencer</h3>
+                    <span id="polizas-vencimiento-count" class="section-badge warning" style="background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);">0</span>
+                </div>
+                <div id="polizas-vencimiento-list" class="desembolsos-list">
+                    <div class="activity-empty">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Cargando...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Desembolsos Pendientes (solo visible cuando hay) -->
+            <div id="desembolsos-pendientes-section" class="desembolsos-section hidden">
+                <div class="section-header">
+                    <h3 class="section-title warning"><i class="fas fa-money-bill-wave"></i> Desembolsos Pendientes</h3>
+                    <span id="desembolsos-count" class="section-badge warning">0</span>
+                </div>
+                <div id="desembolsos-pendientes-list" class="desembolsos-list">
+                    <div class="activity-empty">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Cargando...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -120,6 +143,16 @@
                     </div>
                     <i class="fas fa-chevron-right module-arrow"></i>
                 </div>
+                <div class="module-card" data-view="polizas">
+                    <div class="module-icon polizas">
+                        <i class="fas fa-certificate"></i>
+                    </div>
+                    <div class="module-info">
+                        <span class="module-name">Pólizas</span>
+                        <span class="module-desc">Inversiones y pólizas</span>
+                    </div>
+                    <i class="fas fa-chevron-right module-arrow"></i>
+                </div>
                 <div class="module-card" data-view="precancelaciones">
                     <div class="module-icon precancelaciones">
                         <i class="fas fa-file-invoice-dollar"></i>
@@ -137,6 +170,16 @@
                     <div class="module-info">
                         <span class="module-name">Solicitudes</span>
                         <span class="module-desc">Solicitudes de crédito</span>
+                    </div>
+                    <i class="fas fa-chevron-right module-arrow"></i>
+                </div>
+                <div class="module-card" data-view="bancos">
+                    <div class="module-icon bancos">
+                        <i class="fas fa-university"></i>
+                    </div>
+                    <div class="module-info">
+                        <span class="module-name">Bancos</span>
+                        <span class="module-desc">Situación bancaria</span>
                     </div>
                     <i class="fas fa-chevron-right module-arrow"></i>
                 </div>
@@ -415,8 +458,8 @@
     }
 
     .modules-grid {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
         gap: 0.75rem;
     }
 
@@ -424,7 +467,7 @@
         background: var(--gray-900);
         border: 1px solid var(--border-color);
         border-radius: 0.75rem;
-        padding: 1rem 1.25rem;
+        padding: 0.75rem 1rem;
         cursor: pointer;
         transition: all 0.2s ease;
         display: flex;
@@ -464,6 +507,11 @@
         color: var(--gold);
     }
 
+    .module-icon.polizas {
+        background: linear-gradient(135deg, rgba(5, 150, 105, 0.2) 0%, rgba(5, 150, 105, 0.1) 100%);
+        color: #10b981;
+    }
+
     .module-icon.precancelaciones {
         background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%);
         color: #a78bfa;
@@ -477,6 +525,11 @@
     .module-icon.simulador {
         background: linear-gradient(135deg, rgba(11, 78, 50, 0.2) 0%, rgba(11, 78, 50, 0.1) 100%);
         color: #34d399;
+    }
+
+    .module-icon.bancos {
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(14, 165, 233, 0.1) 100%);
+        color: #38bdf8;
     }
 
     .module-info {
@@ -667,14 +720,80 @@
         border-radius: 2px;
     }
 
-    /* Desembolsos Pendientes Section */
+    /* Priority Alerts Layout */
+    .priority-alerts-layout {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        grid-column: 1 / -1;
+        margin-bottom: 0.5rem;
+        width: 100%;
+        min-height: 20px;
+    }
+
+    /* Skeleton Loader para alertas */
+    .priority-alerts-skeleton {
+        grid-column: 1 / -1;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px dashed var(--gray-700);
+        border-radius: 1rem;
+        padding: 2.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        width: 100%;
+        animation: pulse-skeleton 2s infinite ease-in-out;
+    }
+
+    .priority-alerts-skeleton i {
+        font-size: 1.5rem;
+        color: var(--gold);
+    }
+
+    .priority-alerts-skeleton span {
+        color: var(--gray-400);
+        font-size: 0.9rem;
+        letter-spacing: 0.5px;
+    }
+
+    @keyframes pulse-skeleton {
+        0% { opacity: 0.6; }
+        50% { opacity: 1; }
+        100% { opacity: 0.6; }
+    }
+
+    /* Clases de ancho dinámico por contenido */
+    .desembolsos-section.width-50 {
+        width: calc(50% - 0.75rem);
+        flex: 0 0 auto;
+    }
+
+    .desembolsos-section.width-50 .desembolsos-list {
+        grid-template-columns: 1fr;
+    }
+
+    .desembolsos-section.width-100 {
+        width: 100%;
+        flex: 1 1 100%;
+    }
+
+    .desembolsos-section.width-100 .desembolsos-list {
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    }
+
     .desembolsos-section {
         background: var(--gray-800);
         border: 1px solid var(--border-color);
         border-radius: 1rem;
         padding: 1.5rem;
         border-top: 3px solid #f59e0b;
-        grid-column: 1 / -1;
+        transition: all 0.3s ease;
+    }
+
+    .desembolsos-section.critical-alert {
+        border-top-color: #ef4444;
     }
 
     .desembolsos-section.hidden {
@@ -689,14 +808,28 @@
         border-bottom: 1px solid var(--border-color);
     }
 
+    .desembolsos-section.critical-alert .section-header {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
+    }
+
     .section-title.warning i {
         color: #fbbf24;
         background: rgba(245, 158, 11, 0.15);
     }
 
+    .section-title.danger i {
+        color: #f87171;
+        background: rgba(239, 68, 68, 0.15);
+    }
+
     .section-badge.warning {
         background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
         box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+
+    .section-badge.danger {
+        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
     }
 
     .desembolsos-list {

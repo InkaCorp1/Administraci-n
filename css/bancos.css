@@ -1,0 +1,839 @@
+/* Estilos Módulo Situación Bancaria - INKA CORP */
+
+/* Hero Header */
+.bancos-hero {
+    position: relative;
+    padding: 3rem 2rem;
+    border-radius: 24px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    flex-direction: column;
+    /* Centered layout */
+    align-items: center;
+    /* Center horizontally */
+    justify-content: center;
+    gap: 2rem;
+    text-align: center;
+}
+
+.hero-bg-bancos {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+    opacity: 0.1;
+    pointer-events: none;
+}
+
+.hero-content-bancos {
+    flex: 1;
+    min-width: 300px;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Center content */
+}
+
+.hero-icon-bancos {
+    width: 60px;
+    height: 60px;
+    background: rgba(242, 187, 58, 0.2);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.hero-icon-bancos i {
+    font-size: 2rem;
+    color: var(--gold);
+}
+
+.hero-title-bancos {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #ffffff !important;
+    /* Forced white */
+    margin: 0;
+    letter-spacing: -1px;
+}
+
+.hero-subtitle-bancos {
+    font-size: 1.1rem;
+    color: #ffffff !important;
+    /* Forced white */
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+/* Stats en Hero */
+.bancos-hero-stats {
+    display: flex;
+    gap: 1.5rem;
+    z-index: 1;
+    justify-content: center;
+    /* Center stats */
+    flex-wrap: wrap;
+}
+
+.bancos-hero-stat {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    padding: 1.5rem;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-width: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: transform 0.3s ease;
+}
+
+.bancos-hero-stat:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.bancos-hero-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #ffffff !important;
+    /* Forced white */
+}
+
+.bancos-hero-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #ffffff !important;
+    /* Forced white */
+    margin-top: 0.25rem;
+    font-weight: 600;
+}
+
+/* Search Bar Fixes */
+.search-wrapper {
+    background: white;
+    border-radius: 999px;
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    flex: 1;
+    max-width: 400px;
+    /* Limit width */
+    border: 1px solid var(--border-color);
+}
+
+.search-input {
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    color: var(--white);
+    /* Texto oscuro visible en este sistema */
+    width: 100%;
+    background: transparent;
+}
+
+/* Remove unwanted focus borders/shadows and add subtle brand feedback */
+.search-wrapper:focus-within {
+    border-color: var(--primary-light) !important;
+    box-shadow: 0 0 0 3px var(--primary-glow) !important;
+    transform: none !important;
+    width: inherit !important;
+    /* Keep original width if any module tries to expand it */
+}
+
+.search-input:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.search-input::placeholder {
+    color: var(--gray-400);
+}
+
+.bancos-hero-stat.highlight {
+    border-color: var(--gold);
+    box-shadow: 0 0 20px rgba(242, 187, 58, 0.2);
+}
+
+/* Toolbar */
+.bancos-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    gap: 1rem;
+}
+
+.btn-sync {
+    background: var(--gray-800);
+    color: var(--white);
+    width: 45px;
+    height: 45px;
+    padding: 0;
+    border-radius: 12px;
+}
+
+.btn-sync:hover {
+    background: var(--primary);
+    color: var(--gold);
+}
+
+/* Grid de Tarjetas */
+.bancos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Tarjeta de Banco - Estilo Premium */
+.bank-card {
+    background: var(--bank-bg, linear-gradient(145deg, #f0fdf4 0%, #dcfce7 100%));
+    border-radius: 24px;
+    padding: 1.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--bank-border, rgba(11, 78, 50, 0.1));
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    overflow: hidden;
+}
+
+.bank-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(11, 78, 50, 0.12);
+    border-color: var(--primary);
+}
+
+.bank-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.bank-name-label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--bank-primary, var(--primary));
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    max-width: 80%;
+    line-height: 1.2;
+}
+
+.bank-progress-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bank-glow, var(--primary-glow));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--bank-pill-text, var(--primary));
+}
+
+.bank-card-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.progress-label-group {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gray-500);
+}
+
+.progress-percentage {
+    color: var(--bank-primary, var(--primary));
+    font-weight: 800;
+}
+
+.progress-bar-container {
+    height: 8px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--bank-primary, var(--primary)) 0%, var(--bank-light, var(--primary-light)) 100%);
+    border-radius: 10px;
+    transition: width 1s ease-out;
+}
+
+.bank-card-amounts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.amount-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.amount-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: var(--gray-500);
+    letter-spacing: 0.5px;
+}
+
+.amount-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--white);
+}
+
+.amount-value.pending {
+    color: var(--accent-orange);
+}
+
+.bank-card-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.debtor-label {
+    font-size: 0.65rem;
+    color: var(--gray-500);
+}
+
+.debtor-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--bank-primary, var(--primary));
+    text-transform: uppercase;
+}
+
+.btn-delete-credit {
+    background: #ff4d4f;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: background 0.2s;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.btn-delete-credit:hover {
+    background: #ff1f1f;
+}
+
+.btn-history-toggle {
+    background: white;
+    border: 1px solid var(--border-color);
+    color: var(--gray-500);
+    width: 45px;
+    /* Match screen sync btn height */
+    height: 45px;
+    border-radius: 12px;
+    /* Match layout */
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.btn-history-toggle:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.btn-history-toggle.active {
+    background: var(--gold);
+    color: var(--white);
+    border-color: var(--gold);
+    box-shadow: 0 0 15px rgba(242, 187, 58, 0.4);
+}
+
+.archived-badge {
+    color: var(--gray-500);
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Modal Detalle - Estilo Split View */
+.modal-premium {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(8px);
+}
+
+.modal-card-premium {
+    background: #ffffff;
+    width: 100%;
+    max-width: 1000px;
+    max-height: 90vh;
+    border-radius: 32px;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-card-premium.small {
+    max-width: 500px;
+}
+
+.modal-header-premium {
+    padding: 1.5rem 2rem;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.bank-info-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.bank-logo-container {
+    width: 60px;
+    height: 60px;
+    background: white;
+    border-radius: 16px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.bank-logo-container img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.bank-title-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-title-premium {
+    color: #ffffff;
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.credit-badge {
+    color: var(--gold);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.modal-close-premium {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modal-close-premium:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(90deg);
+}
+
+.modal-body-premium {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+}
+
+.split-view {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 2.5rem;
+}
+
+/* Columna de Detalles */
+.detail-section {
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 750;
+    color: var(--primary);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 2px solid var(--primary-glow);
+    padding-bottom: 0.5rem;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.detail-item.full {
+    grid-column: span 2;
+}
+
+.detail-item label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--gray-500);
+    text-transform: uppercase;
+}
+
+.detail-item span {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--white);
+}
+
+/* Resumen Pago Modal */
+.resumen-pago {
+    background: var(--black-soft);
+    border-radius: 20px;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.progress-bar-premium {
+    height: 12px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+}
+
+.values-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.value-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.value-item label {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+}
+
+.value-item span {
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+/* Columna de Tabla */
+.amortizacion-scroll {
+    max-height: 500px;
+    overflow-y: auto;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.premium-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.premium-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.premium-table th {
+    background: var(--gray-900);
+    padding: 1rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--gray-500);
+    text-align: left;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.premium-table td {
+    padding: 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color);
+    background: white;
+}
+
+.premium-table tr {
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.premium-table tr:hover td {
+    background: var(--black-soft);
+}
+
+.premium-table tr.paid td {
+    opacity: 0.8;
+}
+
+/* Badge de Estado en Tabla */
+.status-pill {
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.status-pill.pagado {
+    background: rgba(20, 110, 58, 0.1);
+    color: #146E3A;
+}
+
+.status-pill.pendiente {
+    background: rgba(204, 84, 34, 0.1);
+    color: #CC5422;
+}
+
+/* Formulario de Pago Bancario */
+.premium-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.input-premium {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1.5px solid var(--border-color);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.input-premium:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px var(--primary-glow);
+}
+
+.input-premium.readonly {
+    background: var(--black-soft);
+    cursor: not-allowed;
+}
+
+/* Área de Carga */
+.upload-area-premium {
+    border: 2px dashed var(--border-color);
+    border-radius: 20px;
+    padding: 2rem;
+    text-align: center;
+    background: var(--black-soft);
+    transition: all 0.3s;
+}
+
+.upload-area-premium:hover {
+    border-color: var(--primary);
+}
+
+.upload-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.btn-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid var(--border-color);
+    color: var(--primary);
+    font-size: 1.25rem;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.btn-icon:hover {
+    background: var(--primary);
+    color: var(--white);
+}
+
+/* Preview Image en Form */
+#pago-banco-preview-container {
+    position: relative;
+    width: 100%;
+    max-height: 250px;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+#pago-banco-preview {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+}
+
+.btn-remove-preview {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+/* Visor de Comprobante */
+.comprobante-viewer {
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.comprobante-viewer img {
+    width: 100%;
+    display: block;
+}
+
+.comprobante-info-footer {
+    padding: 1rem;
+    background: var(--black-soft);
+    border-radius: 12px;
+    text-align: center;
+    font-weight: 700;
+}
+
+/* Footer Modal */
+.modal-footer-premium {
+    padding: 1.5rem 2rem;
+    background: var(--black-soft);
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Sticky Preview Column */
+.preview-column {
+    position: sticky;
+    top: 0;
+    align-self: start;
+}
+
+/* Responsividad */
+@media (max-width: 900px) {
+    .split-view {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-card-premium {
+        max-height: 95vh;
+    }
+}
+
+@media (max-width: 600px) {
+    .bancos-hero {
+        padding: 2rem 1.5rem;
+    }
+
+
+
+    .hero-title-bancos {
+        font-size: 1.8rem;
+    }
+
+
+
+    .bancos-hero-stats {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+    }
+
+
+
+    .bancos-hero-stat {
+        flex: 1;
+        min-width: 140px;
+    }
+
+
+}

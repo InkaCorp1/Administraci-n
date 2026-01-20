@@ -1521,6 +1521,10 @@
                 <i class="fas fa-hand-holding-usd"></i>
                 <span>Créditos</span>
             </button>
+            <button class="nav-item" id="nav-aportes" onclick="goToAportes()">
+                <i class="fas fa-hand-holding-heart"></i>
+                <span>Aportes</span>
+            </button>
         </nav>
     </div>
 
@@ -1680,11 +1684,13 @@
                 </div>
 
                 <!-- Contenedor de Mora (Solo visible si hay retraso) -->
-                <div id="lite-pago-mora-cont" style="display: none; background: rgba(220, 38, 38, 0.05); border: 1px dashed #ef4444; padding: 10px; border-radius: 8px; margin-bottom: 1.5rem;">
+                <div id="lite-pago-mora-cont"
+                    style="display: none; background: rgba(220, 38, 38, 0.05); border: 1px dashed #ef4444; padding: 10px; border-radius: 8px; margin-bottom: 1.5rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <span class="lite-det-label" style="color: #ef4444; margin-bottom: 0;">Mora Detectada</span>
-                            <div class="lite-det-value" id="lite-pago-txt-mora" style="color: #ef4444; font-size: 0.95rem; font-weight: bold;">0 días ($0.00)</div>
+                            <div class="lite-det-value" id="lite-pago-txt-mora"
+                                style="color: #ef4444; font-size: 0.95rem; font-weight: bold;">0 días ($0.00)</div>
                         </div>
                         <i class="fas fa-exclamation-triangle" style="color: #ef4444; font-size: 1.5rem;"></i>
                     </div>
@@ -3182,11 +3188,11 @@
 
                 // Llenar formulario
                 document.getElementById('lite-pago-sugerido').textContent = `$${parseFloat(currentLiteCuota.cuota_total).toLocaleString('es-EC', { minimumFractionDigits: 2 })}`;
-                
+
                 // Configurar fecha inicial
                 const fechaInput = document.getElementById('lite-pago-fecha');
                 fechaInput.valueAsDate = new Date();
-                
+
                 // Listener para recalcular mora cuando cambia la fecha
                 fechaInput.onchange = () => updateLiteMoraUI();
 
@@ -3332,7 +3338,7 @@
                 try {
                     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Notificando...';
                     const c = liteCreditosData.find(item => item.id_credito === currentCreditoId);
-                    
+
                     const receiptData = {
                         socioNombre: c.socio?.nombre || 'Socio',
                         socioCedula: c.socio?.cedula || '',
@@ -3355,7 +3361,7 @@
                     const fechaRegistro = formatEcuadorDateTime();
                     const estadoCuota = receiptData.estaEnMora ? 'EN MORA' : 'A TIEMPO';
                     const moraTexto = receiptData.estaEnMora ? `\n⚠️ *MORA:* ${receiptData.diasMora} días x $2 = ${formatMoney(receiptData.montoMora)}` : '';
-                    
+
                     const messageSocio = `¡HOLA ${receiptData.socioNombre.toUpperCase()}! 👋\n\n✅ *PAGO REGISTRADO DESDE MÓVIL*\n\nMuchas gracias por realizar tu pago de cuota ${receiptData.numeroCuota} de ${receiptData.plazo}, te informamos que ha sido registrado correctamente.\n\n📋 *DETALLES DEL PAGO:*\n━━━━━━━━━━━━━━━\n🔢 Cuota: ${receiptData.numeroCuota} de ${receiptData.plazo}\n📊 Estado: ${estadoCuota}${moraTexto}\n💰 *TOTAL PAGADO:* ${formatMoney(monto)}\n━━━━━━━━━━━━━━━\n📅 Fecha de pago: ${formatDate(fecha)}\n🕐 Registrado: ${fechaRegistro}\n💳 Método: ${metodo}\n\n📈 *PROGRESO:* ${nuevasCuotas}/${receiptData.plazo} cuotas pagadas\n\n🏦 _INKA CORP - Tu confianza, nuestro compromiso_`;
 
                     const messageOwner = `JOSÉ KLEVER NISHVE CORO se ha registrado el pago de un crédito (VÍA MÓVIL):\n\n👤 Socio: ${receiptData.socioNombre.toUpperCase()}\n🆔 Cédula: ${receiptData.socioCedula}\n📑 Crédito: ${receiptData.codigoCredito}\n🔢 Cuota: ${receiptData.numeroCuota} de ${receiptData.plazo}\n📊 Estado: ${estadoCuota}${moraTexto}\n💵 TOTAL RECIBIDO: ${formatMoney(monto)}\n📅 Fecha Pago: ${formatDate(fecha)}\n🕐 Registro: ${fechaRegistro}\n💳 Método: ${metodo}\n\nEl socio ya ha sido notificado correctamente vía WhatsApp. ✅`;
@@ -3552,11 +3558,11 @@
             if (!currentLiteCuota) return;
             const fechaPago = document.getElementById('lite-pago-fecha').value;
             const mora = calcularMoraLite(currentLiteCuota.fecha_vencimiento, fechaPago);
-            
+
             const cont = document.getElementById('lite-pago-mora-cont');
             const txt = document.getElementById('lite-pago-txt-mora');
             const montoInput = document.getElementById('lite-pago-monto');
-            
+
             if (mora.estaEnMora) {
                 if (cont) cont.style.display = 'block';
                 if (txt) txt.textContent = `${mora.diasMora} días ($${mora.montoMora.toFixed(2)})`;
@@ -3646,14 +3652,14 @@
                     ctx.fillStyle = '#64748B'; ctx.font = '12px Arial'; ctx.fillText('CUOTA', 50, boxY + 60);
                     ctx.fillStyle = '#0F172A'; ctx.font = 'bold 18px Arial'; ctx.fillText(`${data.numeroCuota} de ${data.plazo}`, 50, boxY + 82);
                     ctx.textAlign = 'right'; ctx.fillStyle = '#64748B'; ctx.fillText('ESTADO', canvas.width - 50, boxY + 60);
-                    
+
                     if (data.estaEnMora) {
-                        ctx.fillStyle = '#EF4444'; ctx.font = 'bold 14px Arial'; 
+                        ctx.fillStyle = '#EF4444'; ctx.font = 'bold 14px Arial';
                         ctx.fillText(`MORA (${data.diasMora}d)`, canvas.width - 50, boxY + 82);
                         ctx.textAlign = 'center'; ctx.fillStyle = '#EF4444'; ctx.font = '12px Arial';
                         ctx.fillText(`⚠️ Mora: ${data.diasMora} días x $2 = $${data.montoMora.toFixed(2)}`, canvas.width / 2, boxY + 110);
                     } else {
-                        ctx.fillStyle = '#10B981'; ctx.font = 'bold 14px Arial'; 
+                        ctx.fillStyle = '#10B981'; ctx.font = 'bold 14px Arial';
                         ctx.fillText('A TIEMPO', canvas.width - 50, boxY + 82);
                     }
 
@@ -3692,7 +3698,7 @@
                     ctx.fillText('CÓDIGO CRÉDITO:', 80, y); ctx.fillText(data.codigoCredito, 250, y);
                     ctx.fillText('NÚMERO CUOTA:', 80, y + 45); ctx.fillText(`${data.numeroCuota} de ${data.plazo}`, 250, y + 45);
                     ctx.fillText('MONTO PAGADO:', 80, y + 90); ctx.fillStyle = '#0B4E32'; ctx.font = 'bold 22px Arial'; ctx.fillText(formatMoney(data.montoPagado), 250, y + 90);
-                    
+
                     if (data.estaEnMora) {
                         ctx.fillStyle = '#EF4444'; ctx.font = 'bold 12px Arial';
                         ctx.fillText(`(Incluye $${data.montoMora.toFixed(2)} de mora por ${data.diasMora} días)`, 250, y + 110);
@@ -3708,6 +3714,269 @@
             });
         }
 
+
+        // Módulo de Aportes Semanales
+        async function goToAportes() {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.getElementById('nav-aportes').classList.add('active');
+            await loadAportesView();
+        }
+
+        async function loadAportesView() {
+            const mainContent = document.querySelector('.main-content');
+            mainContent.innerHTML = `
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-hand-holding-heart"></i>
+                        Aportes Semanales
+                    </h2>
+                </div>
+
+                <div class="lite-card" style="margin-bottom: 1.5rem; padding: 1.5rem; border-radius: 20px;">
+                    <h3 style="margin-top:0; margin-bottom: 1rem; color: var(--primary); font-size: 1.1rem;">
+                        <i class="fas fa-plus-circle"></i> Nuevo Aporte
+                    </h3>
+                    <div class="lite-form-group">
+                        <label class="lite-det-label">Socio</label>
+                        <div class="lite-input-wrapper">
+                            <i class="fas fa-user"></i>
+                            <select id="mobile-aporte-socio">
+                                <option value="">Seleccione socio...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="lite-form-group">
+                        <label class="lite-det-label">Monto ($)</label>
+                        <div class="lite-input-wrapper">
+                            <i class="fas fa-dollar-sign"></i>
+                            <input type="number" id="mobile-aporte-monto" step="0.01" placeholder="0.00">
+                        </div>
+                    </div>
+                    <div class="lite-form-group">
+                        <label class="lite-det-label">Fecha</label>
+                        <div class="lite-input-wrapper">
+                            <i class="fas fa-calendar-day"></i>
+                            <input type="date" id="mobile-aporte-fecha">
+                        </div>
+                    </div>
+                    
+                    <div class="lite-form-group">
+                        <label class="lite-det-label">Comprobante</label>
+                        <div class="comprobante-mobile-area">
+                            <input type="file" id="mobile-aporte-file" accept="image/*" style="display: none" onchange="handleMobileAporteFileSelect(this)">
+                            <button type="button" class="btn-capture-comprobante" id="btn-mobile-aporte-upload" style="width:100%" onclick="document.getElementById('mobile-aporte-file').click()">
+                                <i class="fas fa-camera"></i>
+                                <span>Subir Comprobante</span>
+                            </button>
+                            <div class="comprobante-mobile-preview" id="mobile-aporte-preview" style="display: none; margin-top: 10px;">
+                                <img src="" id="mobile-aporte-img" alt="Preview">
+                                <button type="button" class="btn-clear-mobile" onclick="clearMobileAportePreview()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="desembolso-btn desembolso-btn-desembolsar" style="width: 100%; margin-top: 1rem; border-radius: 16px; background: var(--primary);" onclick="saveMobileAporte()">
+                        <i class="fas fa-save"></i> Guardar Aporte
+                    </button>
+                </div>
+
+                <div class="section-header">
+                    <h3 class="section-title" style="font-size: 1rem;">
+                        <i class="fas fa-history"></i> Aportes Recientes
+                    </h3>
+                </div>
+                
+                <div id="mobile-summary-aportes" style="display: none; margin-bottom: 1rem; padding: 0 1rem;">
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1; background: var(--bg-card); padding: 10px; border-radius: 12px; border: 1px solid var(--border-color); text-align: center;">
+                            <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">TOTAL</div>
+                            <div id="mobile-resumen-total-monto" style="font-size: 1rem; font-weight: 800; color: var(--primary);">$0.00</div>
+                        </div>
+                        <div style="flex: 1; background: var(--bg-card); padding: 10px; border-radius: 12px; border: 1px solid var(--border-color); text-align: center;">
+                            <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">APORTES</div>
+                            <div id="mobile-resumen-total-conteo" style="font-size: 1rem; font-weight: 800; color: var(--primary);">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="mobile-aportes-list" class="lite-list-container">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p>Cargando aportes...</p>
+                    </div>
+                </div>
+
+                <div class="switch-version">
+                    <button class="switch-version-btn" onclick="goToDesktopModule('aportes')">
+                        <i class="fas fa-desktop"></i>
+                        Ver historial completo (PC)
+                    </button>
+                </div>
+            `;
+
+            // Establecer fecha de hoy
+            document.getElementById('mobile-aporte-fecha').value = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
+
+            // Cargar socios y aportes
+            await fetchMobileSociosParaAportes();
+            await fetchMobileAportesRecientes();
+        }
+
+        let selectedMobileAporteFile = null;
+
+        function handleMobileAporteFileSelect(input) {
+            const file = input.files[0];
+            if (file) {
+                selectedMobileAporteFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('mobile-aporte-img').src = e.target.result;
+                    document.getElementById('mobile-aporte-preview').style.display = 'block';
+                    document.getElementById('btn-mobile-aporte-upload').classList.add('uploaded');
+                    document.getElementById('btn-mobile-aporte-upload').querySelector('span').textContent = 'Imagen Seleccionada';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function clearMobileAportePreview() {
+            selectedMobileAporteFile = null;
+            document.getElementById('mobile-aporte-file').value = '';
+            document.getElementById('mobile-aporte-preview').style.display = 'none';
+            document.getElementById('btn-mobile-aporte-upload').classList.remove('uploaded');
+            document.getElementById('btn-mobile-aporte-upload').querySelector('span').textContent = 'Subir Comprobante';
+        }
+
+        async function fetchMobileSociosParaAportes() {
+            const select = document.getElementById('mobile-aporte-socio');
+            try {
+                const supabase = window.getSupabaseClient();
+                const { data } = await supabase.from('ic_socios').select('idsocio, nombre').order('nombre');
+                if (data) {
+                    select.innerHTML = '<option value="">Seleccione socio...</option>' +
+                        data.map(s => `<option value="${s.idsocio}">${s.nombre}</option>`).join('');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function fetchMobileAportesRecientes() {
+            const list = document.getElementById('mobile-aportes-list');
+            const summaryCont = document.getElementById('mobile-summary-aportes');
+            const labelTotal = document.getElementById('mobile-resumen-total-monto');
+            const labelCount = document.getElementById('mobile-resumen-total-conteo');
+
+            try {
+                const supabase = window.getSupabaseClient();
+                const { data, error } = await supabase
+                    .from('ic_aportes_semanales')
+                    .select('*, socio:ic_socios(nombre)')
+                    .order('fecha', { ascending: false })
+                    .limit(10);
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    list.innerHTML = '<p style="text-align:center; padding: 2rem; color: var(--text-muted);">No hay aportes registrados</p>';
+                    if (summaryCont) summaryCont.style.display = 'none';
+                    return;
+                }
+
+                // Calcular resumen (de los que se están mostrando)
+                let totalMonto = 0;
+                data.forEach(item => totalMonto += parseFloat(item.monto || 0));
+
+                if (summaryCont) {
+                    summaryCont.style.display = 'block';
+                    if (labelTotal) labelTotal.textContent = `$${totalMonto.toLocaleString('es-EC', { minimumFractionDigits: 2 })}`;
+                    if (labelCount) labelCount.textContent = data.length;
+                }
+
+                list.innerHTML = data.map(item => `
+                    <div class="lite-card" style="padding: 1rem; margin-bottom: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: 700; color: var(--text-primary);">${item.socio?.nombre || 'Socio'}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">${formatDate(item.fecha)}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: 800; color: var(--primary); font-size: 1.1rem;">$${parseFloat(item.monto).toFixed(2)}</div>
+                                <a href="${item.comprobante_url}" target="_blank" style="font-size: 0.7rem; color: var(--gold); text-decoration: none;">
+                                    <i class="fas fa-image"></i> Ver Comprobante
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error(e);
+                list.innerHTML = '<p style="text-align:center; padding: 2rem; color: var(--error);">Error al cargar aportes</p>';
+            }
+        }
+
+        async function saveMobileAporte() {
+            const socioId = document.getElementById('mobile-aporte-socio').value;
+            const monto = document.getElementById('mobile-aporte-monto').value;
+            const fecha = document.getElementById('mobile-aporte-fecha').value;
+            const btn = event.currentTarget;
+
+            if (!socioId || !monto || !fecha || !selectedMobileAporteFile) {
+                showToast('Complete todos los campos e imagen', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+            try {
+                const supabase = window.getSupabaseClient();
+                const { data: { user } } = await supabase.auth.getUser();
+
+                // 1. Subir imagen (reutilizando lógica de compresión si existe similar)
+                const timestamp = Date.now();
+                const fileName = `aportes/${socioId}/${timestamp}_movil.jpg`;
+
+                // Usar la función de compresión existente en movil.html si está disponible
+                let fileToUpload = selectedMobileAporteFile;
+                if (typeof compressMobileImage === 'function') {
+                    fileToUpload = await compressMobileImage(selectedMobileAporteFile);
+                }
+
+                const { error: uploadError } = await supabase.storage
+                    .from('inkacorp')
+                    .upload(fileName, fileToUpload);
+
+                if (uploadError) throw uploadError;
+
+                const { data: urlData } = supabase.storage.from('inkacorp').getPublicUrl(fileName);
+
+                // 2. Insertar record
+                const { error: insertError } = await supabase
+                    .from('ic_aportes_semanales')
+                    .insert({
+                        id_socio: socioId,
+                        monto: parseFloat(monto),
+                        fecha: fecha,
+                        comprobante_url: urlData.publicUrl,
+                        id_usuario_registro: user?.id
+                    });
+
+                if (insertError) throw insertError;
+
+                showToast('Aporte guardado con éxito', 'success');
+                clearMobileAportePreview();
+                document.getElementById('mobile-aporte-monto').value = '';
+                await fetchMobileAportesRecientes();
+
+            } catch (e) {
+                console.error(e);
+                showToast('Error al guardar: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Guardar Aporte';
+            }
+        }
 
         // Ir a un módulo específico en desktop
         function goToDesktopModule(module) {

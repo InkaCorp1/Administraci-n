@@ -389,7 +389,7 @@ async function initApp() {
 
     // Cargar vista inicial - verificar si hay hash en la URL
     const hash = window.location.hash.replace('#', '');
-    const validViews = ['dashboard', 'socios', 'solicitud_credito', 'creditos', 'precancelaciones', 'ahorros', 'polizas', 'simulador'];
+    const validViews = ['dashboard', 'socios', 'solicitud_credito', 'creditos', 'precancelaciones', 'ahorros', 'polizas', 'simulador', 'aportes', 'bancos'];
     const initialView = (hash && validViews.includes(hash)) ? hash : 'dashboard';
 
     await loadView(initialView);
@@ -793,6 +793,8 @@ window.showAlert = showAlert;
 window.showConfirm = showConfirm;
 window.enableLoader = enableLoader;
 window.disableLoader = disableLoader;
+window.showLoader = showAppLoader; // Fix for external modules
+window.hideLoader = hideAppLoader; // Fix for external modules
 
 // ==========================================
 // CARGA DE VISTAS
@@ -802,10 +804,10 @@ async function loadView(viewName) {
         // Si es la misma vista, no recargar
         if (currentViewName === viewName) return;
 
-        // Limpiar sticky headers de créditos si existe
-        if (typeof cleanupStickyHeaders === 'function') {
-            cleanupStickyHeaders();
-        }
+        // Limpiar encabezados fijos (Sticky Headers) si existen
+        if (typeof cleanupStickyHeaders === 'function') cleanupStickyHeaders();
+        if (typeof cleanupAhorrosStickyHeaders === 'function') cleanupAhorrosStickyHeaders();
+        if (typeof cleanupPolizasModule === 'function') cleanupPolizasModule();
 
         beginLoading('Cargando módulo...');
 
@@ -857,6 +859,21 @@ async function loadView(viewName) {
             case 'simulador':
                 if (typeof initSimuladorModule === 'function') {
                     await initSimuladorModule();
+                }
+                break;
+            case 'aportes':
+                if (typeof initAportesModule === 'function') {
+                    await initAportesModule();
+                }
+                break;
+            case 'bancos':
+                if (typeof initBancosModule === 'function') {
+                    await initBancosModule();
+                }
+                break;
+            case 'bancos':
+                if (typeof initBancosModule === 'function') {
+                    await initBancosModule();
                 }
                 break;
         }
@@ -938,71 +955,74 @@ async function loadDashboardStats() {
 
     try {
         const supabase = window.getSupabaseClient();
-        if (!supabase) {
-            console.error('Supabase client no disponible');
-            return;
-        }
+        if (!supabase) return;
 
-        // Cargar socios
-        const { data: socios, error: errorSocios } = await supabase
-            .from('ic_socios')
-            .select('idsocio');
+        // 1. Cargar Stats Básicas en Paralelo (Socios y Créditos)
+        const [resSocios, resCreditos] = await Promise.all([
+            supabase.from('ic_socios').select('idsocio', { count: 'exact' }).limit(1),
+            supabase.from('ic_creditos').select('id_credito, capital, estado_credito')
+        ]);
 
-        if (errorSocios) {
-            console.error('Error cargando socios:', errorSocios);
-        } else {
-            const totalSocios = socios?.length || 0;
+        // Procesar Socios
+        if (!resSocios.error) {
+            const totalSocios = resSocios.count || 0;
             const elSocios = document.getElementById('dash-total-socios');
             if (elSocios) elSocios.textContent = totalSocios;
-
-            console.log('Total socios:', totalSocios);
         }
 
-        // Cargar créditos
-        const { data: creditos, error: errorCreditos } = await supabase
-            .from('ic_creditos')
-            .select('id_credito, capital, estado_credito');
-
-        if (errorCreditos) {
-            console.error('Error cargando créditos:', errorCreditos);
-        } else if (creditos) {
-            console.log('Créditos cargados:', creditos.length);
-
+        // Procesar Créditos
+        if (!resCreditos.error && resCreditos.data) {
+            const creditos = resCreditos.data;
             const activos = creditos.filter(c => c.estado_credito === 'ACTIVO');
             const morosos = creditos.filter(c => c.estado_credito === 'MOROSO');
             const totalActivos = activos.length + morosos.length;
 
-            // Créditos activos
             const elActivos = document.getElementById('dash-creditos-activos');
             if (elActivos) elActivos.textContent = totalActivos;
 
-            // Porcentaje de mora
-            const porcentajeMora = totalActivos > 0
-                ? Math.round((morosos.length / totalActivos) * 100)
-                : 0;
+            const porcentajeMora = totalActivos > 0 ? Math.round((morosos.length / totalActivos) * 100) : 0;
             const elMora = document.getElementById('dash-porcentaje-mora');
             if (elMora) elMora.textContent = `${porcentajeMora}%`;
 
-            // Cartera total
             const cartera = creditos
                 .filter(c => c.estado_credito === 'ACTIVO' || c.estado_credito === 'MOROSO')
                 .reduce((sum, c) => sum + parseFloat(c.capital || 0), 0);
 
-            const carteraFormatted = '$' + cartera.toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             const elCartera = document.getElementById('dash-cartera-total');
-            if (elCartera) elCartera.textContent = carteraFormatted;
-
-            console.log('Stats: activos=', totalActivos, 'mora=', porcentajeMora + '%', 'cartera=', cartera);
+            if (elCartera) elCartera.textContent = '$' + cartera.toLocaleString('es-EC', { minimumFractionDigits: 2 });
         }
 
-        // Cargar próximos vencimientos
+        // 2. Cargar socios morosos (Prioridad alta, usa caché)
         await loadSociosMorosos();
 
-        // Cargar desembolsos pendientes
-        await loadDesembolsosPendientes();
+        // 3. Cargar alertas dinámicas en segundo plano (No bloquea el dashboard)
+        loadDashboardPriorityAlerts();
 
     } catch (error) {
         console.error('Error loading dashboard stats:', error);
+    }
+}
+
+/**
+ * Función encargada de coordinar las alertas dinámicas (Desembolsos y Pólizas)
+ * Muestra un skeleton mientras ambas terminan de cargar para evitar saltos visuales.
+ */
+async function loadDashboardPriorityAlerts() {
+    const skeleton = document.getElementById('priority-alerts-skeleton');
+
+    try {
+        // Ejecutar las dos peticiones en paralelo para mayor velocidad
+        await Promise.all([
+            loadDesembolsosPendientes(),
+            loadPolizasVencimientoDashboard()
+        ]);
+    } catch (err) {
+        console.error('Error en alertas prioritarias:', err);
+    } finally {
+        // Al terminar (con éxito o error), ocultamos el skeleton
+        if (skeleton) {
+            skeleton.style.display = 'none';
+        }
     }
 }
 
@@ -1153,6 +1173,166 @@ async function fetchMorososFromDB(container, countBadge, isBackgroundUpdate) {
     }
 }
 
+// Actualizar layout de alertas prioritarias (Dashboard)
+function updatePriorityAlertsLayout() {
+    const layout = document.querySelector('.priority-alerts-layout');
+    if (!layout) return;
+
+    // Obtener las secciones de alerta (Desembolsos y Pólizas)
+    const sections = layout.querySelectorAll('.desembolsos-section');
+
+    sections.forEach(section => {
+        if (section.classList.contains('hidden')) return;
+
+        // Contamos cuántas cards hay dentro
+        const list = section.querySelector('.desembolsos-list');
+        const cards = list ? list.querySelectorAll('.desembolso-card') : [];
+        const count = cards.length;
+
+        // Limpiar clases previas
+        section.classList.remove('width-50', 'width-100');
+
+        // Aplicar ancho según cantidad de elementos de SU categoría
+        if (count === 1) {
+            section.classList.add('width-50');
+        } else if (count >= 2) {
+            section.classList.add('width-100');
+        }
+    });
+}
+
+// Cargar pólizas por vencer para el dashboard
+async function loadPolizasVencimientoDashboard() {
+    const section = document.getElementById('polizas-vencimiento-section');
+    const container = document.getElementById('polizas-vencimiento-list');
+    const countBadge = document.getElementById('polizas-vencimiento-count');
+
+    if (!container || !section) return;
+
+    try {
+        const supabase = window.getSupabaseClient();
+
+        // Obtener la fecha de hoy, y el rango de +-3 días solicitado por el usuario
+        const today = new Date();
+        
+        const startDate = new Date();
+        startDate.setDate(today.getDate() - 3);
+        
+        const endDate = new Date();
+        endDate.setDate(today.getDate() + 3);
+
+        const startStr = startDate.toISOString().split('T')[0];
+        const endStr = endDate.toISOString().split('T')[0];
+
+        // NOTA: Columnas según schemas.txt (ic_polizas)
+        const { data: polizas, error } = await supabase
+            .from('ic_polizas')
+            .select(`
+                id_poliza,
+                valor,
+                valor_final,
+                interes,
+                fecha_vencimiento,
+                estado,
+                id_socio
+            `)
+            .eq('estado', 'ACTIVO')
+            .gte('fecha_vencimiento', startStr)
+            .lte('fecha_vencimiento', endStr)
+            .order('fecha_vencimiento', { ascending: true });
+
+        if (error) {
+            console.error('Error cargando pólizas por vencer:', error);
+            updatePriorityAlertsLayout();
+            return;
+        }
+
+        if (!polizas || polizas.length === 0) {
+            section.classList.add('hidden');
+            updatePriorityAlertsLayout();
+            return;
+        }
+
+        // Cargar datos de socios relacionados
+        const socioIds = [...new Set(polizas.map(p => p.id_socio))];
+        const { data: socios } = await supabase
+            .from('ic_socios')
+            .select('idsocio, nombre, cedula')
+            .in('idsocio', socioIds);
+
+        // Mapear socios
+        polizas.forEach(poliza => {
+            poliza.socio = socios?.find(s => s.idsocio === poliza.id_socio) || {};
+        });
+
+        section.classList.remove('hidden');
+        if (countBadge) countBadge.textContent = polizas.length;
+
+        // Renderizar
+        container.innerHTML = polizas.map(poliza => {
+            const socio = poliza.socio || {};
+            const montoFormatted = parseFloat(poliza.valor).toLocaleString('es-EC', { minimumFractionDigits: 2 });
+            const interesCalculado = parseFloat(poliza.valor_final || 0) - parseFloat(poliza.valor || 0);
+            const interesFormatted = (interesCalculado > 0 ? interesCalculado : 0).toLocaleString('es-EC', { minimumFractionDigits: 2 });
+
+            // Calcular días restantes (normalizado a medianoche para evitar problemas de horas)
+            const hoyMedianoche = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const vencParts = poliza.fecha_vencimiento.split('-');
+            const fechaVenc = new Date(parseInt(vencParts[0]), parseInt(vencParts[1]) - 1, parseInt(vencParts[2]));
+            const diffTime = fechaVenc - hoyMedianoche;
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+            let colorStyle = 'color: #ef4444; background: rgba(239, 68, 68, 0.1); font-weight: bold;'; // Danger por defecto
+            let labelVence = 'Vence en';
+            let textoDias = '';
+
+            if (diffDays === 0) {
+                textoDias = 'HOY';
+            } else if (diffDays > 0) {
+                textoDias = `${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
+            } else {
+                labelVence = 'Vencida hace';
+                textoDias = `${Math.abs(diffDays)} ${Math.abs(diffDays) === 1 ? 'día' : 'días'}`;
+                colorStyle = 'color: white; background: #ef4444; font-weight: bold;'; // Fondo sólido para vencidas
+            }
+
+            const codigoCorto = poliza.id_poliza.substring(0, 8).toUpperCase();
+
+            return `
+                <div class="desembolso-card" onclick="loadView('polizas')" style="cursor: pointer;">
+                    <div class="desembolso-header">
+                        <div class="desembolso-socio">
+                            <div class="desembolso-nombre">${socio.nombre || 'Desconocido'}</div>
+                            <div class="desembolso-cedula">${socio.cedula || ''} | POL-${codigoCorto}</div>
+                        </div>
+                        <div class="desembolso-monto">
+                            <div class="desembolso-monto-valor">$${montoFormatted}</div>
+                            <div class="desembolso-monto-label">Inversión</div>
+                        </div>
+                    </div>
+                    <div class="desembolso-info">
+                        <div class="desembolso-info-item">
+                            <span class="desembolso-info-label">${labelVence}</span>
+                            <span class="desembolso-info-value" style="padding: 2px 8px; border-radius: 6px; ${colorStyle}">
+                                ${textoDias} (${poliza.fecha_vencimiento})
+                            </span>
+                        </div>
+                        <div class="desembolso-info-item">
+                            <span class="desembolso-info-label">Ganancia Est.</span>
+                            <span class="desembolso-info-value">$${interesFormatted}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        updatePriorityAlertsLayout();
+
+    } catch (error) {
+        console.error('Error en loadPolizasVencimientoDashboard:', error);
+    }
+}
+
 // Cargar desembolsos pendientes para el dashboard
 async function loadDesembolsosPendientes() {
     const section = document.getElementById('desembolsos-pendientes-section');
@@ -1190,6 +1370,7 @@ async function loadDesembolsosPendientes() {
         // Mostrar u ocultar sección según haya datos
         if (!creditosPendientes || creditosPendientes.length === 0) {
             section.classList.add('hidden');
+            updatePriorityAlertsLayout();
             return;
         }
 
@@ -1256,6 +1437,8 @@ async function loadDesembolsosPendientes() {
                 </div>
             `;
         }).join('');
+
+        updatePriorityAlertsLayout();
 
         console.log('✅ Desembolsos pendientes:', creditosPendientes.length);
 
@@ -1535,10 +1718,10 @@ function formatDate(dateString, options = {}) {
  * Formatea una fecha a formato corto DD/MM/YY
  */
 function formatDateShort(dateString) {
-    return formatDate(dateString, { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: '2-digit' 
+    return formatDate(dateString, {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit'
     });
 }
 
