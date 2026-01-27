@@ -128,15 +128,16 @@ async function compressImage(file, options = {}) {
 // ==========================================
 
 /**
- * Sube un comprobante de pago a Supabase Storage
+ * Sube una imagen a Supabase Storage
  * Comprime la imagen automáticamente antes de subir
  * 
  * @param {File} file - Archivo a subir
- * @param {string} creditoId - ID del crédito
- * @param {number|string} cuotaNumero - Número de cuota (opcional)
+ * @param {string} folder - Carpeta de destino (ej: 'pagos', 'administrativos')
+ * @param {string} id - ID relacionado (ej: creditoId, gastoId)
+ * @param {string} bucketName - Nombre del bucket (opcional, usa STORAGE_BUCKET por defecto)
  * @returns {Promise<{success: boolean, url?: string, error?: string}>}
  */
-async function uploadReceiptToStorage(file, creditoId, cuotaNumero = '') {
+async function uploadImageToStorage(file, folder, id, bucketName = STORAGE_BUCKET) {
     try {
         const supabase = window.getSupabaseClient();
 
@@ -150,14 +151,13 @@ async function uploadReceiptToStorage(file, creditoId, cuotaNumero = '') {
         // Generar nombre único de archivo
         const timestamp = Date.now();
         const extension = file.type === 'image/png' ? 'png' : 'jpg';
-        const cuotaSuffix = cuotaNumero ? `_cuota${cuotaNumero}` : '';
-        const fileName = `pagos/${creditoId}/${timestamp}${cuotaSuffix}.${extension}`;
+        const fileName = `${folder}/${id}/${timestamp}.${extension}`;
 
-        console.log(`uploadReceiptToStorage: Subiendo ${fileName} (${compressedSize} bytes, comprimido: ${wasCompressed})`);
+        console.log(`uploadImageToStorage: Subiendo ${fileName} (${compressedSize} bytes, comprimido: ${wasCompressed})`);
 
         // Subir a Storage
         const { data, error } = await supabase.storage
-            .from(STORAGE_BUCKET)
+            .from(bucketName)
             .upload(fileName, blob, {
                 cacheControl: '3600',
                 upsert: false,
@@ -171,7 +171,7 @@ async function uploadReceiptToStorage(file, creditoId, cuotaNumero = '') {
 
         // Obtener URL pública
         const { data: urlData } = supabase.storage
-            .from(STORAGE_BUCKET)
+            .from(bucketName)
             .getPublicUrl(fileName);
 
         const publicUrl = urlData?.publicUrl;
@@ -180,7 +180,7 @@ async function uploadReceiptToStorage(file, creditoId, cuotaNumero = '') {
             throw new Error('No se pudo obtener URL pública');
         }
 
-        console.log(`uploadReceiptToStorage: Subido exitosamente -> ${publicUrl}`);
+        console.log(`uploadImageToStorage: Subido exitosamente -> ${publicUrl}`);
 
         return {
             success: true,
@@ -191,12 +191,19 @@ async function uploadReceiptToStorage(file, creditoId, cuotaNumero = '') {
         };
 
     } catch (error) {
-        console.error('uploadReceiptToStorage: Error:', error);
+        console.error('uploadImageToStorage: Error:', error);
         return {
             success: false,
-            error: error.message || 'Error al subir comprobante'
+            error: error.message || 'Error al subir imagen'
         };
     }
+}
+
+/**
+ * Mantiene compatibilidad con la función anterior
+ */
+async function uploadReceiptToStorage(file, creditoId, cuotaNumero = '') {
+    return uploadImageToStorage(file, 'pagos', `${creditoId}${cuotaNumero ? '_cuota' + cuotaNumero : ''}`);
 }
 
 /**
@@ -225,5 +232,6 @@ function showImagePreview(file, imgElement) {
 
 // Exportar funciones para uso global
 window.compressImage = compressImage;
+window.uploadImageToStorage = uploadImageToStorage;
 window.uploadReceiptToStorage = uploadReceiptToStorage;
 window.showImagePreview = showImagePreview;

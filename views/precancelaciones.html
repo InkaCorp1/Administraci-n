@@ -44,15 +44,15 @@
             title="Todos los países">
             <span class="globe-emoji">🌎</span>
         </button>
-        <button class="toolbar-btn pais-filter-btn" data-pais="ECUADOR" onclick="filterPrecancelacionesByPais('ECUADOR')"
-            title="Ecuador">
+        <button class="toolbar-btn pais-filter-btn" data-pais="ECUADOR"
+            onclick="filterPrecancelacionesByPais('ECUADOR')" title="Ecuador">
             <img src="https://flagcdn.com/w40/ec.png" alt="EC" class="toolbar-flag">
         </button>
         <button class="toolbar-btn pais-filter-btn" data-pais="USA" onclick="filterPrecancelacionesByPais('USA')"
             title="Estados Unidos">
             <img src="https://flagcdn.com/w40/us.png" alt="US" class="toolbar-flag">
         </button>
-        <button class="toolbar-btn pais-filter-btn" data-pais="PERU" onclick="filterPrecancelacionesByPais('PERU')" 
+        <button class="toolbar-btn pais-filter-btn" data-pais="PERU" onclick="filterPrecancelacionesByPais('PERU')"
             title="Perú">
             <img src="https://flagcdn.com/w40/pe.png" alt="PE" class="toolbar-flag">
         </button>
@@ -151,7 +151,7 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label required">Fecha de Precancelación</label>
+                <label class="form-label required" for="fecha-precancelacion">Fecha de Precancelación</label>
                 <input type="date" id="fecha-precancelacion" class="form-input" required>
                 <small class="form-hint">Seleccione la fecha en que se realizará la precancelación</small>
             </div>
@@ -250,13 +250,13 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label">Referencia / Comprobante</label>
+                <label class="form-label" for="confirm-referencia">Referencia / Comprobante</label>
                 <input type="text" id="confirm-referencia" class="form-input"
                     placeholder="Número de transacción o comprobante...">
             </div>
 
             <div class="form-group">
-                <label class="form-label">Observaciones</label>
+                <label class="form-label" for="confirm-observaciones">Observaciones</label>
                 <textarea id="confirm-observaciones" class="form-input" rows="3"
                     placeholder="Observaciones adicionales..."></textarea>
             </div>
@@ -478,8 +478,13 @@
     }
 
     @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     .toolbar-separator {

@@ -1,0 +1,374 @@
+/* Estilos para Gastos Administrativos - INKA CORP */
+
+.administrativos-hero {
+    position: relative;
+    padding: 3rem 2rem;
+    border-radius: 1.5rem;
+    margin-bottom: 2rem;
+    overflow: hidden;
+    background: linear-gradient(135deg, #0f172a 0%, #073d27 100%);
+    /* Deep dark blue to Inka Green */
+    color: white;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hero-bg-administrativos {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('https://www.transparenttextures.com/patterns/cubes.png');
+    opacity: 0.1;
+    pointer-events: none;
+}
+
+.hero-content-administrativos {
+    position: relative;
+    z-index: 1;
+}
+
+.hero-icon-administrativos {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    backdrop-filter: blur(4px);
+}
+
+.hero-title-administrativos {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.hero-subtitle-administrativos {
+    font-size: 1rem;
+    opacity: 0.9;
+    margin: 0.5rem 0 0 0;
+}
+
+.administrativos-hero-stats {
+    display: flex;
+    gap: 2rem;
+    position: relative;
+    z-index: 1;
+}
+
+.adm-hero-stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.adm-hero-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.adm-hero-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.7;
+}
+
+.administrativos-toolbar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Estilos de tabla premium para gastos */
+.adm-table-container {
+    background: white;
+    border-radius: 1rem;
+    padding: 1rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    overflow-x: auto;
+}
+
+.adm-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px;
+}
+
+.adm-table th {
+    text-align: left;
+    padding: 1.4rem 1rem;
+    color: #334155;
+    /* slate-700 */
+    font-weight: 800;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-bottom: 2px solid #e2e8f0;
+    background-color: #f1f5f9;
+}
+
+.adm-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--gray-50);
+    vertical-align: middle;
+}
+
+.adm-table tr:hover {
+    background-color: var(--gray-50);
+}
+
+.expense-row {
+    transition: background-color 0.2s;
+}
+
+.expense-id {
+    display: block;
+    font-family: 'Inter', monospace;
+    font-size: 0.7rem;
+    color: #94a3b8;
+    /* slate-400 */
+    margin-top: 0.2rem;
+}
+
+.expense-amount {
+    font-weight: 800;
+    color: #0f172a;
+    /* slate-900 */
+    font-size: 1.1rem;
+}
+
+.expense-reason {
+    font-weight: 600;
+    color: #334155;
+    /* slate-700 */
+    max-width: 400px;
+    line-height: 1.4;
+}
+
+.expense-date {
+    font-weight: 500;
+    color: #475569;
+    /* slate-600 */
+}
+
+.btn-view-photo {
+    background: #e2e8f0;
+    color: #1e293b;
+    border: 1px solid #cbd5e1;
+    padding: 0.5rem 1rem;
+    border-radius: 0.6rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-view-photo:hover {
+    background: #cbd5e1;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-view-photo i {
+    font-size: 1rem;
+    color: #64748b;
+}
+
+/* Modal especificidades */
+.upload-area-premium {
+    width: 100%;
+    margin-top: 1rem;
+    border: 2px dashed #0b4e32;
+    border-radius: 1.5rem;
+    min-height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    padding: 1.5rem;
+}
+
+.upload-area-premium:hover {
+    background: #f1f5f9;
+    border-color: #146e3a;
+}
+
+.img-preview-container img {
+    max-width: 100%;
+    max-height: 300px;
+    display: block;
+}
+
+.btn-delete-expense {
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fee2e2;
+    padding: 0.6rem;
+    border-radius: 0.6rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-delete-expense:hover {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fecaca;
+    transform: scale(1.1);
+}
+
+/* Fix para botón de carga de imagen que solapa texto e icono */
+#modal-gasto-adm .btn-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #0b4e32;
+    width: auto;
+    height: auto;
+    padding: 0;
+    box-shadow: none;
+}
+
+#modal-gasto-adm .btn-icon i {
+    width: 44px;
+    height: 44px;
+    background: rgba(11, 78, 50, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all 0.2s ease;
+}
+
+#modal-gasto-adm .btn-camera i {
+    background: rgba(242, 187, 58, 0.15);
+    color: #d3900d;
+}
+
+#modal-gasto-adm .btn-camera:hover i {
+    background: #f2bb3a;
+    color: white;
+}
+
+#modal-gasto-adm .btn-gallery i {
+    background: rgba(20, 110, 58, 0.15);
+    color: #0b4e32;
+}
+
+#modal-gasto-adm .btn-gallery:hover i {
+    background: #0b4e32;
+    color: white;
+}
+
+.upload-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 3.5rem;
+    /* A bit more space for icons */
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
+/* Estilos para Inputs en Modal Administrativos */
+#modal-gasto-adm .input-premium {
+    background: #ffffff !important;
+    border: 1.5px solid #e2e8f0 !important;
+    color: #1e293b !important;
+    transition: all 0.2s ease;
+}
+
+#modal-gasto-adm .input-premium:focus {
+    border-color: #0b4e32 !important;
+    box-shadow: 0 0 0 4px rgba(11, 78, 50, 0.1) !important;
+}
+
+#modal-gasto-adm label {
+    color: #475569 !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    margin-bottom: 0.4rem !important;
+}
+
+.comprobante-viewer {
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.date-filters {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    background: #f8fafc;
+    padding: 0.5rem 1rem;
+    border-radius: 0.8rem;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-group label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+}
+
+.input-premium.sm {
+    padding: 0.4rem 0.6rem !important;
+    font-size: 0.8rem !important;
+    min-width: 130px;
+}
+
+#btn-adm-ver-todo.hidden {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .administrativos-hero-stats {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .hero-title-administrativos {
+        font-size: 1.5rem;
+    }
+
+    .date-filters {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

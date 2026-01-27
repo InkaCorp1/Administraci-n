@@ -221,7 +221,7 @@ async function refreshCacheInBackground() {
                 .from('ic_socios')
                 .select(`
                     *,
-                    creditos:ic_creditos!id_socio (
+                    creditos:ic_creditos (
                         id_credito,
                         estado_credito,
                         capital
@@ -232,7 +232,7 @@ async function refreshCacheInBackground() {
                 .from('ic_creditos')
                 .select(`
                     *,
-                    socio:ic_socios!id_socio (
+                    socio:ic_socios (
                         idsocio,
                         nombre,
                         cedula,
@@ -249,11 +249,11 @@ async function refreshCacheInBackground() {
                 .from('ic_creditos_precancelacion')
                 .select(`
                     *,
-                    credito:ic_creditos!id_credito (
+                    credito:ic_creditos (
                         id_credito,
                         codigo_credito,
                         capital,
-                        socio:ic_socios!id_socio (
+                        socio:ic_socios (
                             idsocio,
                             nombre,
                             cedula
@@ -265,7 +265,7 @@ async function refreshCacheInBackground() {
                 .from('ic_polizas')
                 .select(`
                     *,
-                    socio:ic_socios!id_socio (
+                    socio:ic_socios (
                         idsocio,
                         nombre,
                         cedula,
@@ -389,7 +389,7 @@ async function initApp() {
 
     // Cargar vista inicial - verificar si hay hash en la URL
     const hash = window.location.hash.replace('#', '');
-    const validViews = ['dashboard', 'socios', 'solicitud_credito', 'creditos', 'precancelaciones', 'ahorros', 'polizas', 'simulador', 'aportes', 'bancos'];
+    const validViews = ['dashboard', 'socios', 'solicitud_credito', 'creditos', 'precancelaciones', 'ahorros', 'polizas', 'simulador', 'aportes', 'bancos', 'administrativos'];
     const initialView = (hash && validViews.includes(hash)) ? hash : 'dashboard';
 
     await loadView(initialView);
@@ -876,6 +876,11 @@ async function loadView(viewName) {
                     await initBancosModule();
                 }
                 break;
+            case 'administrativos':
+                if (typeof initAdministrativosModule === 'function') {
+                    await initAdministrativosModule();
+                }
+                break;
         }
 
         currentViewName = viewName;
@@ -1065,11 +1070,11 @@ async function fetchMorososFromDB(container, countBadge, isBackgroundUpdate) {
                 fecha_vencimiento,
                 cuota_total,
                 estado_cuota,
-                credito:ic_creditos!id_credito (
+                credito:ic_creditos (
                     id_credito,
                     capital,
                     estado_credito,
-                    socio:ic_socios!id_socio (
+                    socio:ic_socios (
                         idsocio,
                         nombre,
                         cedula,
@@ -1214,10 +1219,10 @@ async function loadPolizasVencimientoDashboard() {
 
         // Obtener la fecha de hoy, y el rango de +-3 días solicitado por el usuario
         const today = new Date();
-        
+
         const startDate = new Date();
         startDate.setDate(today.getDate() - 3);
-        
+
         const endDate = new Date();
         endDate.setDate(today.getDate() + 3);
 

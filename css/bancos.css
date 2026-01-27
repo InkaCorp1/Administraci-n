@@ -449,12 +449,26 @@
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
 }
 
 .bank-logo-container img {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
+    transition: transform 0.3s ease;
+}
+
+.bank-logo-container img.logo-zoom-max {
+    transform: scale(2.0);
+}
+
+.bank-logo-container img.logo-zoom-high {
+    transform: scale(1.5);
+}
+
+.bank-logo-container img.logo-zoom-low {
+    transform: scale(1.3);
 }
 
 .bank-title-group {
@@ -540,7 +554,7 @@
     grid-column: span 2;
 }
 
-.detail-item label {
+.detail-item label, .detail-item .detail-label-static {
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--gray-500);
@@ -587,7 +601,7 @@
     flex-direction: column;
 }
 
-.value-item label {
+.value-item label, .value-item .value-label-static {
     font-size: 0.75rem;
     color: var(--gray-500);
 }
@@ -814,13 +828,9 @@
         padding: 2rem 1.5rem;
     }
 
-
-
     .hero-title-bancos {
         font-size: 1.8rem;
     }
-
-
 
     .bancos-hero-stats {
         width: 100%;
@@ -828,12 +838,94 @@
         padding-bottom: 0.5rem;
     }
 
-
-
     .bancos-hero-stat {
         flex: 1;
         min-width: 140px;
     }
+}
 
+/* Estilos Precancelación */
+.info-prepay-summary {
+    background: var(--black-soft);
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #f59e0b;
+}
 
+.info-prepay-summary p {
+    margin: 0;
+    font-weight: 600;
+    color: var(--gray-400);
+}
+
+.info-prepay-summary span {
+    font-size: 1.25rem;
+    color: var(--white);
+    font-weight: 800;
+    display: block;
+}
+
+.saving-box {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    animation: slideUpBancos 0.3s ease-out;
+}
+
+.saving-icon {
+    width: 45px;
+    height: 45px;
+    background: #22c55e;
+    color: white;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.saving-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.saving-content label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #22c55e;
+    font-weight: 700;
+    margin: 0;
+}
+
+.saving-content span {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #22c55e;
+}
+
+@keyframes slideUpBancos {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.btn-warning {
+    background: #f59e0b;
+    color: white;
+}
+
+.btn-warning:hover {
+    background: #d97706;
 }

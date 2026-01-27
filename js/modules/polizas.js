@@ -56,7 +56,7 @@ function handlePolizasStickyScroll() {
     if (activeSection) {
         const header = activeSection.querySelector('.section-sticky-header');
         if (!header) return;
-        
+
         const headerRect = header.getBoundingClientRect();
 
         // Si el header original está fuera del viewport (arriba)
@@ -198,7 +198,7 @@ async function loadPolizas(forceRefresh = false) {
             .from('ic_polizas')
             .select(`
                 *,
-                socio:ic_socios!id_socio (
+                socio:ic_socios (
                     idsocio,
                     nombre,
                     cedula,
@@ -272,13 +272,13 @@ function renderPolizasStats() {
 
     const hoy = new Date();
     const hoyMedianoche = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-    
+
     const tresDiasAntes = new Date(hoyMedianoche);
     tresDiasAntes.setDate(hoyMedianoche.getDate() - 3);
-    
+
     const tresDiasDespues = new Date(hoyMedianoche);
     tresDiasDespues.setDate(hoyMedianoche.getDate() + 3);
-    
+
     const polizasPorVencer = statsActivos.filter(p => {
         const venc = parseDate(p.fecha_vencimiento);
         return venc >= tresDiasAntes && venc <= tresDiasDespues;
@@ -286,14 +286,14 @@ function renderPolizasStats() {
 
     const porVencer = polizasPorVencer.length;
     let mostImminentMsg = '';
-    
+
     if (porVencer > 0) {
         let minDays = 999;
         polizasPorVencer.forEach(p => {
             const days = getDaysRemaining(p.fecha_vencimiento);
             if (Math.abs(days) < Math.abs(minDays)) minDays = days;
         });
-        
+
         if (minDays === 0) mostImminentMsg = 'Vence hoy';
         else if (minDays === 1) mostImminentMsg = 'Vence mañana';
         else if (minDays === -1) mostImminentMsg = 'Venció ayer';
@@ -307,7 +307,7 @@ function renderPolizasStats() {
     if (document.getElementById('stat-polizas-vencimiento-msg')) {
         document.getElementById('stat-polizas-vencimiento-msg').textContent = mostImminentMsg;
     }
-    
+
     if (document.getElementById('stat-polizas-total')) document.getElementById('stat-polizas-total').textContent = formatMoney(totalInvertido);
     if (document.getElementById('stat-polizas-interes')) document.getElementById('stat-polizas-interes').textContent = formatMoney(interesProyectado);
 
@@ -321,7 +321,7 @@ function renderPolizasStats() {
 function renderPolizas() {
     filterAndSortPolizas();
     renderPolizasStats();
-    
+
     // Ocultar header fijo anterior antes de re-renderizar
     hidePolizasFixedHeader();
 
@@ -341,16 +341,16 @@ function renderPolizas() {
     const grouped = {};
     const hoy = new Date();
     const hoyMedianoche = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-    
+
     const tresDiasAntes = new Date(hoyMedianoche);
     tresDiasAntes.setDate(hoyMedianoche.getDate() - 3);
-    
+
     const tresDiasDespues = new Date(hoyMedianoche);
     tresDiasDespues.setDate(hoyMedianoche.getDate() + 3);
 
     filteredPolizas.forEach(p => {
         let est = p.estado || 'ACTIVO';
-        
+
         // Si es ACTIVA y venció hace poco o vence pronto (+-3 días), moverla a un grupo especial
         if (est === 'ACTIVO') {
             const venc = parseDate(p.fecha_vencimiento);
@@ -373,7 +373,7 @@ function renderPolizas() {
     };
 
     let html = '';
-    
+
     // Si hay filtro activo
     if (currentEstadoFilterPolizas) {
         if (currentEstadoFilterPolizas === 'ACTIVO') {
@@ -430,23 +430,23 @@ function renderPolizaSection(estado, polizas, config) {
                     </thead>
                     <tbody>
                         ${polizas.map(p => {
-                            const daysRemaining = getDaysRemaining(p.fecha_vencimiento);
-                            
-                            // Unificar con el rango solicitado de +-3 días para alertas críticas
-                            const isCriticalRange = daysRemaining >= -3 && daysRemaining <= 3;
-                            const isUpcoming = daysRemaining > 3 && daysRemaining <= 30;
-                            
-                            let vencimientoSignal = '';
-                            if (p.estado === 'ACTIVO') {
-                                if (daysRemaining === 0) vencimientoSignal = '<span class="vencimiento-tag critical">Vence hoy</span>';
-                                else if (daysRemaining === 1) vencimientoSignal = '<span class="vencimiento-tag warning">Vence mañana</span>';
-                                else if (daysRemaining === -1) vencimientoSignal = '<span class="vencimiento-tag critical" style="background: var(--error); color: white;">Venció ayer</span>';
-                                else if (daysRemaining > 1 && daysRemaining <= 3) vencimientoSignal = `<span class="vencimiento-tag warning">En ${daysRemaining} días</span>`;
-                                else if (daysRemaining < -1 && daysRemaining >= -3) vencimientoSignal = `<span class="vencimiento-tag critical" style="background: var(--error); color: white;">Hace ${Math.abs(daysRemaining)} días</span>`;
-                                else if (isUpcoming) vencimientoSignal = `<span class="vencimiento-tag info">${daysRemaining} días</span>`;
-                            }
+        const daysRemaining = getDaysRemaining(p.fecha_vencimiento);
 
-                            return `
+        // Unificar con el rango solicitado de +-3 días para alertas críticas
+        const isCriticalRange = daysRemaining >= -3 && daysRemaining <= 3;
+        const isUpcoming = daysRemaining > 3 && daysRemaining <= 30;
+
+        let vencimientoSignal = '';
+        if (p.estado === 'ACTIVO') {
+            if (daysRemaining === 0) vencimientoSignal = '<span class="vencimiento-tag critical">Vence hoy</span>';
+            else if (daysRemaining === 1) vencimientoSignal = '<span class="vencimiento-tag warning">Vence mañana</span>';
+            else if (daysRemaining === -1) vencimientoSignal = '<span class="vencimiento-tag critical" style="background: var(--error); color: white;">Venció ayer</span>';
+            else if (daysRemaining > 1 && daysRemaining <= 3) vencimientoSignal = `<span class="vencimiento-tag warning">En ${daysRemaining} días</span>`;
+            else if (daysRemaining < -1 && daysRemaining >= -3) vencimientoSignal = `<span class="vencimiento-tag critical" style="background: var(--error); color: white;">Hace ${Math.abs(daysRemaining)} días</span>`;
+            else if (isUpcoming) vencimientoSignal = `<span class="vencimiento-tag info">${daysRemaining} días</span>`;
+        }
+
+        return `
                                 <tr class="credito-row" onclick="viewPoliza('${p.id_poliza}')">
                                     <td class="col-socio">
                                         <div class="socio-info">
@@ -475,7 +475,7 @@ function renderPolizaSection(estado, polizas, config) {
                                     </td>
                                 </tr>
                             `;
-                        }).join('')}
+    }).join('')}
                     </tbody>
                 </table>
             </div>
@@ -502,7 +502,7 @@ function filterPolizasByEstado(estado) {
 
 function setupPolizasEventListeners() {
     console.log('⚙️ Configurando listeners de pólizas...');
-    
+
     // Búsqueda
     const searchInput = document.getElementById('search-polizas');
     if (searchInput) {
@@ -525,7 +525,7 @@ function setupPolizasEventListeners() {
     document.querySelectorAll('.polizas-wrapper .estado-counter').forEach(counter => {
         counter.addEventListener('click', () => {
             const estado = counter.dataset.estado;
-            
+
             // Toggle filter
             if (currentEstadoFilterPolizas === estado) {
                 currentEstadoFilterPolizas = '';
@@ -560,9 +560,9 @@ function setupPolizasEventListeners() {
             btnSync.classList.add('loading');
             const icon = btnSync.querySelector('i');
             if (icon) icon.className = 'fas fa-spinner fa-spin';
-            
+
             await loadPolizas(true);
-            
+
             btnSync.classList.remove('loading');
             if (icon) icon.className = 'fas fa-sync-alt';
             showToast('Pólizas actualizadas', 'success');
@@ -571,7 +571,7 @@ function setupPolizasEventListeners() {
 
     // Botón Nuevo
     document.getElementById('btn-nueva-poliza')?.addEventListener('click', () => openPolizaModal());
-    
+
     // Formulario
     document.getElementById('form-poliza')?.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -635,7 +635,7 @@ function openPolizaModal(poliza = null) {
     document.getElementById('display-valor-final').textContent = '$0.00';
     document.getElementById('socio-initials').textContent = '??';
     if (actionsContainer) actionsContainer.classList.add('hidden');
-    
+
     // Reset preview de certificado
     const previewContainer = document.getElementById('poliza-certificado-preview-container');
     const previewImg = document.getElementById('poliza-certificado-preview');
@@ -662,26 +662,26 @@ function openPolizaModal(poliza = null) {
         document.getElementById('display-valor-inversion').textContent = formatMoney(poliza.valor);
         document.getElementById('display-interes').textContent = `${poliza.interes}%`;
         document.getElementById('display-certificado-url').textContent = poliza.certificado_firmado || 'Sin documento';
-        
+
         // Estado y Proyecciones
         const estadoDisplay = document.getElementById('display-estado');
         if (estadoDisplay) estadoDisplay.innerHTML = getEstadoBadgePoliza(poliza.estado);
         document.getElementById('display-vencimiento').textContent = formatDate(poliza.fecha_vencimiento);
         document.getElementById('display-valor-final').textContent = formatMoney(poliza.valor_final);
-        
+
         // Cálculo de valor devengado a HOY
         const devengadoContainer = document.getElementById('poliza-devengado-container');
         if (devengadoContainer && poliza.estado === 'ACTIVO') {
             const fechaInicio = parseDate(poliza.fecha);
             const hoy = new Date();
             const diasPasados = Math.max(0, Math.floor((hoy - fechaInicio) / (1000 * 60 * 60 * 24)));
-            
+
             // Interés total proyectado (para 365 días base)
             const interesTotal = (parseFloat(poliza.valor_final) - parseFloat(poliza.valor));
             const interesPorDia = interesTotal / (parseInt(poliza.plazo) * 30.44); // Aproximado a días del plazo
             // Ajustamos a 365 días como pidió el usuario: (Capital * % * Plazo_Años)
             const interesDiarioReal = (parseFloat(poliza.valor) * (parseFloat(poliza.interes) / 100)) / 365;
-            
+
             const interesAcumulado = interesDiarioReal * diasPasados;
             const valorHoy = parseFloat(poliza.valor) + interesAcumulado;
 
@@ -718,7 +718,7 @@ function openPolizaModal(poliza = null) {
         if (modalTitle) modalTitle.textContent = 'Apertura de Póliza';
         if (btnGuardar) btnGuardar.classList.remove('hidden');
         if (actionsContainer) actionsContainer.classList.add('hidden');
-        
+
         editElements.forEach(el => el.classList.remove('hidden'));
         infoElements.forEach(el => el.classList.add('hidden'));
 
@@ -799,7 +799,7 @@ async function handlePagarPoliza(poliza) {
             if (errPago) throw errPago;
 
             await Swal.fire('Pagado', 'La póliza ha sido liquidada correctamente.', 'success');
-            
+
             // Cerrar modal
             const modal = document.getElementById('poliza-modal');
             if (modal) {
@@ -807,10 +807,10 @@ async function handlePagarPoliza(poliza) {
                 modal.style.display = 'none';
             }
             document.body.style.overflow = '';
-            
+
             // Enviar notificación de agradecimiento
             await sendPayoutNotification(poliza, totalAPagar, interesGanado);
-            
+
             await loadPolizas(true);
 
         } catch (error) {
@@ -831,13 +831,13 @@ async function handleRenovarPoliza(poliza) {
     const fechaInicio = parseDate(poliza.fecha);
     const hoy = new Date();
     const hoyISO = todayISODate();
-    
+
     // Cálculo de interés justicia (pro-rateado por días transcurridos)
     const diasPasados = Math.max(0, Math.floor((hoy - fechaInicio) / (1000 * 60 * 60 * 24)));
     const interesDiario = (capitalOriginal * (parseFloat(poliza.interes) / 100)) / 365;
     const interesGanadoHoy = interesDiario * diasPasados;
     const valorActualTotal = capitalOriginal + interesGanadoHoy;
-    
+
     // 1. Selección de Modo de Renovación
     const { value: modo, isDismissed } = await Swal.fire({
         title: 'Modo de Renovación',
@@ -880,7 +880,7 @@ async function handleRenovarPoliza(poliza) {
     // modo === false (Deny) -> Solo Capital
     const esCapitalMasInteres = (modo === true);
     const nuevoCapitalBase = parseFloat((esCapitalMasInteres ? valorActualTotal : capitalOriginal).toFixed(2));
-    
+
     // 2. Calcular Nueva Proyección para la nueva póliza (Regla del 17)
     const nuevaFechaVenc = calculateFixed17Maturity(hoyISO, poliza.plazo);
     let nuevoInteres = parseFloat(poliza.interes);
@@ -949,7 +949,7 @@ async function handleRenovarPoliza(poliza) {
             const msgFirma = document.getElementById('msg-recordatorio-firma');
             const inputInteres = document.getElementById('nuevo-interes-renovacion');
             const displayValorFinal = document.getElementById('display-nuevo-valor-final');
-            
+
             btnConfirm.disabled = true;
             btnConfirm.style.opacity = '0.5';
 
@@ -971,9 +971,9 @@ async function handleRenovarPoliza(poliza) {
                     fecha_venc: nuevaFechaVenc,
                     valor_final: currentNuevoValorFinal
                 };
-                
+
                 await generatePolizaPDF(dataPDF);
-                
+
                 contratoGenerado = true;
                 btnConfirm.disabled = false;
                 btnConfirm.style.opacity = '1';
@@ -992,9 +992,9 @@ async function handleRenovarPoliza(poliza) {
 
         // 1. Marcar póliza actual
         const nuevoEstadoPadre = esCapitalMasInteres ? 'CAPITALIZADO' : 'PAGADO';
-        await supabase.from('ic_polizas').update({ 
-            estado: nuevoEstadoPadre, 
-            updated_at: new Date().toISOString() 
+        await supabase.from('ic_polizas').update({
+            estado: nuevoEstadoPadre,
+            updated_at: new Date().toISOString()
         }).eq('id_poliza', poliza.id_poliza);
 
         // 2. Si es Solo Capital, registrar pago del interés real acumulado
@@ -1020,13 +1020,13 @@ async function handleRenovarPoliza(poliza) {
             fecha_vencimiento: nuevaFechaVenc,
             valor_final: currentNuevoValorFinal.toFixed(2),
             estado: 'ACTIVO',
-            notas: `Renovación de póliza ${poliza.id_poliza.substring(0,8)} | Justiprecio por ${diasPasados} días.`
+            notas: `Renovación de póliza ${poliza.id_poliza.substring(0, 8)} | Justiprecio por ${diasPasados} días.`
         }]);
 
         if (errNew) throw errNew;
 
         Swal.fire('Renovación Exitosa', 'Se ha generado la nueva inversión ajustada a la fecha.', 'success');
-        
+
         const modal = document.getElementById('poliza-modal');
         if (modal) {
             modal.classList.add('hidden');
@@ -1061,12 +1061,12 @@ function calculatePolizaProjections() {
     if (valor > 0 && plazoMeses > 0 && fechaInicio) {
         // Calcular fecha vencimiento (Regla del día 17 y 360 días)
         const vencDate = calculateFixed17Maturity(fechaInicio, plazoMeses);
-        
+
         // Recalcular el plazo real en días para el interés exacto si fuera necesario, 
         // pero seguiremos usando el interés anual prorrateado por meses o el nuevo cálculo solicitado
         const interesTotal = (valor * (interesPct / 100) * (plazoMeses / 12));
         const valorFinal = parseFloat((valor + interesTotal).toFixed(2));
-        
+
         document.getElementById('poliza-vencimiento').value = vencDate;
         document.getElementById('display-vencimiento').textContent = formatDate(vencDate);
         document.getElementById('poliza-valor-final').value = valorFinal.toFixed(2);
@@ -1080,27 +1080,27 @@ function calculatePolizaProjections() {
  */
 function calculateFixed17Maturity(fechaInicioStr, plazoMeses) {
     if (!fechaInicioStr || !plazoMeses) return '';
-    
+
     let start = new Date(fechaInicioStr + 'T00:00:00');
     let target = new Date(start);
-    
+
     // 1. Sumar meses del plazo
     target.setMonth(target.getMonth() + parseInt(plazoMeses));
-    
+
     // 2. Forzar día 17
     target.setDate(17);
-    
+
     // 3. Validar regla de los 360 días (solo si el plazo es de 12 meses o más)
     if (plazoMeses >= 12) {
         let diffTime = target - start;
         let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
+
         if (diffDays < 360) {
             target.setMonth(target.getMonth() + 1);
             target.setDate(17);
         }
     }
-    
+
     return toISODate(target);
 }
 
@@ -1239,12 +1239,12 @@ async function handleWhatsAppNotification(poliza) {
     const hoy = new Date();
     const diasPasados = Math.max(0, Math.floor((hoy - fechaInicio) / (1000 * 60 * 60 * 24)));
     const diasFaltantes = getDaysRemaining(poliza.fecha_vencimiento);
-    
+
     // Cálculo interés real a hoy
     const interesDiario = (capital * (parseFloat(poliza.interes) / 100)) / 365;
     const interesGanadoHoy = interesDiario * diasPasados;
     const valorHoy = capital + interesGanadoHoy;
-    
+
     // Interés proyectado pactado
     const interesVencimiento = parseFloat(poliza.valor_final) - capital;
 
@@ -1324,7 +1324,7 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 function renderJustifiedText(doc, text, x, y, width, lineHeight = 5.8) {
     if (!text) return y;
-    
+
     doc.setFontSize(10);
     const paragraphs = text.split('\n');
     let currentY = y;
@@ -1343,16 +1343,16 @@ function renderJustifiedText(doc, text, x, y, width, lineHeight = 5.8) {
         for (let i = 0; i < words.length; i++) {
             const word = words[i];
             const cleanWord = word.replace(/\*\*/g, '');
-            
+
             // Determinar si esta palabra empieza como negrita
             // Si el estado global es bold, la palabra es bold.
             // Si no lo es, pero la palabra empieza con **, también se marca para medirla.
             const startsWithMarker = word.startsWith('**');
             const measureBold = isBoldGlobal || startsWithMarker;
-            
+
             if (measureBold) doc.setFont("helvetica", "bold");
             else doc.setFont("helvetica", "normal");
-            
+
             const wordWidth = doc.getTextWidth(cleanWord + ' ');
 
             if (currentLineWidth + wordWidth > width && currentLine.length > 0) {
@@ -1372,7 +1372,7 @@ function renderJustifiedText(doc, text, x, y, width, lineHeight = 5.8) {
             // Actualizar el estado global para la siguiente palabra
             const markers = (word.match(/\*\*/g) || []).length;
             if (markers % 2 !== 0) isBoldGlobal = !isBoldGlobal;
-            
+
             if (i === words.length - 1) {
                 drawParagraphLine(doc, currentLine, x, currentY, width, false);
                 currentY += lineHeight;
@@ -1399,7 +1399,7 @@ function drawParagraphLine(doc, segments, x, y, width, justify) {
                 if (idx < parts.length - 1) tempBold = !tempBold;
             });
         });
-        
+
         doc.setFont("helvetica", "normal");
         const spaceWidth = doc.getTextWidth(' ');
         extraSpace = (width - totalWordsWidth - (spaceWidth * (segments.length - 1))) / (segments.length - 1);
@@ -1408,14 +1408,14 @@ function drawParagraphLine(doc, segments, x, y, width, justify) {
     segments.forEach((seg, index) => {
         let wordBold = seg.startsBold;
         const parts = seg.text.split('**');
-        
+
         parts.forEach((part, idx) => {
             if (wordBold) doc.setFont("helvetica", "bold");
             else doc.setFont("helvetica", "normal");
-            
+
             doc.text(part, currentX, y);
             currentX += doc.getTextWidth(part);
-            
+
             if (idx < parts.length - 1) wordBold = !wordBold;
         });
 
@@ -1430,12 +1430,12 @@ function drawField(doc, label, value, x, y, maxWidth) {
     doc.setFont("helvetica", "bold");
     doc.text(label, x, y);
     const labelWidth = doc.getTextWidth(label);
-    
+
     doc.setFont("helvetica", "normal");
     const valText = value || '';
     const lines = doc.splitTextToSize(valText, maxWidth - labelWidth);
     doc.text(lines, x + labelWidth, y);
-    
+
     return y + (lines.length * 5);
 }
 
@@ -1443,7 +1443,7 @@ function formatDateFull(fechaStr) {
     if (!fechaStr) return '-';
     const fecha = parseDate(fechaStr);
     if (!fecha) return '-';
-    
+
     return fecha.toLocaleDateString('es-EC', {
         day: 'numeric',
         month: 'long',
@@ -1457,7 +1457,7 @@ function getDatosAcreedor() {
     return {
         nombre: user?.nombre || 'HENRY FABRICIO VALENZUELA CALERO',
         institucion: 'INKA CORP',
-        cedula: user?.cedula || '1715421542', 
+        cedula: user?.cedula || '1715421542',
         ciudad: user?.lugar_asesor || 'LATACUNGA', // Se saca de ic_users.lugar_asesor
         domicilio: 'CALLE GUAYAQUIL Y QUITO, EDIFICIO INKA'
     };
@@ -1469,7 +1469,7 @@ function getDatosAcreedor() {
 function porcentajeALetras(valor) {
     const num = parseFloat(valor);
     if (isNaN(num)) return "CERO POR CIENTO";
-    
+
     // Usamos el mismo motor de conversión que numeroALetras pero adaptado
     const unidades = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
     const decenas = ['DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISEIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'];
@@ -1491,13 +1491,13 @@ function porcentajeALetras(valor) {
 
     const entero = Math.floor(num);
     const decimales = Math.round((num - entero) * 100);
-    
+
     let letras = entero === 0 ? 'CERO' : convertir(entero);
-    
+
     if (decimales > 0) {
         letras += ' PUNTO ' + convertir(decimales);
     }
-    
+
     return `${letras} POR CIENTO`.replace(/\s+/g, ' ').trim();
 }
 
@@ -1546,13 +1546,13 @@ function addWatermark(doc) {
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         const logoUrl = 'https://i.ibb.co/3mC22Hc4/inka-corp.png';
-        
+
         doc.saveGraphicsState();
         // Opacidad extremadamente sutil para compensar la mayor densidad
         if (typeof doc.setGState === 'function') {
             doc.setGState(new doc.GState({ opacity: 0.03 }));
         }
-        
+
         // Aumentamos la densidad (8 filas x 5 columnas = 40 logos) para asegurar cobertura uniforme
         const rows = 8;
         const cols = 5;
@@ -1564,20 +1564,20 @@ function addWatermark(doc) {
                 // Reducimos el desplazamiento aleatorio (30% máximo) para evitar huecos grandes
                 const jitterX = (Math.random() - 0.5) * stepX * 0.3;
                 const jitterY = (Math.random() - 0.5) * stepY * 0.3;
-                
+
                 const centerX = (c * stepX) + (stepX / 2) + jitterX;
                 const centerY = (r * stepY) + (stepY / 2) + jitterY;
-                
+
                 // Tamaño más controlado para uniformidad visual (25mm a 45mm)
                 const size = 25 + (Math.random() * 20);
-                
+
                 // Rotación totalmente aleatoria para mantener el dinamismo
                 const angle = Math.random() * 360;
-                
+
                 doc.addImage(logoUrl, 'PNG', centerX - (size / 2), centerY - (size / 2), size, size, undefined, 'FAST', angle);
             }
         }
-        
+
         doc.restoreGraphicsState();
     } catch (e) {
         console.warn('No se pudo añadir la marca de agua:', e);
@@ -1592,13 +1592,13 @@ function drawSecurityBand(doc, y, height) {
         const pageWidth = doc.internal.pageSize.getWidth();
         const logoUrl = 'https://i.ibb.co/3mC22Hc4/inka-corp.png';
         const logoSize = 6; // Tamaño fijo pequeño para máxima densidad
-        
+
         doc.saveGraphicsState();
-        
+
         // Franja de borde a borde (0 a pageWidth)
         doc.rect(0, y, pageWidth, height);
         doc.clip();
-        
+
         // Fondo sutil para la zona de seguridad
         doc.setFillColor(245, 245, 245);
         doc.rect(0, y, pageWidth, height, 'F');
@@ -1607,32 +1607,32 @@ function drawSecurityBand(doc, y, height) {
         // Usamos una rejilla densa con jitter para asegurar cobertura total
         const cols = Math.ceil(pageWidth / (logoSize * 0.6)); // Superposición del 40%
         const rows = Math.ceil(height / (logoSize * 0.6));
-        
+
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
                 // Posición base con jitter mínimo para evitar huecos grandes
                 const lx = (c * logoSize * 0.6) + ((Math.random() - 0.5) * 2);
                 const ly = y + (r * logoSize * 0.6) + ((Math.random() - 0.5) * 2);
-                
+
                 const angle = Math.random() * 360;
                 const opacity = 0.5 + (Math.random() * 0.5); // 50% a 100%
 
                 if (typeof doc.setGState === 'function') {
                     doc.setGState(new doc.GState({ opacity: opacity }));
                 }
-                
+
                 doc.addImage(logoUrl, 'PNG', lx, ly, logoSize, logoSize, undefined, 'FAST', angle);
             }
         }
-        
+
         doc.restoreGraphicsState();
-        
+
         // Bordes de la franja en VERDE INKA de borde a borde
-        doc.setDrawColor(11, 78, 50); 
+        doc.setDrawColor(11, 78, 50);
         doc.setLineWidth(0.5);
         doc.line(0, y, pageWidth, y);
         doc.line(0, y + height, pageWidth, y + height);
-        
+
     } catch (e) {
         console.warn('Error al crear banda de seguridad:', e);
     }
@@ -1643,11 +1643,11 @@ function drawSecurityBand(doc, y, height) {
  */
 async function generatePolizaPDF(data) {
     const { jsPDF } = window.jspdf;
-    
+
     // REFUERZO DE DATOS: Si el socio está incompleto, intentamos recuperarlo de la base de datos o de las solicitudes
     let socioCompleto = data.socio || {};
     const idSocio = data.id_socio || socioCompleto.idsocio || socioCompleto.id_socio;
-    
+
     // Forzar recarga si faltan datos críticos o si es el socio del problema
     if (idSocio) {
         try {
@@ -1657,7 +1657,7 @@ async function generatePolizaPDF(data) {
             if (sMaster) {
                 socioCompleto = { ...socioCompleto, ...sMaster };
             }
-            
+
             // Si sigue sin domicilio real, buscar en la solicitud de crédito más reciente
             if (!socioCompleto.domicilio || socioCompleto.domicilio.toUpperCase() === 'SIN DIRECCIÓN' || !socioCompleto.estadocivil) {
                 const socioCI = socioCompleto.cedula || idSocio;
@@ -1668,7 +1668,7 @@ async function generatePolizaPDF(data) {
                     .order('solicitudid', { ascending: false })
                     .limit(1)
                     .maybeSingle();
-                
+
                 if (sSolicitud) {
                     if (!socioCompleto.domicilio || socioCompleto.domicilio.toUpperCase() === 'SIN DIRECCIÓN') {
                         socioCompleto.domicilio = sSolicitud.direccionsocio;
@@ -1701,7 +1701,7 @@ async function generatePolizaPDF(data) {
     try {
         const logoUrl = 'https://i.ibb.co/3mC22Hc4/inka-corp.png';
         doc.addImage(logoUrl, 'PNG', margin, y, 25, 25);
-    } catch (e) {}
+    } catch (e) { }
 
     // Título Principal
     doc.setFont("helvetica", "bold");
@@ -1709,7 +1709,7 @@ async function generatePolizaPDF(data) {
     doc.setTextColor(11, 78, 50); // Verde Inka
     doc.text("CONTRATO DE INVERSIÓN", margin + 32, y + 10);
     doc.text("A PLAZO FIJO", margin + 32, y + 18);
-    
+
     // Referencia / Contrato
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
@@ -1730,15 +1730,15 @@ async function generatePolizaPDF(data) {
     doc.setTextColor(0);
 
     // --- SECCIÓN: IDENTIFICACIÓN (Estilo Banner Oscuro) ---
-    doc.setFillColor(32, 70, 82); 
+    doc.setFillColor(32, 70, 82);
     doc.rect(margin, y, contentWidth, 7, 'F');
     doc.setFont("helvetica", "bold");
     doc.setTextColor(255);
     doc.text("COMPARECIENTES Y ANTECEDENTES", margin + 3, y + 4.8);
-    
-    y += 14; 
+
+    y += 14;
     doc.setTextColor(0);
-    
+
     // Fallbacks mejorados para datos del socio usando el objeto completo recuperado
     const s = socioCompleto;
     const domicilioSocio = (s.domicilio || s.direccionsocio || s.direccion || 'SIN DIRECCIÓN').toUpperCase();
@@ -1746,12 +1746,12 @@ async function generatePolizaPDF(data) {
     const estadoCivilSocio = (s.estadocivil || s.estado_civil || '---').toUpperCase();
     const socioNombre = (s.nombre || data.nombre_socio || 'SOCIO').toUpperCase();
     const socioCedula = s.cedula || s.cedulasocio || data.cedula_socio || '---';
-    
+
     const introText = `En la ciudad de **${acreedor.ciudad}**, a los **${formatDateFull(data.fecha_inicio)}**, se celebra el presente CONTRATO DE INVERSIÓN A PLAZO FIJO, bajo los términos y condiciones aquí descritos:\n\n` +
         `De una parte, la institución **${acreedor.institucion}**, representada por el Sr. **${acreedor.nombre}**, con C.I. **${acreedor.cedula}**, denominada en lo sucesivo como "EL DEPOSITARIO"; y de otra parte, el Sr/Sra. **${socioNombre}**, con C.I. **${socioCedula}**, de estado civil **${estadoCivilSocio}**, con domicilio en **${domicilioSocio}**, quien actúa por sus propios derechos y a quien se denominará como "EL DEPOSITANTE".`;
-    
+
     y = renderJustifiedText(doc, introText, margin, y, contentWidth, 5.8);
-    y += 12; 
+    y += 12;
 
     // --- SECCIÓN: CONDICIONES ---
     doc.setFillColor(32, 70, 82);
@@ -1759,8 +1759,8 @@ async function generatePolizaPDF(data) {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(255);
     doc.text("CLÁUSULAS DEL CONTRATO", margin + 3, y + 4.8);
-    
-    y += 14; 
+
+    y += 14;
     doc.setTextColor(0);
 
     const diffTime = parseDate(data.fecha_venc) - parseDate(data.fecha_inicio);
@@ -1781,12 +1781,12 @@ async function generatePolizaPDF(data) {
     ];
 
     clausulas.forEach(txt => {
-        if (y > 265) { 
+        if (y > 265) {
             // Dibujar banda al final de cada página antes de cambiar
-            drawSecurityBand(doc, 278, 8); 
-            doc.addPage(); 
+            drawSecurityBand(doc, 278, 8);
+            doc.addPage();
             addWatermark(doc);
-            y = 20; 
+            y = 20;
         }
         y = renderJustifiedText(doc, txt, margin, y, contentWidth, 5.2);
         y += 2.5;
@@ -1797,12 +1797,12 @@ async function generatePolizaPDF(data) {
 
     // --- FIRMAS ---
     y += 10;
-    if (y > 240) { 
-        doc.addPage(); 
+    if (y > 240) {
+        doc.addPage();
         addWatermark(doc);
-        y = 20; 
+        y = 20;
     }
-    
+
     doc.setFont("helvetica", "italic");
     doc.setFontSize(8);
     doc.setTextColor(80);
@@ -1813,19 +1813,19 @@ async function generatePolizaPDF(data) {
     doc.setDrawColor(0);
     doc.line(margin + 5, y, margin + 70, y);
     doc.line(pageWidth - margin - 70, y, pageWidth - margin - 5, y);
-    
+
     y += 4;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     doc.setTextColor(0);
     doc.text(socioNombre, margin + 37.5, y, { align: 'center' });
     doc.text(acreedor.nombre.toUpperCase(), pageWidth - margin - 37.5, y, { align: 'center' });
-    
+
     y += 4;
     doc.setFont("helvetica", "normal");
     doc.text(`C.I. ${socioCedula}`, margin + 37.5, y, { align: 'center' });
     doc.text(`C.I. ${acreedor.cedula}`, pageWidth - margin - 37.5, y, { align: 'center' });
-    
+
     y += 4;
     doc.setFont("helvetica", "bold");
     doc.text("EL DEPOSITANTE", margin + 37.5, y, { align: 'center' });

@@ -35,7 +35,8 @@
 
     <!-- Toolbar (normalizado como socios/créditos) -->
     <div class="solicitud-toolbar">
-        <button id="btn-sync-solicitudes" class="toolbar-btn btn-sync" onclick="refreshSolicitudes()" title="Actualizar">
+        <button id="btn-sync-solicitudes" class="toolbar-btn btn-sync" onclick="refreshSolicitudes()"
+            title="Actualizar">
             <i class="fas fa-sync-alt"></i>
         </button>
 
@@ -54,7 +55,8 @@
             <span>Todas</span>
             <span id="count-solicitudes-all" class="filter-count">0</span>
         </button>
-        <button class="toolbar-btn filter-btn active" data-estado="PENDIENTE" onclick="filterSolicitudesByEstado('PENDIENTE')">
+        <button class="toolbar-btn filter-btn active" data-estado="PENDIENTE"
+            onclick="filterSolicitudesByEstado('PENDIENTE')">
             <span>Pendientes</span>
             <span id="count-solicitudes-pendiente" class="filter-count">0</span>
         </button>
@@ -66,7 +68,8 @@
             <span>Colocadas</span>
             <span id="count-solicitudes-colocada" class="filter-count">0</span>
         </button>
-        <button class="toolbar-btn filter-btn" data-estado="DESEMBOLSADA" onclick="filterSolicitudesByEstado('DESEMBOLSADA')">
+        <button class="toolbar-btn filter-btn" data-estado="DESEMBOLSADA"
+            onclick="filterSolicitudesByEstado('DESEMBOLSADA')">
             <span>Desembolsadas</span>
             <span id="count-solicitudes-desembolsada" class="filter-count">0</span>
         </button>
@@ -114,7 +117,8 @@
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-card modal-ver-solicitud">
         <div class="modal-header modal-header-solicitud">
-            <h3><i class="fas fa-file-invoice-dollar"></i> <span id="modal-solicitud-titulo">Solicitud de Crédito</span></h3>
+            <h3><i class="fas fa-file-invoice-dollar"></i> <span id="modal-solicitud-titulo">Solicitud de Crédito</span>
+            </h3>
             <button class="modal-close" data-close-modal>
                 <i class="fas fa-times"></i>
             </button>
@@ -312,7 +316,8 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="input-monto">Monto Solicitado ($)</label>
-                    <input type="number" id="input-monto" class="form-control" placeholder="Ej: 1000" min="100" step="100">
+                    <input type="number" id="input-monto" class="form-control" placeholder="Ej: 1000" min="100"
+                        step="100">
                 </div>
                 <div class="form-group">
                     <label for="input-plazo">Plazo (meses)</label>
@@ -374,29 +379,36 @@
                 <!-- Columna Izquierda: Configuración -->
                 <div class="colocacion-config">
                     <div class="config-pago">
-                        <label class="config-label"><i class="fas fa-calendar-day"></i> Seleccione el Día de Pago</label>
+                        <label class="config-label" for="dia-10"><i class="fas fa-calendar-day"></i> Seleccione el Día
+                            de Pago</label>
                         <div class="dia-pago-selector">
-                            <input type="radio" name="dia-pago" id="dia-10" value="10" onchange="actualizarCalculosColocacion()">
+                            <input type="radio" name="dia-pago" id="dia-10" value="10"
+                                onchange="actualizarCalculosColocacion()">
                             <label for="dia-10">Día 10</label>
-                            
-                            <input type="radio" name="dia-pago" id="dia-15" value="15" checked onchange="actualizarCalculosColocacion()">
+
+                            <input type="radio" name="dia-pago" id="dia-15" value="15" checked
+                                onchange="actualizarCalculosColocacion()">
                             <label for="dia-15">Día 15</label>
-                            
-                            <input type="radio" name="dia-pago" id="dia-20" value="20" onchange="actualizarCalculosColocacion()">
+
+                            <input type="radio" name="dia-pago" id="dia-20" value="20"
+                                onchange="actualizarCalculosColocacion()">
                             <label for="dia-20">Día 20</label>
                         </div>
-                        <p class="config-help">El primer pago se ajustará automáticamente según la regla de los 25 días.</p>
+                        <p class="config-help">El primer pago se ajustará automáticamente según la regla de los 25 días.
+                        </p>
                     </div>
 
                     <!-- Tasa de Interés Configurable -->
                     <div class="config-tasa">
-                        <label class="config-label"><i class="fas fa-percentage"></i> Tasa de Interés Mensual</label>
+                        <label class="config-label" for="input-tasa-interes"><i class="fas fa-percentage"></i> Tasa de
+                            Interés Mensual</label>
                         <div class="tasa-input-container">
                             <button type="button" class="tasa-btn tasa-btn-down" onclick="ajustarTasa(-0.25)">
                                 <i class="fas fa-chevron-down"></i>
                             </button>
                             <div class="tasa-display">
-                                <input type="number" id="input-tasa-interes" class="tasa-input" value="2" min="0.5" max="10" step="0.25" onchange="actualizarCalculosColocacion()">
+                                <input type="number" id="input-tasa-interes" class="tasa-input" value="2" min="0.5"
+                                    max="10" step="0.25" onchange="actualizarCalculosColocacion()">
                                 <span class="tasa-suffix">%</span>
                             </div>
                             <button type="button" class="tasa-btn tasa-btn-up" onclick="ajustarTasa(0.25)">
@@ -466,45 +478,52 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div id="garante-form-container" class="garante-form hidden">
                     <div class="garante-info-note">
                         <i class="fas fa-info-circle"></i>
-                        <span>Complete los datos del garante. Los campos marcados con <strong>*</strong> son obligatorios.</span>
+                        <span>Complete los datos del garante. Los campos marcados con <strong>*</strong> son
+                            obligatorios.</span>
                     </div>
-                    
+
                     <div class="garante-form-grid">
                         <div class="garante-field">
-                            <label class="garante-label">Nombre Completo *</label>
-                            <input type="text" id="garante-nombre" class="garante-input" placeholder="Nombre del garante">
+                            <label class="garante-label" for="garante-nombre">Nombre Completo *</label>
+                            <input type="text" id="garante-nombre" class="garante-input"
+                                placeholder="Nombre del garante">
                         </div>
                         <div class="garante-field">
-                            <label class="garante-label">Cédula *</label>
-                            <input type="text" id="garante-cedula" class="garante-input" placeholder="Número de cédula" maxlength="10">
+                            <label class="garante-label" for="garante-cedula">Cédula *</label>
+                            <input type="text" id="garante-cedula" class="garante-input" placeholder="Número de cédula"
+                                maxlength="10">
                         </div>
                         <div class="garante-field">
-                            <label class="garante-label">Domicilio</label>
-                            <input type="text" id="garante-domicilio" class="garante-input" placeholder="Dirección del garante">
+                            <label class="garante-label" for="garante-domicilio">Domicilio</label>
+                            <input type="text" id="garante-domicilio" class="garante-input"
+                                placeholder="Dirección del garante">
                         </div>
                         <div class="garante-field">
-                            <label class="garante-label">Teléfono</label>
+                            <label class="garante-label" for="garante-telefono">Teléfono</label>
                             <input type="text" id="garante-telefono" class="garante-input" placeholder="Teléfono fijo">
                         </div>
                         <div class="garante-field">
-                            <label class="garante-label">WhatsApp</label>
-                            <input type="text" id="garante-whatsapp" class="garante-input" placeholder="Número de WhatsApp">
+                            <label class="garante-label" for="garante-whatsapp">WhatsApp</label>
+                            <input type="text" id="garante-whatsapp" class="garante-input"
+                                placeholder="Número de WhatsApp">
                         </div>
                     </div>
-                    
+
                     <p class="garante-docs-note">
-                        <i class="fas fa-camera"></i> Los documentos (foto cédula, domicilio, firma) se solicitarán después de la colocación.
+                        <i class="fas fa-camera"></i> Los documentos (foto cédula, domicilio, firma) se solicitarán
+                        después de la colocación.
                     </p>
                 </div>
             </div>
-            
+
             <div class="alerta-informativa">
                 <i class="fas fa-shield-alt"></i>
-                <p>Al confirmar, se activará el crédito y se notificará al socio. La tabla de amortización se generará bajo la <strong>Regla de Suma de Dígitos</strong>.</p>
+                <p>Al confirmar, se activará el crédito y se notificará al socio. La tabla de amortización se generará
+                    bajo la <strong>Regla de Suma de Dígitos</strong>.</p>
             </div>
         </div>
         <div class="modal-footer">

@@ -79,7 +79,7 @@ function filterAhorrosByEstado(estado) {
     document.querySelectorAll('.ahorros-toolbar .filter-btn').forEach(btn => {
         btn.classList.add('active');
     });
-    
+
     currentFilterAhorro = ''; // Siempre mostramos todos los que pasaron el filtro inicial
     filterAhorros();
 }
@@ -91,10 +91,10 @@ async function refreshAhorros() {
         btn.classList.add('spinning');
         btn.disabled = true;
     }
-    
+
     await loadAhorros(true); // Forzar actualización
     showToast('Ahorros actualizados', 'success');
-    
+
     if (btn) {
         btn.classList.remove('spinning');
         btn.disabled = false;
@@ -133,7 +133,7 @@ async function loadAhorros(forceRefresh = false) {
                 cuotas_pagadas,
                 plazo,
                 estado_credito,
-                socio:ic_socios!id_socio (
+                socio:ic_socios (
                     idsocio,
                     nombre,
                     cedula
@@ -190,7 +190,7 @@ function updateAhorrosStats() {
 
     allAhorros.forEach(ahorro => {
         totalAcumulado += ahorro.ahorro_acumulado || 0;
-        
+
         // Si por alguna razón necesitamos rastrear algo que no es activo aquí, 
         // pero por ahora allAhorros ya está filtrado
     });
@@ -198,7 +198,7 @@ function updateAhorrosStats() {
     // Actualizar stats del hero
     document.getElementById('stat-total-ahorros').textContent = totalCreditosWithAhorro;
     document.getElementById('stat-total-acumulado').textContent = formatMoney(totalAcumulado);
-    
+
     // El stat de "Por Devolver" lo ocultamos o lo ponemos en 0 si ya no mostramos cancelados
     const statPorDevolver = document.getElementById('stat-pendiente-devolucion');
     if (statPorDevolver) {
@@ -311,11 +311,11 @@ async function viewAhorroDetail(creditoId) {
         const codigoCredito = ahorro.codigo_credito || '-';
         codigoSpan.innerHTML = `${nombreSocio} <span style="color: #b59410; margin-left: 8px;">- ${codigoCredito}</span>`;
     }
-    
+
     // Info del socio (IDs que ya no existen en el HTML se ignoran)
     const detNombre = document.getElementById('ahorro-det-nombre');
     if (detNombre) detNombre.textContent = ahorro.socio?.nombre || '-';
-    
+
     const detCredito = document.getElementById('ahorro-det-credito');
     if (detCredito) detCredito.textContent = ahorro.codigo_credito;
 
@@ -339,7 +339,7 @@ async function viewAhorroDetail(creditoId) {
     // Abrir modal
     const modal = document.getElementById('ver-ahorro-modal');
     modal.classList.remove('hidden');
-    
+
     // Reset scroll del contenedor de tabla
     const tableContainer = modal.querySelector('.table-responsive-modern');
     if (tableContainer) tableContainer.scrollTop = 0;
@@ -402,7 +402,7 @@ function openDevolucionModal() {
     if (!currentViewingAhorro) return;
 
     document.getElementById('devolucion-monto').textContent = formatMoney(currentViewingAhorro.ahorro_acumulado);
-    
+
     const observacionesEl = document.getElementById('devolucion-observaciones');
     if (observacionesEl) observacionesEl.value = '';
 
@@ -533,7 +533,7 @@ function handleAhorrosScroll() {
     if (activeSection) {
         const header = activeSection.querySelector('.section-sticky-header');
         if (!header) return;
-        
+
         const headerRect = header.getBoundingClientRect();
 
         // Si el header original está fuera del viewport (arriba)
@@ -559,7 +559,7 @@ function showFixedAhorrosHeader(originalHeader, section) {
 
     // Crear contenedor para el header fijo
     stickyAhorrosHeaderClone = document.createElement('div');
-    stickyAhorrosHeaderClone.classList.add('fixed-header-clone'); 
+    stickyAhorrosHeaderClone.classList.add('fixed-header-clone');
     // Usamos la clase de créditos ya que tiene los estilos base adecuados
     stickyAhorrosHeaderClone.style.cssText = `
         position: fixed;

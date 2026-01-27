@@ -48,7 +48,7 @@ function getCachedFoto(idsocio) {
     const cache = getFotosCache();
     const entry = cache[idsocio];
     if (!entry) return null;
-    
+
     // Verificar si expiró
     if (Date.now() - entry.timestamp > FOTO_CACHE_DURATION) {
         return null;
@@ -131,17 +131,27 @@ function initSociosModule() {
 async function loadSocios(forceRefresh = false) {
     try {
         const sociosGrid = document.getElementById('socios-grid');
-        
+
         // PASO 1: Mostrar datos de caché INMEDIATAMENTE si existen
         if (!forceRefresh && window.hasCacheData && window.hasCacheData('socios')) {
             console.log('⚡ Mostrando socios desde caché (instantáneo)');
             const sociosFromCache = window.getCacheData('socios');
+
+            // Verificar si el caché tiene el nuevo campo 'amortizacion' necesario para la mora
+            // Buscamos algún socio que tenga créditos para verificar si tienen la propiedad amortizacion
+            const needsRefresh = sociosFromCache.some(s =>
+                s.creditos && s.creditos.length > 0 && s.creditos.some(c => c.amortizacion === undefined)
+            );
+
             processSociosData(sociosFromCache);
-            
-            // Si el caché es reciente, no recargar
-            if (window.isCacheValid && window.isCacheValid('socios')) {
+
+            // Si el caché es reciente y tiene todos los campos, no recargar
+            if (!needsRefresh && window.isCacheValid && window.isCacheValid('socios')) {
                 console.log('✓ Caché fresco, no se requiere actualización');
                 return;
+            }
+            if (needsRefresh) {
+                console.log('⚠ Caché incompleto (faltan datos de amortización), forzando actualización...');
             }
         } else {
             // Solo mostrar loading si no hay caché o es refresh forzado
@@ -158,11 +168,11 @@ async function loadSocios(forceRefresh = false) {
             .from('ic_socios')
             .select(`
                 *,
-                creditos:ic_creditos!id_socio (
+                creditos:ic_creditos (
                     id_credito,
                     estado_credito,
                     capital,
-                    amortizacion:ic_creditos_amortizacion!id_credito (
+                    amortizacion:ic_creditos_amortizacion (
                         fecha_vencimiento,
                         estado_cuota
                     )
@@ -192,8 +202,7 @@ async function loadSocios(forceRefresh = false) {
 
 // Procesar datos de socios (desde caché o BD)
 function processSociosData(socios) {
-    const hoyStr = todayISODate();
-    const hoy = new Date(hoyStr + 'T00:00:00');
+    const hoy = parseDate(todayISODate());
 
     allSocios = (socios || []).map(socio => {
         const creditosVigentes = socio.creditos?.filter(c =>
@@ -219,8 +228,11 @@ function processSociosData(socios) {
                     if (cuota.estado_cuota === 'VENCIDO') {
                         const fechaVenc = parseDate(cuota.fecha_vencimiento);
                         if (!fechaVenc) return;
-                        fechaVenc.setHours(0, 0, 0, 0);
-                        const dias = Math.floor((hoy - fechaVenc) / (1000 * 60 * 60 * 24));
+
+                        // Ambos están en UTC-5 (Ecuador) a las 00:00:00
+                        const diffTime = hoy.getTime() - fechaVenc.getTime();
+                        const dias = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+
                         if (dias > diasMoraMax) diasMoraMax = dias;
                     }
                 });
@@ -385,7 +397,7 @@ function renderSocios() {
     // Función para renderizar morosos agrupados por país
     const renderMorososByPais = (morososList) => {
         if (!morososList || morososList.length === 0) return '';
-        
+
         // Agrupar por país
         const porPais = {};
         morososList.forEach(s => {
@@ -393,19 +405,19 @@ function renderSocios() {
             if (!porPais[pais]) porPais[pais] = [];
             porPais[pais].push(s);
         });
-        
+
         // Ordenar países por el socio con más días de mora
         const paisesOrdenados = Object.keys(porPais).sort((a, b) => {
             const maxA = Math.max(...porPais[a].map(s => s.diasMora || 0));
             const maxB = Math.max(...porPais[b].map(s => s.diasMora || 0));
             return maxB - maxA;
         });
-        
+
         // Ordenar socios dentro de cada país por días de mora
         paisesOrdenados.forEach(pais => {
             porPais[pais].sort((a, b) => (b.diasMora || 0) - (a.diasMora || 0));
         });
-        
+
         const getPaisFlag = (pais) => {
             const paisLower = pais.toLowerCase();
             const flags = {
@@ -420,7 +432,7 @@ function renderSocios() {
             };
             return flags[paisLower] || '';
         };
-        
+
         return paisesOrdenados.map(pais => {
             const flagUrl = getPaisFlag(pais);
             const flagImg = flagUrl ? `<img src="${flagUrl}" alt="" class="pais-flag-mini" style="width:18px;height:12px;margin-right:6px;">` : '';
@@ -516,8 +528,8 @@ function createSocioCard(socio) {
         : (socio.creditoEstado === 'ACTIVO' ? 'activo' : (socio.creditoEstado === 'PAUSADO' ? 'pausado' : ''));
 
     // Estilo dinámico del avatar para morosos
-    const avatarStyle = esMoroso 
-        ? `style="background: linear-gradient(135deg, ${moraColor} 0%, rgba(220,38,38,0.8) 100%); border-color: ${moraColor};"` 
+    const avatarStyle = esMoroso
+        ? `style="background: linear-gradient(135deg, ${moraColor} 0%, rgba(220,38,38,0.8) 100%); border-color: ${moraColor};"`
         : '';
 
     // Ya no necesitamos indicador separado, está en el badge principal
@@ -608,7 +620,7 @@ function showSocioDetails(idsocio) {
 
     const paisFlag = getPaisFlagSocios(socio.paisresidencia);
     const paisNombre = socio.paisresidencia ? socio.paisresidencia.toUpperCase() : '-';
-    
+
     // Determinar badge de estado
     let estadoBadge = '';
     if (socio.esMoroso) {
@@ -628,10 +640,10 @@ function showSocioDetails(idsocio) {
         <!-- Header con foto de perfil y info básica - NUEVO DISEÑO -->
         <div class="socio-modal-hero">
             <div class="socio-hero-photo" id="${fotoId}">
-                ${fotoUrl ? 
-                    '<img src="' + fotoUrl + '" alt="Foto" class="socio-photo-img" onerror="this.parentElement.innerHTML=\'' + getInitials(socio.nombre) + '\'">' : 
-                    getInitials(socio.nombre)
-                }
+                ${fotoUrl ?
+            '<img src="' + fotoUrl + '" alt="Foto" class="socio-photo-img" onerror="this.parentElement.innerHTML=\'' + getInitials(socio.nombre) + '\'">' :
+            getInitials(socio.nombre)
+        }
             </div>
             <div class="socio-hero-gradient"></div>
             <div class="socio-hero-info">
@@ -753,8 +765,8 @@ function showSocioDetails(idsocio) {
                 <span class="creditos-count">${socio.totalCreditos || 0}</span>
             </div>
             <div class="modal-creditos-list">
-                ${socio.creditos && socio.creditos.length > 0 ? 
-                    socio.creditos.map(c => `
+                ${socio.creditos && socio.creditos.length > 0 ?
+            socio.creditos.map(c => `
                         <div class="credito-card ${c.estado_credito.toLowerCase()}">
                             <div class="credito-card-left">
                                 <div class="credito-indicator"></div>
@@ -764,11 +776,11 @@ function showSocioDetails(idsocio) {
                                 </div>
                             </div>
                             <div class="credito-card-right">
-                                <span class="credito-monto">$${parseFloat(c.capital || 0).toLocaleString('es-EC', {minimumFractionDigits: 2})}</span>
+                                <span class="credito-monto">$${parseFloat(c.capital || 0).toLocaleString('es-EC', { minimumFractionDigits: 2 })}</span>
                             </div>
                         </div>
-                    `).join('') 
-                : `
+                    `).join('')
+            : `
                     <div class="no-creditos">
                         <i class="fas fa-folder-open"></i>
                         <span>Este socio no tiene créditos registrados</span>
@@ -782,7 +794,7 @@ function showSocioDetails(idsocio) {
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
-    
+
     // Resetear scroll al inicio
     modalBody.scrollTop = 0;
 

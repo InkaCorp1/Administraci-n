@@ -1697,7 +1697,7 @@
                 </div>
 
                 <div class="lite-form-group">
-                    <label class="lite-det-label">Monto a Pagar</label>
+                    <label class="lite-det-label" for="lite-pago-monto">Monto a Pagar</label>
                     <div class="lite-input-wrapper">
                         <i class="fas fa-dollar-sign"></i>
                         <input type="number" id="lite-pago-monto" step="0.01" placeholder="0.00">
@@ -1705,7 +1705,7 @@
                 </div>
 
                 <div class="lite-form-group">
-                    <label class="lite-det-label">Fecha de Pago</label>
+                    <label class="lite-det-label" for="lite-pago-fecha">Fecha de Pago</label>
                     <div class="lite-input-wrapper">
                         <i class="fas fa-calendar-day"></i>
                         <input type="date" id="lite-pago-fecha">
@@ -1713,7 +1713,7 @@
                 </div>
 
                 <div class="lite-form-group">
-                    <label class="lite-det-label">Referencia / Observación</label>
+                    <label class="lite-det-label" for="lite-pago-referencia">Referencia / Observación</label>
                     <div class="lite-input-wrapper">
                         <i class="fas fa-tag"></i>
                         <input type="text" id="lite-pago-referencia" placeholder="Ej: Depósito #12345">
@@ -1721,7 +1721,7 @@
                 </div>
 
                 <div class="lite-form-group">
-                    <label class="lite-det-label">Método de Pago</label>
+                    <label class="lite-det-label" for="lite-pago-metodo">Método de Pago</label>
                     <div class="lite-input-wrapper">
                         <i class="fas fa-wallet"></i>
                         <select id="lite-pago-metodo">
@@ -1735,7 +1735,8 @@
 
                 <!-- Campo de Comprobante de Pago (OBLIGATORIO) -->
                 <div class="lite-form-group">
-                    <label class="lite-det-label" style="color: var(--primary);">Comprobante de Pago *</label>
+                    <label class="lite-det-label" for="lite-pago-comprobante-camera"
+                        style="color: var(--primary);">Comprobante de Pago *</label>
                     <div class="comprobante-mobile-area" id="comprobante-mobile-area">
                         <!-- Input para cámara -->
                         <input type="file" id="lite-pago-comprobante-camera" accept="image/*" capture="environment"
@@ -2411,32 +2412,32 @@
                         <form id="simulador-form">
                             <div class="simulador-form-grid">
                                 <div class="form-group full-width">
-                                    <label class="form-label">Nombre del Socio (opcional)</label>
+                                    <label class="form-label" for="sim-nombre">Nombre del Socio (opcional)</label>
                                     <input type="text" id="sim-nombre" class="form-input" placeholder="Nombre para el documento">
                                 </div>
 
                                 <div class="form-group">
-                                    <label class="form-label" id="label-capital">Capital Solicitado ($)</label>
+                                    <label class="form-label" id="label-capital" for="sim-capital">Capital Solicitado ($)</label>
                                     <input type="number" id="sim-capital" class="form-input" value="10000" min="100" step="100" required>
                                 </div>
 
                                 <div class="form-group">
-                                    <label class="form-label" id="label-interes">Tasa de Interés Mensual (%)</label>
+                                    <label class="form-label" id="label-interes" for="sim-interes">Tasa de Interés Mensual (%)</label>
                                     <input type="number" id="sim-interes" class="form-input" value="2" min="0.1" max="15" step="0.1" required>
                                 </div>
 
                                 <div class="form-group">
-                                    <label class="form-label">Plazo (meses)</label>
+                                    <label class="form-label" for="sim-plazo">Plazo (meses)</label>
                                     <input type="number" id="sim-plazo" class="form-input" value="12" min="1" max="60" step="1" required>
                                 </div>
 
                                 <div class="form-group credito-field">
-                                    <label class="form-label">Fecha de Desembolso</label>
+                                    <label class="form-label" for="sim-fecha-desembolso">Fecha de Desembolso</label>
                                     <input type="date" id="sim-fecha-desembolso" class="form-input">
                                 </div>
 
                                 <div class="form-group credito-field">
-                                    <label class="form-label">Día de Pago Mensual</label>
+                                    <label class="form-label" for="sim-dia-pago">Día de Pago Mensual</label>
                                     <select id="sim-dia-pago" class="form-select">
                                         <option value="10">Día 10 de cada mes</option>
                                         <option value="15" selected>Día 15 de cada mes</option>
@@ -2446,7 +2447,7 @@
                                 </div>
 
                                 <div class="form-group poliza-field hidden">
-                                    <label class="form-label">Fecha de Inicio</label>
+                                    <label class="form-label" for="sim-fecha-inicio">Fecha de Inicio</label>
                                     <input type="date" id="sim-fecha-inicio" class="form-input">
                                 </div>
                             </div>
@@ -3737,7 +3738,7 @@
                         <i class="fas fa-plus-circle"></i> Nuevo Aporte
                     </h3>
                     <div class="lite-form-group">
-                        <label class="lite-det-label">Socio</label>
+                        <label class="lite-det-label" for="mobile-aporte-socio">Socio</label>
                         <div class="lite-input-wrapper">
                             <i class="fas fa-user"></i>
                             <select id="mobile-aporte-socio">
@@ -3746,14 +3747,14 @@
                         </div>
                     </div>
                     <div class="lite-form-group">
-                        <label class="lite-det-label">Monto ($)</label>
+                        <label class="lite-det-label" for="mobile-aporte-monto">Monto ($)</label>
                         <div class="lite-input-wrapper">
                             <i class="fas fa-dollar-sign"></i>
                             <input type="number" id="mobile-aporte-monto" step="0.01" placeholder="0.00">
                         </div>
                     </div>
                     <div class="lite-form-group">
-                        <label class="lite-det-label">Fecha</label>
+                        <label class="lite-det-label" for="mobile-aporte-fecha">Fecha</label>
                         <div class="lite-input-wrapper">
                             <i class="fas fa-calendar-day"></i>
                             <input type="date" id="mobile-aporte-fecha">
@@ -3761,7 +3762,7 @@
                     </div>
                     
                     <div class="lite-form-group">
-                        <label class="lite-det-label">Comprobante</label>
+                        <label class="lite-det-label" for="mobile-aporte-file">Comprobante</label>
                         <div class="comprobante-mobile-area">
                             <input type="file" id="mobile-aporte-file" accept="image/*" style="display: none" onchange="handleMobileAporteFileSelect(this)">
                             <button type="button" class="btn-capture-comprobante" id="btn-mobile-aporte-upload" style="width:100%" onclick="document.getElementById('mobile-aporte-file').click()">

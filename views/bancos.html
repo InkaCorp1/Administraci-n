@@ -84,27 +84,27 @@
                         <h3 class="section-title"><i class="fas fa-info-circle"></i> Datos del Crédito</h3>
                         <div class="detail-grid">
                             <div class="detail-item">
-                                <label>Solicitado</label>
+                                <span class="detail-label-static">Solicitado</span>
                                 <span id="det-banco-monto">$0.00</span>
                             </div>
                             <div class="detail-item">
-                                <label>Cuotas</label>
+                                <span class="detail-label-static">Cuotas</span>
                                 <span id="det-banco-plazo">-- meses</span>
                             </div>
                             <div class="detail-item">
-                                <label>Mensualidad</label>
+                                <span class="detail-label-static">Mensualidad</span>
                                 <span id="det-banco-cuota">$0.00</span>
                             </div>
                             <div class="detail-item">
-                                <label>Interés</label>
+                                <span class="detail-label-static">Interés</span>
                                 <span id="det-banco-interes">--%</span>
                             </div>
                             <div class="detail-item full">
-                                <label>Deudor</label>
+                                <span class="detail-label-static">Deudor</span>
                                 <span id="det-banco-deudor">---</span>
                             </div>
                             <div class="detail-item full">
-                                <label>Motivo</label>
+                                <span class="detail-label-static">Motivo</span>
                                 <span id="det-banco-motivo">---</span>
                             </div>
                         </div>
@@ -124,11 +124,11 @@
                             </div>
                             <div class="values-grid">
                                 <div class="value-item">
-                                    <label>Pagado</label>
+                                    <span class="value-label-static">Pagado</span>
                                     <span id="det-banco-pagado" class="text-success">$0.00</span>
                                 </div>
                                 <div class="value-item">
-                                    <label>Pendiente</label>
+                                    <span class="value-label-static">Pendiente</span>
                                     <span id="det-banco-pendiente" class="text-error">$0.00</span>
                                 </div>
                             </div>
@@ -162,6 +162,9 @@
             <button id="btn-generar-reporte-pagos" class="btn btn-primary">
                 <i class="fas fa-file-pdf"></i> Generar Estado Pagos
             </button>
+            <button id="btn-precancelar-banco" class="btn btn-warning">
+                <i class="fas fa-hand-holding-usd"></i> Precancelar
+            </button>
             <button class="btn btn-secondary" data-close-modal>Cerrar</button>
         </div>
     </div>
@@ -182,31 +185,21 @@
                 <input type="hidden" id="pago-banco-id-detalle">
 
                 <div class="form-group-premium">
-                    <label><i class="fas fa-calendar-alt"></i> Fecha de Pago real</label>
+                    <label for="pago-banco-fecha"><i class="fas fa-calendar-alt"></i> Fecha de Pago real</label>
                     <input type="date" id="pago-banco-fecha" required class="input-premium">
                 </div>
 
                 <div class="form-group-premium">
-                    <label><i class="fas fa-money-bill-alt"></i> Valor Pagado</label>
+                    <label for="pago-banco-valor"><i class="fas fa-money-bill-alt"></i> Valor Pagado</label>
                     <input type="number" id="pago-banco-valor" step="0.01" readonly class="input-premium readonly">
                 </div>
 
                 <div class="form-group-premium">
-                    <label><i class="fas fa-camera"></i> Comprobante de Pago</label>
+                    <label for="banco-camera"><i class="fas fa-camera"></i> Comprobante de Pago</label>
                     <div class="upload-area-premium" id="pago-banco-dropzone">
                         <div id="pago-banco-upload-placeholder">
                             <i class="fas fa-cloud-upload-alt"></i>
                             <p>Toca para subir o tomar foto</p>
-                            <div class="upload-buttons">
-                                <button type="button" class="btn-icon"
-                                    onclick="document.getElementById('banco-camera').click()">
-                                    <i class="fas fa-camera"></i>
-                                </button>
-                                <button type="button" class="btn-icon"
-                                    onclick="document.getElementById('banco-gallery').click()">
-                                    <i class="fas fa-image"></i>
-                                </button>
-                            </div>
                         </div>
                         <div id="pago-banco-preview-container" class="hidden">
                             <img id="pago-banco-preview" src="" alt="Comprobante">
@@ -216,6 +209,16 @@
                         </div>
                         <input type="file" id="banco-camera" accept="image/*" capture="environment" class="hidden">
                         <input type="file" id="banco-gallery" accept="image/*" class="hidden">
+                    </div>
+                    <div class="upload-buttons">
+                        <button type="button" class="btn-icon"
+                            onclick="document.getElementById('banco-camera').click()">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                        <button type="button" class="btn-icon"
+                            onclick="document.getElementById('banco-gallery').click()">
+                            <i class="fas fa-image"></i>
+                        </button>
                     </div>
                 </div>
             </form>
@@ -253,6 +256,79 @@
     </div>
 </div>
 
+<!-- Modal Precancelar Crédito -->
+<div id="modal-precancelar-banco" class="modal-premium hidden">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card-premium small">
+        <div class="modal-header-premium">
+            <h2 class="modal-title-premium">Precancelar Crédito</h2>
+            <button class="modal-close-premium" data-close-modal>
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body-premium">
+            <form id="form-precancelar-banco" class="premium-form">
+                <div class="form-group-premium">
+                    <label for="prepay-total-pendiente"><i class="fas fa-hand-holding-usd"></i> Total Pendiente</label>
+                    <input type="text" id="prepay-total-pendiente" readonly class="input-premium readonly"
+                        style="font-weight: 700;">
+                </div>
+
+                <div class="form-group-premium">
+                    <label for="prepay-valor"><i class="fas fa-money-bill-wave"></i> Valor a Pagar
+                        (Precancelación)</label>
+                    <input type="number" id="prepay-valor" step="0.01" required class="input-premium"
+                        placeholder="0.00">
+                </div>
+
+                <!-- Ahorro Estimado Integrado -->
+                <div class="form-group-premium hidden" id="prepay-saving-box">
+                    <label for="prepay-ahorro"><i class="fas fa-piggy-bank"></i> Ahorro Estimado</label>
+                    <input type="text" id="prepay-ahorro" readonly class="input-premium readonly text-success"
+                        style="font-weight: 800; border-color: #22c55e;">
+                </div>
+
+                <div class="form-group-premium">
+                    <label for="prepay-camera"><i class="fas fa-camera"></i> Comprobante de Pago</label>
+                    <div class="upload-area-premium" id="prepay-dropzone">
+                        <div id="prepay-upload-placeholder">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Toca para subir o tomar foto</p>
+                        </div>
+                        <div id="prepay-preview-container" class="hidden">
+                            <img id="prepay-preview" src="" alt="Comprobante">
+                            <button type="button" class="btn-remove-preview" id="remove-prepay-preview">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <input type="file" id="prepay-camera" accept="image/*" capture="environment" class="hidden">
+                        <input type="file" id="prepay-gallery" accept="image/*" class="hidden">
+                    </div>
+                    <div class="upload-buttons">
+                        <button type="button" class="btn-icon"
+                            onclick="document.getElementById('prepay-camera').click()">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                        <button type="button" class="btn-icon"
+                            onclick="document.getElementById('prepay-gallery').click()">
+                            <i class="fas fa-image"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer-premium">
+            <button class="btn btn-secondary" data-close-modal>Cancelar</button>
+            <button type="submit" form="form-precancelar-banco" class="btn btn-primary"
+                id="btn-registrar-precancelacion">
+                <i class="fas fa-check-circle"></i> Registrar Precancelación
+            </button>
+        </div>
+    </div>
+</div>
+</div>
+</div>
+
 <!-- Modal Nuevo Crédito/Póliza -->
 <div id="modal-nuevo-banco" class="modal-premium hidden">
     <div class="modal-backdrop" data-close-modal></div>
@@ -271,14 +347,14 @@
 
                         <div class="form-row">
                             <div class="form-group-premium grow">
-                                <label><i class="fas fa-university"></i> Banco</label>
+                                <label for="new-banco-nombre"><i class="fas fa-university"></i> Banco</label>
                                 <select id="new-banco-nombre" required class="input-premium">
                                     <option value="">Seleccione Banco...</option>
                                     <!-- Options loaded from DB -->
                                 </select>
                             </div>
                             <div class="form-group-premium">
-                                <label><i class="fas fa-tag"></i> Tipo</label>
+                                <label for="new-banco-tipo"><i class="fas fa-tag"></i> Tipo</label>
                                 <select id="new-banco-tipo" required class="input-premium">
                                     <option value="CREDITO">Crédito</option>
                                     <option value="POLIZA">Póliza</option>
@@ -288,64 +364,62 @@
 
                         <div class="form-row">
                             <div class="form-group-premium">
-                                <label>Periodicidad</label>
+                                <label for="new-banco-periodicidad">Periodicidad</label>
                                 <select id="new-banco-periodicidad" class="input-premium">
                                     <option value="MENSUAL">Mensual</option>
                                     <option value="ANUAL">Anual</option>
                                 </select>
                             </div>
                             <div class="form-group-premium">
-                                <label>Plazo (Meses)</label>
+                                <label for="new-banco-plazo">Plazo (Meses)</label>
                                 <input type="number" id="new-banco-plazo" min="1" required class="input-premium">
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group-premium">
-                                <label id="lbl-monto">Monto Solicitado</label>
+                                <label id="lbl-monto" for="new-banco-monto">Monto Solicitado</label>
                                 <input type="number" id="new-banco-monto" step="0.01" required class="input-premium">
                             </div>
                             <div class="form-group-premium">
-                                <label>Interés (%)</label>
+                                <label for="new-banco-interes">Interés (%)</label>
                                 <input type="number" id="new-banco-interes" step="0.01" required class="input-premium">
                             </div>
                         </div>
 
                         <div class="form-group-premium">
-                            <label>Monto Total a Pagar</label>
+                            <label for="new-banco-total">Monto Total a Pagar</label>
                             <input type="number" id="new-banco-total" step="0.01" class="input-premium">
                         </div>
 
                         <div class="form-row">
                             <div class="form-group-premium">
-                                <label>Fecha Transacción</label>
+                                <label for="new-banco-fecha">Fecha Transacción</label>
                                 <input type="date" id="new-banco-fecha" required class="input-premium">
                             </div>
                             <div class="form-group-premium hidden" id="group-primer-pago">
-                                <label>Fecha Primer Pago</label>
+                                <label for="new-banco-primer-pago">Fecha Primer Pago</label>
                                 <input type="date" id="new-banco-primer-pago" class="input-premium">
                             </div>
                             <div class="form-group-premium hidden" id="group-valor-recibir">
-                                <label>Valor Mensual a Recibir</label>
+                                <label for="new-banco-valor-recibir">Valor Mensual a Recibir</label>
                                 <input type="number" id="new-banco-valor-recibir" step="0.01" class="input-premium">
                             </div>
                         </div>
 
                         <div class="form-group-premium">
-                            <label>A Nombre De</label>
+                            <label for="new-banco-deudor">A Nombre De</label>
                             <input type="text" id="new-banco-deudor" required class="input-premium">
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group-premium grow">
-                                <label>Motivo</label>
-                                <input type="text" id="new-banco-motivo" required class="input-premium">
+                            <div class="form-row">
+                                <div class="form-group-premium grow">
+                                    <label for="new-banco-motivo">Motivo</label>
+                                    <input type="text" id="new-banco-motivo" required class="input-premium">
+                                </div>
+                                <div class="form-group-premium">
+                                    <label for="new-banco-recibido">Valor Recibido (Cash)</label>
+                                    <input type="number" id="new-banco-recibido" step="0.01" class="input-premium">
+                                </div>
                             </div>
-                            <div class="form-group-premium">
-                                <label>Valor Recibido (Cash)</label>
-                                <input type="number" id="new-banco-recibido" step="0.01" class="input-premium">
-                            </div>
-                        </div>
 
                     </form>
                 </div>

@@ -99,6 +99,33 @@ function setupBancosEventListeners() {
     if (removePreviewBtn) {
         removePreviewBtn.addEventListener('click', clearBancoPreview);
     }
+
+    // Botón Precancelar (abre el modal)
+    const btnPrecancelar = document.getElementById('btn-precancelar-banco');
+    if (btnPrecancelar) {
+        btnPrecancelar.addEventListener('click', openPrecancelarModal);
+    }
+
+    // Inputs Precancelar
+    const inputPrepayValor = document.getElementById('prepay-valor');
+    if (inputPrepayValor) {
+        inputPrepayValor.addEventListener('input', calculatePrepaySavings);
+    }
+
+    // Formulario Precancelar
+    const formPrecancelar = document.getElementById('form-precancelar-banco');
+    if (formPrecancelar) {
+        formPrecancelar.addEventListener('submit', handlePrecancelarSubmit);
+    }
+
+    // Imagen Precancelar
+    const prepayCamera = document.getElementById('prepay-camera');
+    const prepayGallery = document.getElementById('prepay-gallery');
+    if (prepayCamera) prepayCamera.addEventListener('change', (e) => handlePrepayImageUpload(e.target.files[0]));
+    if (prepayGallery) prepayGallery.addEventListener('change', (e) => handlePrepayImageUpload(e.target.files[0]));
+
+    const removePrepayBtn = document.getElementById('remove-prepay-preview');
+    if (removePrepayBtn) removePrepayBtn.addEventListener('click', clearPrepayPreview);
 }
 
 /**
@@ -287,20 +314,20 @@ function getBankTheme(bankName) {
             textOnPill: '#1a5d1a'
         },
         DAQUILEMA: {
-            bg: 'linear-gradient(145deg, #f0fdfa 0%, #ccfbf1 100%)',
-            primary: '#0d9488', // Teal/Turquesa
-            light: '#14b8a6',
-            glow: 'rgba(13, 148, 136, 0.1)',
-            border: 'rgba(13, 148, 136, 0.15)',
-            textOnPill: '#0d9488'
+            bg: 'linear-gradient(145deg, #fef2f2 0%, #fee2e2 100%)',
+            primary: '#dc2626', // Rojo Daquilema
+            light: '#ef4444',
+            glow: 'rgba(220, 38, 38, 0.1)',
+            border: 'rgba(220, 38, 38, 0.15)',
+            textOnPill: '#dc2626'
         },
         TUPAK: {
-            bg: 'linear-gradient(145deg, #f7fee7 0%, #f0fdf4 100%)',
-            primary: '#65a30d', // Lima oscuro / Oliva
-            light: '#84cc16',
-            glow: 'rgba(101, 163, 13, 0.1)',
-            border: 'rgba(101, 163, 13, 0.15)',
-            textOnPill: '#65a30d'
+            bg: 'linear-gradient(145deg, #f0f9ff 0%, #dbeafe 100%)',
+            primary: '#2563eb', // Azul Celesto Tupak (Más azul, no turquesa)
+            light: '#60a5fa',
+            glow: 'rgba(37, 99, 235, 0.1)',
+            border: 'rgba(37, 99, 235, 0.15)',
+            textOnPill: '#1e40af'
         }
     };
 
@@ -396,9 +423,13 @@ function renderBancosCards(data, pagosMap = {}) {
 async function archiveBanco(event, id) {
     event.stopPropagation(); // Evitar abrir el modal
 
-    if (!confirm('¿Deseas mover este crédito al historial de pagados? Desaparecerá de esta lista.')) {
-        return;
-    }
+    const confirmed = await window.showConfirm(
+        '¿Deseas mover este crédito al historial de pagados? Desaparecerá de esta lista.',
+        'Mover al Historial',
+        { confirmText: 'Mover al Historial', cancelText: 'Cancelar', type: 'warning' }
+    );
+
+    if (!confirmed) return;
 
     try {
         const supabase = window.getSupabaseClient();
@@ -444,7 +475,28 @@ async function openBancoDetail(banco) {
     const modal = document.getElementById('modal-detalle-banco');
 
     // Llenar datos básicos
-    document.getElementById('modal-bank-logo').src = banco.logo_banco || 'img/bank-placeholder.png';
+    // Consolidación de Logo para Banco Pichincha (usar logo moderno)
+    let logoUrl = banco.logo_banco || 'img/bank-placeholder.png';
+    if ((banco.nombre_banco || '').toUpperCase().includes('PICHINCHA')) {
+        logoUrl = 'https://lh3.googleusercontent.com/d/10zy2rxIR2dp_MfdGO7JiOjVvovGSIGCZ=w2048?name=Pichincha.png';
+    }
+
+    const logoImg = document.getElementById('modal-bank-logo');
+    logoImg.src = logoUrl;
+
+    // Aplicar Zoom según la institución
+    const bankName = (banco.nombre_banco || '').toUpperCase();
+    logoImg.classList.remove('logo-zoom-max', 'logo-zoom-high', 'logo-zoom-low'); // Reset entries
+
+    if (bankName.includes('DAQUILEMA')) {
+        logoImg.classList.add('logo-zoom-max');
+    } else if (bankName.includes('MUSHUC')) {
+        logoImg.classList.add('logo-zoom-high');
+    } else if (bankName.includes('PACIFICO') || bankName.includes('TUPAK')) {
+        logoImg.classList.add('logo-zoom-low');
+    }
+    // Pichincha queda sin clase (zoom: 1) para evitar que se vea muy grande
+
     document.getElementById('modal-bank-name').textContent = banco.nombre_banco;
     document.getElementById('modal-credit-id').textContent = `ID: ${banco.id_transaccion}`;
 
@@ -790,6 +842,16 @@ function updateAmortizacionProgress(data) {
 
     document.getElementById('det-banco-pagado').textContent = '$' + totalPagado.toLocaleString('es-EC', { minimumFractionDigits: 2 });
     document.getElementById('det-banco-pendiente').textContent = '$' + totalPendiente.toLocaleString('es-EC', { minimumFractionDigits: 2 });
+
+    // Ocultar botón de precancelar si ya está pagado al 100%
+    const btnPrecancelar = document.getElementById('btn-precancelar-banco');
+    if (btnPrecancelar) {
+        if (pct >= 100) {
+            btnPrecancelar.classList.add('hidden');
+        } else {
+            btnPrecancelar.classList.remove('hidden');
+        }
+    }
 }
 
 /**
@@ -900,6 +962,144 @@ function clearBancoPreview() {
     img.src = '';
     container.classList.add('hidden');
     placeholder.classList.remove('hidden');
+}
+
+/**
+ * Abre el modal de precancelación
+ */
+function openPrecancelarModal() {
+    if (!currentBancoId) return;
+
+    // Calcular total pendiente real
+    const totalPendiente = bancosDetalleData
+        .filter(i => i.estado !== 'PAGADO')
+        .reduce((sum, i) => sum + parseFloat(i.valor || 0), 0);
+
+    document.getElementById('prepay-total-pendiente').value = '$' + totalPendiente.toLocaleString('es-EC', { minimumFractionDigits: 2 });
+    document.getElementById('prepay-valor').value = '';
+    document.getElementById('prepay-saving-box').classList.add('hidden');
+
+    clearPrepayPreview();
+    document.getElementById('modal-precancelar-banco').classList.remove('hidden');
+}
+
+/**
+ * Calcula el ahorro en tiempo real
+ */
+function calculatePrepaySavings() {
+    const totalPendiente = bancosDetalleData
+        .filter(i => i.estado !== 'PAGADO')
+        .reduce((sum, i) => sum + parseFloat(i.valor || 0), 0);
+
+    const valorPagar = parseFloat(document.getElementById('prepay-valor').value) || 0;
+    const savingBox = document.getElementById('prepay-saving-box');
+    const savingText = document.getElementById('prepay-ahorro');
+
+    if (valorPagar > 0 && valorPagar < totalPendiente) {
+        const ahorro = totalPendiente - valorPagar;
+        savingText.value = '$' + ahorro.toLocaleString('es-EC', { minimumFractionDigits: 2 });
+        savingBox.classList.remove('hidden');
+    } else {
+        savingBox.classList.add('hidden');
+    }
+}
+
+/**
+ * Maneja la carga de imagen para precancelar
+ */
+function handlePrepayImageUpload(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const container = document.getElementById('prepay-preview-container');
+        const placeholder = document.getElementById('prepay-upload-placeholder');
+        const img = document.getElementById('prepay-preview');
+        img.src = e.target.result;
+        container.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+    };
+    reader.readAsDataURL(file);
+}
+
+/**
+ * Limpia el preview de precancelar
+ */
+function clearPrepayPreview() {
+    const container = document.getElementById('prepay-preview-container');
+    const placeholder = document.getElementById('prepay-upload-placeholder');
+    const img = document.getElementById('prepay-preview');
+    img.src = '';
+    container.classList.add('hidden');
+    placeholder.classList.remove('hidden');
+}
+
+/**
+ * Procesa la precancelación
+ */
+async function handlePrecancelarSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-registrar-precancelacion');
+    const valorPagar = parseFloat(document.getElementById('prepay-valor').value);
+    const previewImg = document.getElementById('prepay-preview');
+
+    if (!previewImg.src || previewImg.src.includes('data:image/gif') || previewImg.src === '') {
+        return window.showAlert('Por favor sube el comprobante de la precancelación', 'Comprobante requerido', 'warning');
+    }
+
+    try {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+
+        const supabase = window.getSupabaseClient();
+        const pendingInstallments = bancosDetalleData.filter(i => i.estado !== 'PAGADO');
+
+        if (pendingInstallments.length === 0) throw new Error('No hay cuotas pendientes para precancelar');
+
+        // 1. Subir imagen
+        const fileName = `bancos/prepay_${currentBancoId}_${Date.now()}.jpg`;
+        const blob = await fetch(previewImg.src).then(r => r.blob());
+        const { error: uploadError } = await supabase.storage.from('comprobantes').upload(fileName, blob);
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage.from('comprobantes').getPublicUrl(fileName);
+        const imgUrl = publicUrlData.publicUrl;
+
+        // 2. Distribuir el pago en las cuotas pendientes
+        // Para que las estadísticas cuadren, pondremos el valor proporcional pagado en cada cuota
+        // o simplemente marcamos todas como pagadas con el valor que el usuario ingresó (prorrateado).
+        const valorPorCuota = valorPagar / pendingInstallments.length;
+        const idsPending = pendingInstallments.map(i => i.id_detalle);
+        const hoy = new Date().toISOString().split('T')[0];
+
+        const { error: updateError } = await supabase
+            .from('ic_situacion_bancaria_detalle')
+            .update({
+                estado: 'PAGADO',
+                fecha_pagado: hoy,
+                fotografia: imgUrl,
+                valor: valorPorCuota // Actualizamos el valor al real pagado tras el descuento
+            })
+            .in('id_detalle', idsPending);
+
+        if (updateError) throw updateError;
+
+        // 3. Si se pagó todo, podrías archivar el crédito o dejar que el usuario lo haga
+        // Por ahora refrescamos y cerramos
+        window.showToast('Precancelación registrada con éxito', 'success');
+        closePremiumModals();
+
+        if (currentBancoId) {
+            await loadAmortizacionBanco(currentBancoId);
+        }
+        loadBancosData();
+
+    } catch (error) {
+        console.error('Error al precancelar:', error);
+        window.showAlert(error.message, 'Error', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check-circle"></i> Registrar Precancelación';
+    }
 }
 
 // Exponer funciones necesarias globalmente si se requiere
@@ -1027,6 +1227,7 @@ function toggleBancoFields() {
     }
 }
 
+
 /**
  * Actualiza la tarjeta de previsualización en tiempo real
  */
@@ -1041,7 +1242,12 @@ function updateBancoPreview() {
     // Get Logo
     const select = document.getElementById('new-banco-nombre');
     const selectedOpt = select.options[select.selectedIndex];
-    const logoUrl = selectedOpt ? selectedOpt.dataset.logo : '';
+    let logoUrl = selectedOpt ? selectedOpt.dataset.logo : '';
+
+    // Normalización para Pichincha
+    if ((bancoName || '').toUpperCase().includes('PICHINCHA')) {
+        logoUrl = 'https://lh3.googleusercontent.com/d/10zy2rxIR2dp_MfdGO7JiOjVvovGSIGCZ=w2048?name=Pichincha.png';
+    }
 
     // Calculations
     let cuota = 0;
@@ -1141,7 +1347,7 @@ async function handleSaveNewBanco() {
             .insert({
                 id_transaccion: id_transaccion,
                 nombre_banco: nombre_banco,
-                tipo: tipo, // Póliza or Crédito (Add column if missing in DB, assuming keys map)
+                tipo: tipo,
                 monto_inicial: monto,
                 monto_final: total,
                 plazo: plazo,

@@ -909,7 +909,7 @@ tbody tr:last-child td {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 3000;
 }
 
 .app-loader-card {
@@ -949,7 +949,7 @@ tbody tr:last-child td {
 .modal {
     position: fixed;
     inset: 0;
-    z-index: 500;
+    z-index: 2000;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -958,7 +958,7 @@ tbody tr:last-child td {
 
 /* Modal de pago debe estar por encima del modal de crédito */
 #registrar-pago-modal {
-    z-index: 2000 !important;
+    z-index: 2100 !important;
 }
 
 /* Fix for SweetAlert containers to always be above any modals */

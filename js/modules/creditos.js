@@ -292,7 +292,7 @@ async function loadCreditos(forceRefresh = false) {
             .from('ic_creditos')
             .select(`
                 *,
-                socio:ic_socios!id_socio (
+                socio:ic_socios (
                     idsocio,
                     nombre,
                     cedula,
@@ -1214,7 +1214,7 @@ async function confirmarPago() {
             // 3. Actualizar ahorro a ACUMULADO
             const { error: errorAhorro } = await supabase
                 .from('ic_creditos_ahorro')
-                .update({ 
+                .update({
                     estado: 'ACUMULADO',
                     updated_at: new Date().toISOString()
                 })
@@ -1226,7 +1226,7 @@ async function confirmarPago() {
 
         // 4. Actualizar contador de cuotas pagadas y mora en el crédito
         const nuevasCuotasPagadas = (currentViewingCredito.cuotas_pagadas || 0) + cantidadCuotas;
-        
+
         // Decrementar el contador de cuotas en mora si las cuotas pagadas estaban vencidas
         const cuotasPagadasEnMora = cuotasConMora.filter(c => c.estaEnMora).length;
         const cuotasEnMoraAnterior = currentViewingCredito.cuotas_en_mora || 0;
@@ -1251,7 +1251,7 @@ async function confirmarPago() {
         // ==========================================
         try {
             console.log('Iniciando sistema de notificaciones...');
-            
+
             // Reusar la lógica de construcción de datos para el recibo
             const fechaRegistro = formatEcuadorDateTime();
             const cuotasPagadasActualizado = nuevasCuotasPagadas - cantidadCuotas; // Estado previo al commit de hoy
@@ -1305,24 +1305,24 @@ async function confirmarPago() {
             }
 
             const whatsapp = currentViewingCredito.socio?.whatsapp || '';
-            const socioResult = await sendPaymentWebhook({ 
-                whatsapp: whatsapp, 
-                image_base64: image_base64, 
-                message: message 
+            const socioResult = await sendPaymentWebhook({
+                whatsapp: whatsapp,
+                image_base64: image_base64,
+                message: message
             });
 
             if (socioResult.success) {
                 const noticeimage_base64 = cantidadCuotas === 1 ? await generateNoticeCanvas(reciboData) : await generateMultiQuotaNoticeCanvas(reciboData);
-                const detailList = cantidadCuotas === 1 
+                const detailList = cantidadCuotas === 1
                     ? `🔢 Cuota: ${reciboData.numeroCuota} de ${reciboData.plazo}\n📊 Estado: ${reciboData.estadoCuota}${totalMora > 0 ? ` (Mora: ${formatMoney(totalMora)})` : ''}`
                     : `🔢 Cuotas pagadas: ${cantidadCuotas}\n💰 Detalle: ${montoBase.toFixed(2)}${totalMora > 0 ? ` + Mora: ${totalMora.toFixed(2)}` : ''}`;
 
                 const ownerMessage = `JOSÉ KLEVER NISHVE CORO se ha registrado el pago de un crédito con los siguientes detalles:\n\n👤 Socio: ${reciboData.socioNombre.toUpperCase()}\n🆔 Cédula: ${reciboData.socioCedula}\n📑 Crédito: ${reciboData.codigoCredito}\n${detailList}\n💵 TOTAL RECIBIDO: ${formatMoney(montoPagado)}\n📅 Fecha Pago: ${formatDate(fechaPago)}\n🕐 Registro: ${fechaRegistro}\n💳 Método: ${metodoPago}\n\nTe comentamos que el socio ya ha sido notificado correctamente vía WhatsApp. ✅`;
 
-                await sendOwnerWebhook({ 
+                await sendOwnerWebhook({
                     whatsapp: whatsapp, // Enviamos el whatsapp del socio como referencia o destino si el hook lo requiere
-                    image_base64: noticeimage_base64, 
-                    message: ownerMessage 
+                    image_base64: noticeimage_base64,
+                    message: ownerMessage
                 });
                 console.log('Notificaciones de producción enviadas correctamente');
             }
@@ -2188,7 +2188,7 @@ async function generateNoticeCanvas(data) {
                 ctx.fillStyle = '#64748B';
                 ctx.font = 'bold 13px Arial';
                 ctx.fillText(f.label, 80, startY + (i * 45));
-                
+
                 ctx.fillStyle = f.color || '#0F172A';
                 ctx.font = f.size || 'bold 16px Arial';
                 ctx.fillText(f.value, 250, startY + (i * 45));
@@ -2235,7 +2235,7 @@ async function generateMultiQuotaNoticeCanvas(data) {
             ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
             // Barra superior de "AVISO"
-            ctx.fillStyle = '#C2410C'; 
+            ctx.fillStyle = '#C2410C';
             ctx.fillRect(15, 15, canvas.width - 30, 90);
 
             if (mode === 'withLogo') {

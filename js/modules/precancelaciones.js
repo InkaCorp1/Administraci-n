@@ -104,7 +104,7 @@ function closePrecancModal(modalId) {
     if (!modal) return;
     modal.classList.add('hidden');
     modal.style.display = 'none';
-    
+
     // Restaurar scroll si no hay modales abiertos
     const anyOpen = document.querySelector('.modal:not(.hidden)');
     if (!anyOpen) {
@@ -138,8 +138,8 @@ function hasPrecancCacheData() {
 
 // Verificar si necesita sincronización
 function needsPrecancSync() {
-    return precancCacheTimestamp === 0 || 
-           (Date.now() - precancCacheTimestamp) >= CACHE_DURATION_PRECANC;
+    return precancCacheTimestamp === 0 ||
+        (Date.now() - precancCacheTimestamp) >= CACHE_DURATION_PRECANC;
 }
 
 // Sincronización en segundo plano
@@ -179,27 +179,27 @@ async function loadCreditosPrecancelables() {
     // 1. PRIMERO: Carga instantánea desde caché global de créditos
     if (window.hasCacheData && window.hasCacheData('creditos') && allCreditosPrecancelables.length === 0) {
         console.log('⚡ Carga instantánea de precancelaciones desde caché de créditos');
-        
+
         // Filtrar créditos activos y morosos del caché global
-        const creditosCache = window.dataCache.creditos.filter(c => 
+        const creditosCache = window.dataCache.creditos.filter(c =>
             c.estado_credito === 'ACTIVO' || c.estado_credito === 'MOROSO'
         );
-        
+
         // Procesar créditos para cálculos básicos
         await procesarCreditosParaPrecancelacion(creditosCache);
-        
+
         // Sincronizar en segundo plano para obtener datos completos
         syncPrecancelacionesBackground();
         return;
     }
-    
+
     // Si ya hay datos en memoria, usarlos
     if (allCreditosPrecancelables.length > 0) {
         console.log('⚡ Usando datos en memoria para precancelaciones');
         filteredCreditosPrecancelables = [...allCreditosPrecancelables];
         updatePrecancelacionesStats();
         renderPrecancelacionesSections();
-        
+
         if (needsPrecancSync()) {
             syncPrecancelacionesBackground();
         }
@@ -218,11 +218,11 @@ async function procesarCreditosParaPrecancelacion(creditos) {
         const cuotasPagadas = credito.cuotas_pagadas || 0;
         const plazo = credito.plazo || 12;
         const capitalOriginal = credito.capital || 0;
-        
+
         // Estimación simple: proporción del capital
         const porcentajePagado = cuotasPagadas / plazo;
         const capitalPendienteEstimado = capitalOriginal * (1 - porcentajePagado);
-        
+
         return {
             ...credito,
             capital_pendiente: credito.capital_pendiente || capitalPendienteEstimado,
@@ -230,10 +230,10 @@ async function procesarCreditosParaPrecancelacion(creditos) {
             cuotas_pagadas_count: cuotasPagadas
         };
     });
-    
+
     filteredCreditosPrecancelables = [...allCreditosPrecancelables];
     precancCacheTimestamp = Date.now();
-    
+
     updatePrecancelacionesStats();
     renderPrecancelacionesSections();
 }
@@ -241,13 +241,13 @@ async function procesarCreditosParaPrecancelacion(creditos) {
 async function loadCreditosPrecancelablesFromDB(silently = false) {
     try {
         const supabase = window.getSupabaseClient();
-        
+
         // Obtener créditos activos y morosos (ambos pueden precancelarse)
         const { data: creditos, error } = await supabase
             .from('ic_creditos')
             .select(`
                 *,
-                socio:ic_socios!id_socio(*)
+                socio:ic_socios(*)
             `)
             .in('estado_credito', ['ACTIVO', 'MOROSO'])
             .order('created_at', { ascending: false });
@@ -291,16 +291,16 @@ async function loadHistorialPrecancelaciones() {
 async function loadHistorialFromDB(silently = false) {
     try {
         const supabase = window.getSupabaseClient();
-        
+
         const { data, error } = await supabase
             .from('ic_creditos_precancelacion')
             .select(`
                 *,
-                credito:ic_creditos!id_credito(
+                credito:ic_creditos(
                     codigo_credito,
                     capital,
                     plazo,
-                    socio:ic_socios!id_socio(nombre, cedula, paisresidencia)
+                    socio:ic_socios(nombre, cedula, paisresidencia)
                 )
             `)
             .order('fecha_precancelacion', { ascending: false });
@@ -308,7 +308,7 @@ async function loadHistorialFromDB(silently = false) {
         if (error) throw error;
 
         historialPrecancelaciones = data || [];
-        
+
         // Actualizar contador del tab
         const countEl = document.getElementById('tab-count-historial');
         if (countEl) countEl.textContent = historialPrecancelaciones.length;
@@ -333,7 +333,7 @@ async function loadHistorialFromDB(silently = false) {
 
 async function calcularCapitalPendiente(creditos) {
     const supabase = window.getSupabaseClient();
-    
+
     for (const credito of creditos) {
         try {
             const { data: cuotas, error } = await supabase
@@ -395,7 +395,7 @@ function updatePrecancelacionesStats() {
 function renderPrecancelacionesSections() {
     const container = document.getElementById('precancelaciones-sections-container');
     const emptyEl = document.getElementById('precancelaciones-empty');
-    
+
     if (!container) return;
 
     const creditos = filteredCreditosPrecancelables;
@@ -499,7 +499,7 @@ function renderCreditoRowPrecanc(credito) {
 function renderHistorialSections() {
     const container = document.getElementById('historial-sections-container');
     const emptyEl = document.getElementById('historial-empty');
-    
+
     if (!container) return;
 
     if (!historialPrecancelaciones || historialPrecancelaciones.length === 0) {
@@ -617,14 +617,14 @@ function applyFiltersPrecanc() {
 
     filteredCreditosPrecancelables = allCreditosPrecancelables.filter(credito => {
         // Filtro de búsqueda
-        const matchesSearch = !query || 
+        const matchesSearch = !query ||
             credito.codigo_credito.toLowerCase().includes(query) ||
             credito.socio?.nombre?.toLowerCase().includes(query) ||
             credito.socio?.cedula?.includes(query);
 
         // Filtro de país
         const paisCredito = credito.socio?.paisresidencia?.toUpperCase() || '';
-        const matchesPais = !currentPaisFilterPrecanc || 
+        const matchesPais = !currentPaisFilterPrecanc ||
             paisCredito.includes(currentPaisFilterPrecanc.toUpperCase());
 
         return matchesSearch && matchesPais;
@@ -640,11 +640,11 @@ async function refreshPrecancelaciones() {
         loadCreditosPrecancelables(),
         loadHistorialPrecancelaciones()
     ]);
-    
+
     if (currentTab === 'historial') {
         renderHistorialSections();
     }
-    
+
     showNotification('Datos actualizados', 'success');
 }
 
@@ -701,7 +701,7 @@ async function handleCalcularMontos() {
 
     try {
         beginLoading('Calculando montos...');
-        
+
         const calculo = await calcularPrecancelacion(creditoActual.id_credito, fechaPrecanc);
         calculoPrecancelacion = calculo;
 
@@ -719,7 +719,7 @@ async function handleCalcularMontos() {
 
 async function calcularPrecancelacion(idCredito, fechaPrecancelacion) {
     const supabase = window.getSupabaseClient();
-    
+
     // 1. Obtener tabla de amortización
     const { data: amortizacion, error: errorAmort } = await supabase
         .from('ic_creditos_amortizacion')
@@ -773,7 +773,7 @@ async function calcularPrecancelacion(idCredito, fechaPrecancelacion) {
     // 6. Interés proporcional por días
     const unDiaEnMs = 1000 * 60 * 60 * 24;
     const diasTranscurridos = Math.max(0, Math.round((fechaPrecancelacion - fechaUltimaCuotaPagada) / unDiaEnMs));
-    
+
     const tasaMensual = (creditoActual.tasa_interes_mensual || 0) / 100;
     const tasaDiaria = (tasaMensual * 12) / 365;
     const interesProporcional = capitalPendiente * tasaDiaria * diasTranscurridos;
@@ -852,16 +852,16 @@ async function handleConfirmarPrecancelacion() {
 
     try {
         beginLoading('Procesando precancelación...');
-        
+
         await ejecutarProcesamiento(calculoPrecancelacion, referencia, observaciones);
 
         showNotification('Precancelación completada con éxito', 'success');
         closePrecancModal('modal-confirmar-precancelacion');
-        
+
         // Limpiar formulario
         document.getElementById('confirm-referencia').value = '';
         document.getElementById('confirm-observaciones').value = '';
-        
+
         // Recargar datos
         await refreshPrecancelaciones();
 

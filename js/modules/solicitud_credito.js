@@ -17,7 +17,7 @@ let searchTermSolicitud = '';
 function mostrarScreenBlocker(mensaje) {
     // Remover si ya existe
     ocultarScreenBlocker();
-    
+
     const blocker = document.createElement('div');
     blocker.id = 'screen-blocker';
     blocker.innerHTML = `
@@ -37,10 +37,10 @@ function mostrarScreenBlocker(mensaje) {
 function actualizarScreenBlocker(mensaje, progreso = null) {
     const blocker = document.getElementById('screen-blocker');
     if (!blocker) return;
-    
+
     const msgEl = blocker.querySelector('.blocker-message');
     if (msgEl) msgEl.textContent = mensaje;
-    
+
     if (progreso !== null) {
         const progressBar = blocker.querySelector('.blocker-progress-bar');
         if (progressBar) progressBar.style.width = `${progreso}%`;
@@ -53,9 +53,9 @@ function ocultarScreenBlocker() {
 }
 
 // Estilos del screen blocker (se agregan dinámicamente)
-(function() {
+(function () {
     if (document.getElementById('screen-blocker-styles')) return;
-    
+
     const styles = document.createElement('style');
     styles.id = 'screen-blocker-styles';
     styles.textContent = `
@@ -126,7 +126,7 @@ function ocultarScreenBlocker() {
 async function initSolicitudCreditoModule() {
     setupSolicitudesEventListeners();
     await loadSolicitudes();
-    
+
     // Aplicar filtro por defecto (PENDIENTE)
     filterSolicitudesByEstado('PENDIENTE');
 }
@@ -190,7 +190,7 @@ async function loadSolicitudes(forceRefresh = false) {
             updateSolicitudesStats();
             updateSolicitudesCounts();
             applyFiltersSolicitud(); // Aplicar filtro por defecto (PENDIENTE)
-            
+
             // Cargar sección de pendientes de desembolso
             await loadPendientesDesembolso();
 
@@ -199,7 +199,7 @@ async function loadSolicitudes(forceRefresh = false) {
                 console.log('✓ Caché fresco, no se requiere actualización');
                 return;
             }
-            
+
             // Actualizar en segundo plano
             console.log('⟳ Actualizando solicitudes en segundo plano...');
             syncSolicitudesBackground();
@@ -240,7 +240,7 @@ async function loadSolicitudesFromDB() {
     updateSolicitudesStats();
     updateSolicitudesCounts();
     applyFiltersSolicitud();
-    
+
     // Cargar sección de pendientes de desembolso
     await loadPendientesDesembolso();
 }
@@ -309,65 +309,65 @@ async function loadPendientesDesembolso() {
     const section = document.getElementById('seccion-pendiente-desembolso');
     const container = document.getElementById('lista-pendiente-desembolso');
     const countBadge = document.getElementById('count-pendiente-desembolso');
-    
+
     if (!section || !container) return;
 
     try {
         const supabase = window.getSupabaseClient();
-        
+
         // Obtener créditos en estado PENDIENTE (colocados pero no desembolsados)
         const { data: creditosPendientes, error } = await supabase
             .from('ic_creditos')
             .select('*')
             .eq('estado_credito', 'PENDIENTE')
             .order('created_at', { ascending: false });
-        
+
         if (error) {
             console.error('Error cargando pendientes de desembolso:', error);
             section.classList.add('hidden');
             return;
         }
-        
+
         // Si hay créditos pendientes, cargar datos relacionados
         if (creditosPendientes && creditosPendientes.length > 0) {
             // Cargar socios - primero intentar desde caché
             const cachedSocios = window.dataCache?.socios || [];
             let socios = [];
-            
+
             // Obtener IDs únicos de socios
             const socioIds = [...new Set(creditosPendientes.map(c => c.id_socio).filter(Boolean))];
-            
+
             if (socioIds.length > 0) {
                 const { data: sociosDB, error: errorSocios } = await supabase
                     .from('ic_socios')
                     .select('idsocio, nombre, cedula, whatsapp, estadocivil')
                     .in('idsocio', socioIds);
-                
+
                 if (!errorSocios && sociosDB) {
                     socios = sociosDB;
                 }
             }
-            
+
             // Cargar documentos
             const creditoIds = creditosPendientes.map(c => c.id_credito);
             const { data: documentos } = await supabase
                 .from('ic_creditos_documentos')
                 .select('id_credito, contrato_generado, pagare_generado, tabla_amortizacion_generada, documento_garante_firmado')
                 .in('id_credito', creditoIds);
-            
+
             // Cargar garantes
             const { data: garantes } = await supabase
                 .from('ic_creditos_garantes')
                 .select('id_credito, nombre_garante, cedula_garante')
                 .in('id_credito', creditoIds);
-            
+
             // Mapear datos a los créditos
             creditosPendientes.forEach(credito => {
                 // Buscar socio primero en DB, luego en caché
                 let socioEncontrado = socios?.find(s => s.idsocio === credito.id_socio);
                 if (!socioEncontrado) {
                     // Buscar en caché por id_socio o por cédula (el id_socio podría ser la cédula)
-                    socioEncontrado = cachedSocios.find(s => 
+                    socioEncontrado = cachedSocios.find(s =>
                         s.idsocio === credito.id_socio || s.cedula === credito.id_socio
                     );
                 }
@@ -391,18 +391,18 @@ async function loadPendientesDesembolso() {
             const socio = credito.socio || {};
             const docs = credito.documentos?.[0] || {};
             const garanteInfo = credito.garante_info?.[0] || null;
-            
+
             const nombreCompleto = socio.nombre || 'Sin nombre';
             const capitalFormatted = parseFloat(credito.capital).toLocaleString('es-EC', { minimumFractionDigits: 2 });
             const cuotaFormatted = parseFloat(credito.cuota_con_ahorro).toLocaleString('es-EC', { minimumFractionDigits: 2 });
-            
+
             // Estado de documentos
             const contratoOk = docs.contrato_generado;
             const pagareOk = docs.pagare_generado;
             const tablaOk = docs.tabla_amortizacion_generada;
             const garanteOk = !credito.garante || docs.documento_garante_firmado;
             const todosDocsOk = contratoOk && pagareOk && tablaOk && garanteOk;
-            
+
             return `
                 <div class="card-desembolso-pendiente" data-id="${credito.id_credito}">
                     <div class="card-desembolso-header">
@@ -588,14 +588,14 @@ function renderSolicitudesGrid(solicitudes) {
 
         html += '<div class="solicitud-section">' +
             '<div class="section-header ' + estadoInfo.class + '">' +
-                '<div class="section-title">' +
-                    '<i class="' + estadoInfo.icon + '"></i>' +
-                    '<span>' + estadoInfo.label + '</span>' +
-                    '<span class="section-count">' + items.length + '</span>' +
-                '</div>' +
+            '<div class="section-title">' +
+            '<i class="' + estadoInfo.icon + '"></i>' +
+            '<span>' + estadoInfo.label + '</span>' +
+            '<span class="section-count">' + items.length + '</span>' +
+            '</div>' +
             '</div>' +
             '<div class="solicitudes-cards">' +
-                items.map(s => renderSolicitudCard(s, estadoInfo)).join('') +
+            items.map(s => renderSolicitudCard(s, estadoInfo)).join('') +
             '</div>' +
             '</div>';
     });
@@ -606,7 +606,7 @@ function renderSolicitudesGrid(solicitudes) {
 function renderSolicitudCard(solicitud, estadoInfo) {
     // Parsear fecha y hora del ID
     const { fecha, hora } = parseSolicitudId(solicitud.solicitudid);
-    
+
     const montoFormatted = '$' + parseFloat(solicitud.monto || 0).toLocaleString('es-EC', {
         minimumFractionDigits: 2
     });
@@ -621,40 +621,40 @@ function renderSolicitudCard(solicitud, estadoInfo) {
 
     return '<div class="solicitud-card ' + estadoInfo.class + '" onclick="viewSolicitud(\'' + solicitud.solicitudid + '\')">' +
         '<div class="solicitud-card-header">' +
-            '<div class="solicitud-fecha">' +
-                '<i class="fas fa-calendar-alt"></i>' +
-                '<span>' + fecha + '</span>' +
-                '<span class="solicitud-hora"><i class="fas fa-clock"></i> ' + hora + '</span>' +
-            '</div>' +
-            '<span class="badge badge-' + estadoInfo.badgeClass + '">' + estadoInfo.label + '</span>' +
+        '<div class="solicitud-fecha">' +
+        '<i class="fas fa-calendar-alt"></i>' +
+        '<span>' + fecha + '</span>' +
+        '<span class="solicitud-hora"><i class="fas fa-clock"></i> ' + hora + '</span>' +
+        '</div>' +
+        '<span class="badge badge-' + estadoInfo.badgeClass + '">' + estadoInfo.label + '</span>' +
         '</div>' +
         '<div class="solicitud-card-body">' +
-            '<div class="solicitud-socio">' +
-                '<i class="fas fa-user"></i>' +
-                '<div class="socio-info">' +
-                    '<span class="socio-nombre">' + (solicitud.nombresocio || 'N/A') + '</span>' +
-                    '<span class="socio-cedula">' + (solicitud.cedulasocio || '') + '</span>' +
-                '</div>' +
-            '</div>' +
-            '<div class="solicitud-monto">' +
-                '<span class="monto-label">Monto Solicitado</span>' +
-                '<span class="monto-value">' + montoFormatted + '</span>' +
-            '</div>' +
-            '<div class="solicitud-extra">' +
-                '<span class="extra-item">' +
-                    '<i class="fas fa-map-marker-alt"></i>' +
-                    (solicitud.paisresidencia || '-') +
-                '</span>' +
-                whatsappHtml +
-            '</div>' +
+        '<div class="solicitud-socio">' +
+        '<i class="fas fa-user"></i>' +
+        '<div class="socio-info">' +
+        '<span class="socio-nombre">' + (solicitud.nombresocio || 'N/A') + '</span>' +
+        '<span class="socio-cedula">' + (solicitud.cedulasocio || '') + '</span>' +
+        '</div>' +
+        '</div>' +
+        '<div class="solicitud-monto">' +
+        '<span class="monto-label">Monto Solicitado</span>' +
+        '<span class="monto-value">' + montoFormatted + '</span>' +
+        '</div>' +
+        '<div class="solicitud-extra">' +
+        '<span class="extra-item">' +
+        '<i class="fas fa-map-marker-alt"></i>' +
+        (solicitud.paisresidencia || '-') +
+        '</span>' +
+        whatsappHtml +
+        '</div>' +
         '</div>' +
         '<div class="solicitud-card-footer">' +
-            '<button class="btn btn-ver-detalles" onclick="event.stopPropagation(); viewSolicitud(\'' + solicitud.solicitudid + '\')">' +
-                '<i class="fas fa-eye"></i>' +
-                '<span>Ver Detalles</span>' +
-            '</button>' +
+        '<button class="btn btn-ver-detalles" onclick="event.stopPropagation(); viewSolicitud(\'' + solicitud.solicitudid + '\')">' +
+        '<i class="fas fa-eye"></i>' +
+        '<span>Ver Detalles</span>' +
+        '</button>' +
         '</div>' +
-    '</div>';
+        '</div>';
 }
 
 function getEstadoInfo(estado) {
@@ -682,7 +682,7 @@ function abrirModalNuevaSolicitud() {
     const inputMonto = document.getElementById('input-monto');
     const inputPlazo = document.getElementById('input-plazo');
     const infoSocio = document.getElementById('info-socio-seleccionado');
-    
+
     if (selectSocio) selectSocio.value = '';
     if (inputMonto) inputMonto.value = '';
     if (inputPlazo) inputPlazo.value = '';
@@ -734,7 +734,7 @@ function mostrarInfoSocioSeleccionado() {
     // Mostrar/Ocultar cédula del cónyuge según estado civil
     const containerCedulaConyuge = document.getElementById('container-cedula-conyuge');
     const displayCedulaConyuge = document.getElementById('display-cedula-conyuge');
-    
+
     const estadoCivil = (socio.estadocivil || '').toUpperCase();
     if (estadoCivil === 'CASADO/A' || estadoCivil === 'UNIÓN LIBRE') {
         containerCedulaConyuge.classList.remove('hidden');
@@ -785,7 +785,7 @@ function parseSolicitudId(solicitudId) {
     if (!solicitudId || solicitudId.length < 14) {
         return { fecha: 'N/A', hora: 'N/A', fechaObj: null };
     }
-    
+
     try {
         const dd = solicitudId.substring(0, 2);
         const mm = solicitudId.substring(2, 4);
@@ -793,9 +793,9 @@ function parseSolicitudId(solicitudId) {
         const hh = solicitudId.substring(8, 10);
         const min = solicitudId.substring(10, 12);
         const ss = solicitudId.substring(12, 14);
-        
+
         const fechaObj = new Date(parseInt(yyyy), parseInt(mm) - 1, parseInt(dd), parseInt(hh), parseInt(min), parseInt(ss));
-        
+
         const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
         const fechaLarga = `${dd} de ${meses[parseInt(mm) - 1]} del ${yyyy}`;
 
@@ -950,7 +950,7 @@ function viewSolicitud(solicitudId) {
 
     // Parsear fecha y hora del ID
     const { fechaLarga, hora } = parseSolicitudId(solicitud.solicitudid);
-    
+
     // Formatear monto
     const montoFormatted = '$' + parseFloat(solicitud.monto || 0).toLocaleString('es-EC', {
         minimumFractionDigits: 2
@@ -966,16 +966,16 @@ function viewSolicitud(solicitudId) {
     document.getElementById('modal-solicitud-whatsapp').textContent = solicitud.whatsappsocio || '-';
     document.getElementById('modal-solicitud-estadocivil').textContent = solicitud.estadocivil || '-';
     document.getElementById('modal-solicitud-direccion').textContent = solicitud.direccionsocio || '-';
-    
+
     // Datos del cónyuge
     const conyugeEl = document.getElementById('modal-solicitud-conyuge');
     const cedulaConyugeEl = document.getElementById('modal-solicitud-cedula-conyuge');
     const containerCedulaConyuge = document.getElementById('container-modal-cedula-conyuge');
-    
+
     if (conyugeEl) {
         conyugeEl.textContent = solicitud.nombreconyuge || '-';
     }
-    
+
     if (cedulaConyugeEl && containerCedulaConyuge) {
         const estadoCivil = (solicitud.estadocivil || '').toUpperCase();
         if (estadoCivil === 'CASADO/A' || estadoCivil === 'UNIÓN LIBRE') {
@@ -986,17 +986,17 @@ function viewSolicitud(solicitudId) {
             cedulaConyugeEl.textContent = '-';
         }
     }
-    
+
     // Bien
     const bienEl = document.getElementById('modal-solicitud-bien');
     if (bienEl) {
         bienEl.textContent = solicitud.bien || '-';
     }
-    
+
     // Referencia
     const refEl = document.getElementById('modal-solicitud-referencia');
     if (refEl) {
-        refEl.textContent = solicitud.nombrereferencia ? 
+        refEl.textContent = solicitud.nombrereferencia ?
             solicitud.nombrereferencia + ' - ' + (solicitud.whatsappreferencia || '') : '-';
     }
 
@@ -1011,7 +1011,7 @@ function viewSolicitud(solicitudId) {
     // Mostrar/ocultar botones según estado
     const accionesPendiente = document.getElementById('acciones-pendiente');
     const accionesAprobada = document.getElementById('acciones-aprobada');
-    
+
     if (accionesPendiente) accionesPendiente.classList.add('hidden');
     if (accionesAprobada) accionesAprobada.classList.add('hidden');
 
@@ -1048,11 +1048,11 @@ function renderFotosGaleria(solicitud) {
         return;
     }
 
-    container.innerHTML = fotos.map(function(foto) {
+    container.innerHTML = fotos.map(function (foto) {
         return '<div class="foto-thumb" onclick="abrirVisorImagen(\'' + foto.url + '\', \'' + foto.label + '\')">' +
             '<img src="' + foto.url + '" alt="' + foto.label + '" loading="lazy">' +
             '<span class="foto-label">' + foto.label + '</span>' +
-        '</div>';
+            '</div>';
     }).join('');
 }
 
@@ -1065,10 +1065,10 @@ function abrirVisorImagen(url, label) {
 
     const img = document.getElementById('visor-imagen-src');
     const titulo = document.getElementById('visor-imagen-titulo');
-    
+
     if (img) img.src = url;
     if (titulo) titulo.textContent = label;
-    
+
     // Reset zoom
     if (img) {
         img.style.transform = 'scale(1)';
@@ -1096,15 +1096,15 @@ function cerrarVisorImagen() {
 function zoomImagen(direction) {
     const img = document.getElementById('visor-imagen-src');
     if (!img) return;
-    
+
     let currentZoom = parseFloat(img.dataset.zoom || '1');
-    
+
     if (direction === 'in') {
         currentZoom = Math.min(currentZoom + 0.25, 3);
     } else {
         currentZoom = Math.max(currentZoom - 0.25, 0.5);
     }
-    
+
     img.style.transform = 'scale(' + currentZoom + ')';
     img.dataset.zoom = currentZoom;
 }
@@ -1126,7 +1126,7 @@ function closeSolicitudModal(modalId) {
 // Acciones de solicitud
 async function aprobarSolicitud() {
     if (!currentSolicitud) return;
-    
+
     // En lugar de aprobar directamente, abrimos el modal de ajuste de monto/plazo
     abrirModalAprobacion();
 }
@@ -1203,14 +1203,14 @@ async function ejecutarAprobacion() {
     }
 
     cerrarModalAprobacion();
-    
+
     try {
         const supabase = window.getSupabaseClient();
 
         // SI ES NO SOCIO (ID de 17 caracteres), AGREGAR A LA TABLA DE SOCIOS
         if (currentSolicitud.solicitudid.length === 17) {
             showToast('Registrando nuevo socio...', 'info');
-            
+
             const nuevoSocio = {
                 idsocio: currentSolicitud.cedulasocio,
                 nombre: currentSolicitud.nombresocio,
@@ -1242,14 +1242,14 @@ async function ejecutarAprobacion() {
                 console.error('Error al registrar socio:', errorSocio);
                 throw new Error('No se pudo registrar al socio: ' + errorSocio.message);
             }
-            
+
             showToast('Socio registrado exitosamente', 'success');
         }
 
         // Actualizar estado, monto y plazo
         const { error } = await supabase
             .from('ic_solicitud_de_credito')
-            .update({ 
+            .update({
                 estado: 'APROBADA',
                 monto: nuevoMonto,
                 plazo: nuevoPlazo
@@ -1269,14 +1269,14 @@ async function ejecutarAprobacion() {
 
 async function anularSolicitud() {
     if (!currentSolicitud) return;
-    
+
     const confirmed = await showConfirm(
         '¿Está seguro de anular esta solicitud?',
         'Anular Solicitud',
         { confirmText: 'Sí, Anular', cancelText: 'Cancelar', type: 'danger' }
     );
     if (!confirmed) return;
-    
+
     try {
         const supabase = window.getSupabaseClient();
         const { error } = await supabase
@@ -1297,15 +1297,15 @@ async function anularSolicitud() {
 
 async function colocarCredito() {
     if (!currentSolicitud) return;
-    
+
     // Llenar datos básicos en el modal
     document.getElementById('colocar-nombre-socio').textContent = currentSolicitud.nombresocio || '-';
     document.getElementById('colocar-monto-solicitado').textContent = '$' + parseFloat(currentSolicitud.monto || 0).toLocaleString('es-EC', { minimumFractionDigits: 2 });
     document.getElementById('colocar-plazo-solicitado').textContent = (currentSolicitud.plazo || '-') + ' meses';
-    
+
     const today = new Date();
     document.getElementById('colocar-fecha-desembolso').textContent = formatDate(today).toUpperCase();
-    
+
     // Resetear selector de día de pago (radio buttons)
     const radio15 = document.getElementById('dia-15');
     if (radio15) radio15.checked = true;
@@ -1316,10 +1316,10 @@ async function colocarCredito() {
 
     // Resetear sección de garante
     resetGaranteSection();
-    
+
     // Calcular inicialmente
     actualizarCalculosColocacion();
-    
+
     // Abrir modal
     openSolicitudModal('modal-colocar-credito');
 }
@@ -1331,7 +1331,7 @@ function toggleGaranteSection() {
     const checkbox = document.getElementById('switch-requiere-garante');
     const formContainer = document.getElementById('garante-form-container');
     const statusText = document.getElementById('garante-status');
-    
+
     if (checkbox && checkbox.checked) {
         formContainer?.classList.remove('hidden');
         if (statusText) {
@@ -1354,19 +1354,19 @@ function resetGaranteSection() {
     const checkbox = document.getElementById('switch-requiere-garante');
     const formContainer = document.getElementById('garante-form-container');
     const statusText = document.getElementById('garante-status');
-    
+
     // Desactivar switch
     if (checkbox) checkbox.checked = false;
-    
+
     // Ocultar formulario
     formContainer?.classList.add('hidden');
-    
+
     // Resetear status text
     if (statusText) {
         statusText.textContent = 'No';
         statusText.classList.remove('active');
     }
-    
+
     // Limpiar campos del formulario
     const campos = ['garante-nombre', 'garante-cedula', 'garante-domicilio', 'garante-telefono', 'garante-whatsapp'];
     campos.forEach(id => {
@@ -1381,19 +1381,19 @@ function resetGaranteSection() {
  */
 function obtenerDatosGarante() {
     const checkbox = document.getElementById('switch-requiere-garante');
-    
+
     if (!checkbox || !checkbox.checked) {
         return null;
     }
-    
+
     const nombre = document.getElementById('garante-nombre')?.value?.trim() || '';
     const cedula = document.getElementById('garante-cedula')?.value?.trim() || '';
-    
+
     // Validar campos obligatorios
     if (!nombre || !cedula) {
         return { error: true, message: 'El nombre y cédula del garante son obligatorios' };
     }
-    
+
     return {
         nombre_garante: nombre,
         cedula_garante: cedula,
@@ -1407,13 +1407,13 @@ function obtenerDatosGarante() {
 function ajustarTasa(delta) {
     const input = document.getElementById('input-tasa-interes');
     if (!input) return;
-    
+
     let valor = parseFloat(input.value) || 2;
     valor = Math.round((valor + delta) * 100) / 100; // Redondear a 2 decimales
-    
+
     // Limitar entre 0.25 y 15
     valor = Math.max(0.25, Math.min(15, valor));
-    
+
     input.value = valor.toFixed(2);
     actualizarCalculosColocacion();
 }
@@ -1427,7 +1427,7 @@ function actualizarCalculosColocacion() {
 
     const capital = parseFloat(currentSolicitud.monto || 0);
     const plazo = parseInt(currentSolicitud.plazo || 12);
-    
+
     // Obtener día de pago de los radio buttons
     let diaPago = 15;
     const radios = document.getElementsByName('dia-pago');
@@ -1448,16 +1448,16 @@ function actualizarCalculosColocacion() {
     // 1. Calcular Fecha de Primer Pago (Regla de los 25 días)
     // Buscamos la primera ocurrencia del día de pago que esté a más de 25 días
     let fechaPrimerPago = new Date(today.getFullYear(), today.getMonth(), diaPago);
-    
+
     // Si el día ya pasó este mes, vamos al siguiente
     if (fechaPrimerPago <= today) {
         fechaPrimerPago.setMonth(fechaPrimerPago.getMonth() + 1);
     }
-    
+
     // Calculamos diferencia en días
     let diffMs = fechaPrimerPago.getTime() - today.getTime();
     let diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    
+
     // Si hay 25 días o menos, saltamos un mes más
     if (diffDays <= 25) {
         fechaPrimerPago.setMonth(fechaPrimerPago.getMonth() + 1);
@@ -1467,7 +1467,7 @@ function actualizarCalculosColocacion() {
     // La fecha base es un mes antes del primer pago
     let fechaBase = new Date(fechaPrimerPago.getTime());
     fechaBase.setMonth(fechaBase.getMonth() - 1);
-    
+
     let fechaFinCredito = new Date(fechaBase.getTime());
     fechaFinCredito.setMonth(fechaFinCredito.getMonth() + plazo);
 
@@ -1487,7 +1487,7 @@ function actualizarCalculosColocacion() {
     // 5. Calcular Interés Total (usando la tasa mensual del input)
     const tasaAnual = tasaMensual * 12;
     const tasaDiaria = tasaAnual / 365;
-    
+
     // Redondeamos cada componente a 2 decimales para evitar errores de precisión
     const interesTotal = Math.round(capital * tasaDiaria * diasTotales * 100) / 100;
     const gastosAdminRedondeado = Math.round(gastosAdmin * 100) / 100;
@@ -1496,7 +1496,7 @@ function actualizarCalculosColocacion() {
     // 6. Calcular Cuotas Estimadas (según calculadora.html)
     // Cuota Base = Total a Pagar / Plazo (redondeado hacia arriba)
     const cuotaBase = Math.ceil(totalPagar / plazo);
-    
+
     // Ahorro Programado = 10% del (Capital + Intereses) / Plazo (redondeado hacia arriba)
     const ahorroTotal = (capital + interesTotal) * 0.10;
     const ahorroPorCuota = Math.ceil(ahorroTotal / plazo);
@@ -1504,7 +1504,7 @@ function actualizarCalculosColocacion() {
 
     // 7. Actualizar UI
     document.getElementById('colocar-fecha-primer-pago').textContent = formatDate(fechaPrimerPago).toUpperCase();
-    
+
     // Usamos en-US para asegurar el formato $X,XXX.XX (punto para decimales)
     const formatter = new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -1522,10 +1522,10 @@ function actualizarCalculosColocacion() {
     document.getElementById('colocar-gastos-admin').textContent = formatter.format(gastosAdminRedondeado);
     document.getElementById('colocar-interes-total').textContent = formatter.format(interesTotal);
     document.getElementById('colocar-total-pagar').textContent = formatter.format(totalPagar);
-    
+
     document.getElementById('colocar-cuota-base').textContent = formatter.format(cuotaBase);
     document.getElementById('colocar-cuota-total').textContent = formatter.format(cuotaTotal);
-    
+
     // Guardar datos calculados temporalmente para la confirmación
     window.currentColocacionData = {
         fechaPrimerPago,
@@ -1625,7 +1625,7 @@ async function prepararSimulacionPDF() {
 
             // 1. Interés preliminar (Rule of 78s)
             let interesDelMes = parseFloat((interesTotal * ((plazo - i + 1) / sumOfDigits)).toFixed(2));
-            
+
             // 2. Capital de la cuota
             let capitalPeriodo = parseFloat((cuotaBase - interesDelMes - gastosPorCuota).toFixed(2));
             let cuotaBaseReal = cuotaBase;
@@ -1765,7 +1765,7 @@ async function generarPDFColocacion(datosSimulacion) {
     };
 
     const formatCurr = (val) => '$' + parseFloat(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    
+
     // Función para cargar imagen
     const loadImage = (url) => {
         return new Promise((resolve) => {
@@ -1776,7 +1776,7 @@ async function generarPDFColocacion(datosSimulacion) {
             img.src = url;
         });
     };
-    
+
     // Cargar logo
     const logoUrl = 'https://lh3.googleusercontent.com/d/15J6Aj6ZwkVrmDfs6uyVk-oG0Mqr-i9Jn=w2048?name=inka%20corp%20normal.png';
     const logoImg = await loadImage(logoUrl);
@@ -1784,26 +1784,26 @@ async function generarPDFColocacion(datosSimulacion) {
     // --- HEADER CORPORATIVO ---
     doc.setFillColor(255, 255, 255);
     doc.rect(0, 0, pageWidth, 40, 'F');
-    
+
     // Línea decorativa superior
     doc.setFillColor(...colors.primary);
     doc.rect(0, 0, pageWidth, 2, 'F');
-    
+
     // Logo
     if (logoImg) {
         doc.addImage(logoImg, 'PNG', 15, 6, 28, 28);
     }
-    
+
     // Título principal
     doc.setTextColor(...colors.primary);
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.text('SIMULACIÓN DE COLOCACIÓN', 55, 20);
-    
+
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.text('REPORTE TÉCNICO DE ESTRUCTURA DE DATOS', 55, 26);
-    
+
     // Fecha y Código
     doc.setTextColor(100, 100, 100);
     doc.setFontSize(8);
@@ -1814,7 +1814,7 @@ async function generarPDFColocacion(datosSimulacion) {
     doc.setDrawColor(...colors.lightGray);
     doc.setLineWidth(0.5);
     doc.line(margin, 38, pageWidth - margin, 38);
-    
+
     // Línea de acento dorada
     doc.setDrawColor(...colors.contrast2);
     doc.setLineWidth(1.5);
@@ -1893,13 +1893,13 @@ async function generarPDFColocacion(datosSimulacion) {
     // Encabezados de tabla de amortización
     const amortHeaders = ['#', 'Vencimiento', 'Días', 'Capital', 'Interés', 'Gastos', 'Ahorro', 'Cuota Base', 'Cuota Total', 'Saldo'];
     const amortWidths = [8, 22, 12, 20, 18, 18, 18, 22, 22, 20];
-    
+
     doc.setFillColor(...colors.primary);
     doc.rect(margin, y, pageWidth - (margin * 2), 8, 'F');
     doc.setFontSize(6);
     doc.setTextColor(...colors.white);
     doc.setFont('helvetica', 'bold');
-    
+
     let xPos = margin;
     amortHeaders.forEach((h, i) => {
         doc.text(h, xPos + 1, y + 5);
@@ -1997,7 +1997,7 @@ async function generarPDFColocacion(datosSimulacion) {
 
     // ========== SECCIÓN 3: ic_creditos_ahorro ==========
     if (y > 240) { doc.addPage(); y = 20; }
-    
+
     doc.setTextColor(...colors.primary);
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
@@ -2022,8 +2022,8 @@ async function generarPDFColocacion(datosSimulacion) {
 
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...colors.slate600);
-    const ahorrosToShow = datosSimulacion.ahorros.length <= 10 
-        ? datosSimulacion.ahorros 
+    const ahorrosToShow = datosSimulacion.ahorros.length <= 10
+        ? datosSimulacion.ahorros
         : [...datosSimulacion.ahorros.slice(0, 7), null, ...datosSimulacion.ahorros.slice(-3)];
 
     ahorrosToShow.forEach((row, index) => {
@@ -2105,15 +2105,15 @@ async function confirmarColocacionCredito() {
     // Verificar si requiere garante y validar datos
     const requiereGarante = document.getElementById('switch-requiere-garante')?.checked || false;
     const datosGaranteForm = obtenerDatosGarante();
-    
+
     if (requiereGarante && datosGaranteForm?.error) {
         showToast(datosGaranteForm.message, 'error');
         return;
     }
 
     // Función local para formatear números
-    const fmtNum = (n) => parseFloat(n).toLocaleString('es-EC', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    
+    const fmtNum = (n) => parseFloat(n).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
     // Mostrar confirmación antes de proceder
     const confirmacion = await showConfirm(
         `<div style="text-align:left;">
@@ -2132,7 +2132,7 @@ async function confirmarColocacionCredito() {
     try {
         // Mostrar screen blocker
         mostrarScreenBlocker('Iniciando colocación de crédito...');
-        
+
         // Obtener cliente Supabase
         const supabase = window.getSupabaseClient();
 
@@ -2145,7 +2145,7 @@ async function confirmarColocacionCredito() {
         const timestamp = Date.now().toString(36).toUpperCase();
         const random = Math.random().toString(36).substring(2, 6).toUpperCase();
         const codigoCredito = `CRE-${timestamp}-${random}`;
-        
+
         const now = new Date();
         const nowISO = now.toISOString();
         const todayStr = todayISODate();
@@ -2157,7 +2157,7 @@ async function confirmarColocacionCredito() {
 
         // ========== 1. INSERTAR EN ic_creditos ==========
         actualizarScreenBlocker('Paso 1/7: Creando registro de crédito...', 10);
-        
+
         const creditoData = {
             id_socio: idSocio,
             id_solicitud: idSolicitud,
@@ -2202,7 +2202,7 @@ async function confirmarColocacionCredito() {
 
         // ========== 2. INSERTAR EN ic_creditos_amortizacion ==========
         actualizarScreenBlocker('Paso 2/7: Generando tabla de amortización...', 25);
-        
+
         const amortizacion = [];
         let saldoCapital = capital;
         let fechaAnterior = parseDate(todayStr);
@@ -2222,7 +2222,7 @@ async function confirmarColocacionCredito() {
 
             // 1. Interés preliminar (Rule of 78s)
             let interesDelMes = parseFloat((interesTotal * ((plazo - i + 1) / sumOfDigits)).toFixed(2));
-            
+
             // 2. Capital de la cuota
             let capitalPeriodo = parseFloat((cuotaBase - interesDelMes - gastosPorCuota).toFixed(2));
             let cuotaBaseReal = cuotaBase;
@@ -2281,7 +2281,7 @@ async function confirmarColocacionCredito() {
 
         // ========== 3. INSERTAR EN ic_creditos_ahorro ==========
         actualizarScreenBlocker('Paso 3/7: Configurando ahorros programados...', 40);
-        
+
         const ahorros = amortizacionInsertada.map(cuota => ({
             id_credito: idCredito,
             id_detalle: cuota.id_detalle,
@@ -2305,7 +2305,7 @@ async function confirmarColocacionCredito() {
 
         // ========== 4. INSERTAR EN ic_creditos_documentos ==========
         actualizarScreenBlocker('Paso 4/7: Preparando registro de documentos...', 55);
-        
+
         const documentosData = {
             id_credito: idCredito,
             contrato_generado: false,
@@ -2336,7 +2336,7 @@ async function confirmarColocacionCredito() {
         // ========== 5. INSERTAR EN ic_creditos_garantes (si aplica) ==========
         if (requiereGarante && datosGaranteForm) {
             actualizarScreenBlocker('Paso 5/7: Registrando datos del garante...', 65);
-            
+
             const garanteData = {
                 id_credito: idCredito,
                 nombre_garante: datosGaranteForm.nombre_garante,
@@ -2363,7 +2363,7 @@ async function confirmarColocacionCredito() {
 
         // ========== 6. INSERTAR EN ic_creditos_historial ==========
         actualizarScreenBlocker('Paso 6/7: Registrando historial de cambios...', 75);
-        
+
         const historialData = {
             id_credito: idCredito,
             estado_anterior: 'SOLICITUD',
@@ -2385,7 +2385,7 @@ async function confirmarColocacionCredito() {
 
         // ========== 7. ACTUALIZAR ic_solicitud_de_credito ==========
         actualizarScreenBlocker('Paso 7/7: Actualizando estado de solicitud...', 90);
-        
+
         const { error: errorSolicitud } = await supabase
             .from('ic_solicitud_de_credito')
             .update({ estado: 'COLOCADA' })
@@ -2399,26 +2399,26 @@ async function confirmarColocacionCredito() {
 
         // Finalizar screen blocker
         actualizarScreenBlocker('¡Crédito colocado exitosamente!', 100);
-        
+
         // Esperar un momento para mostrar el éxito
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         // Ocultar screen blocker
         ocultarScreenBlocker();
 
         // Cerrar modales
         closeSolicitudModal('modal-colocar-credito');
         closeSolicitudModal('modal-ver-solicitud');
-        
+
         // Actualizar caché de créditos y refrescar
         if (window.dataCache) {
             window.dataCache.creditos = null; // Invalidar caché de créditos
         }
-        
+
         // Cambiar filtro a pendientes de desembolso y recargar
         currentFilterSolicitud = 'COLOCADA';
         await loadSolicitudes();
-        
+
         // Cargar sección de pendientes de desembolso
         await loadPendientesDesembolso();
 
@@ -2506,13 +2506,13 @@ async function generarPDFSolicitud() {
 
         const solicitud = currentSolicitud;
         const nombreSocio = solicitud.nombresocio || '[NOMBRE NO ESPECIFICADO]';
-        
+
         // Configuración de página
         const pageWidth = 210;
         const pageHeight = 297;
         const margin = 20;
         const contentWidth = pageWidth - (margin * 2);
-        
+
         // Función para cargar imagen como base64
         const loadImageAsBase64 = (url) => {
             return new Promise((resolve, reject) => {
@@ -2542,20 +2542,20 @@ async function generarPDFSolicitud() {
                 img.src = url;
             });
         };
-        
+
         // Cargar logo
         showToast('Generando PDF, cargando imágenes...', 'info');
         const logoUrl = 'https://lh3.googleusercontent.com/d/15J6Aj6ZwkVrmDfs6uyVk-oG0Mqr-i9Jn=w2048?name=inka%20corp%20normal.png';
         const logoImg = await loadImage(logoUrl);
-        
+
         // Header Limpio y Corporativo (Fondo Blanco para contraste)
         doc.setFillColor(255, 255, 255);
         doc.rect(0, 0, pageWidth, 40, 'F');
-        
+
         // Línea decorativa superior (Acento institucional)
         doc.setFillColor(...colors.primary);
         doc.rect(0, 0, pageWidth, 2, 'F');
-        
+
         // Logo
         if (logoImg) {
             try {
@@ -2568,35 +2568,35 @@ async function generarPDFSolicitud() {
                 doc.text('INKA CORP', 16, 20);
             }
         }
-        
+
         // Título principal (Verde corporativo sobre blanco)
         doc.setTextColor(...colors.primary);
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
         doc.text('SOLICITUD DE CRÉDITO', 55, 22);
-        
+
         // Número de solicitud (Gris elegante)
         doc.setTextColor(100, 100, 100);
         doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
         doc.text(`Referencia: #${solicitud.solicitudid}`, 55, 31);
-        
+
         // Línea divisoria inferior del header
         doc.setDrawColor(...colors.lightGray);
         doc.setLineWidth(0.5);
         doc.line(margin, 38, pageWidth - margin, 38);
-        
+
         // Línea decorativa de acento (dorada)
         doc.setDrawColor(...colors.contrast2);
         doc.setLineWidth(1.5);
         doc.line(margin, 45, pageWidth - margin, 45);
-        
+
         let yPosition = 55;
-        
+
         // Extraer tiempo y fecha del ID para el descargo (formato ddmmyyyyhhmmss)
         const sid = solicitud.solicitudid || "";
         let tiempoTexto = "";
-        
+
         if (sid.length >= 14) {
             const dd = sid.substring(0, 2);
             const mm_num = parseInt(sid.substring(2, 4));
@@ -2604,13 +2604,13 @@ async function generarPDFSolicitud() {
             const hh = parseInt(sid.substring(8, 10));
             const mm = parseInt(sid.substring(10, 12));
             const ss = parseInt(sid.substring(12, 14));
-            
+
             const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
             const mesNombre = meses[mm_num - 1] || "mes desconocido";
-            
+
             let periodo = "mañana";
             let hora12 = hh;
-            
+
             if (hh >= 19) {
                 periodo = "noche";
                 hora12 = hh > 12 ? hh - 12 : hh;
@@ -2621,7 +2621,7 @@ async function generarPDFSolicitud() {
                 periodo = "mañana";
                 hora12 = hh === 0 ? 12 : hh;
             }
-            
+
             tiempoTexto = `siendo las ${hora12} de la ${periodo} con ${mm} minutos y ${ss} segundos del día ${parseInt(dd)} de ${mesNombre} del ${yyyy}`;
         }
 
@@ -2646,7 +2646,7 @@ async function generarPDFSolicitud() {
             '',
             'Esta autorización se otorga de manera libre, voluntaria e informada.'
         ];
-        
+
         // Calcular altura del descargo
         let descargoHeight = 12;
         descargoTexto.forEach(linea => {
@@ -2658,7 +2658,7 @@ async function generarPDFSolicitud() {
             }
         });
         descargoHeight += 10;
-        
+
         // Renderizar descargo
         doc.setFillColor(...colors.tertiary);
         doc.rect(margin, yPosition, contentWidth, 8, 'F');
@@ -2666,14 +2666,14 @@ async function generarPDFSolicitud() {
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
         doc.text('DESCARGO DE RESPONSABILIDAD Y AUTORIZACIÓN', margin + 3, yPosition + 5.5);
-        
+
         yPosition += 12;
-        
+
         // Contenido del descargo
         doc.setTextColor(...colors.textDark);
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
-        
+
         descargoTexto.forEach((linea, index) => {
             if (linea === '') {
                 yPosition += 3;
@@ -2685,16 +2685,16 @@ async function generarPDFSolicitud() {
                 });
             }
         });
-        
+
         yPosition += 10;
-        
+
         // Función helper para agregar secciones
         const addSection = (title, data, startY) => {
             let y = startY;
-            
+
             const titleHeight = 12;
             let contentHeight = 0;
-            
+
             Object.entries(data).forEach(([key, value]) => {
                 if (value && value !== 'No especificado') {
                     const valueText = String(value);
@@ -2703,14 +2703,14 @@ async function generarPDFSolicitud() {
                     contentHeight += lines.length * 4 + 2;
                 }
             });
-            
+
             const totalSectionHeight = titleHeight + contentHeight + 10;
-            
+
             if (y + totalSectionHeight > pageHeight - 50) {
                 doc.addPage();
                 y = 20;
             }
-            
+
             // Título de la sección
             doc.setFillColor(...colors.secondary);
             doc.rect(margin, y, contentWidth, 8, 'F');
@@ -2718,37 +2718,37 @@ async function generarPDFSolicitud() {
             doc.setFontSize(11);
             doc.setFont('helvetica', 'bold');
             doc.text(title, margin + 3, y + 5.5);
-            
+
             y += 12;
-            
+
             // Contenido de la sección
             doc.setTextColor(...colors.textDark);
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
-            
+
             Object.entries(data).forEach(([key, value], index) => {
                 if (value && value !== 'No especificado') {
                     if (index % 2 === 0) {
                         doc.setFillColor(...colors.lightGray);
                         doc.rect(margin, y - 2, contentWidth, 6, 'F');
                     }
-                    
+
                     doc.setFont('helvetica', 'bold');
                     doc.text(`${key}:`, margin + 2, y + 2);
                     doc.setFont('helvetica', 'normal');
-                    
+
                     const valueText = String(value);
                     const maxWidth = contentWidth - 60;
                     const lines = doc.splitTextToSize(valueText, maxWidth);
                     doc.text(lines, margin + 55, y + 2);
-                    
+
                     y += lines.length * 4 + 2;
                 }
             });
-            
+
             return y + 5;
         };
-        
+
         // Datos personales
         const personalData = {
             'Nombre Completo': solicitud.nombresocio || 'No especificado',
@@ -2758,56 +2758,56 @@ async function generarPDFSolicitud() {
             'País de Residencia': solicitud.paisresidencia || 'No especificado',
             'WhatsApp': solicitud.whatsappsocio || 'No especificado'
         };
-        
+
         yPosition = addSection('DATOS PERSONALES', personalData, yPosition);
-        
+
         // Información familiar/referencias
         const familiarData = {
             'Nombre del Cónyuge': solicitud.nombreconyuge || 'No especificado',
             'País Residencia Cónyuge': solicitud.paisresidenciaconyuge || 'No especificado',
             'WhatsApp Cónyuge': solicitud.whatsappconyuge || 'No especificado',
             'Nombre de Referencia': solicitud.nombrereferencia || 'No especificado',
-            'WhatsApp Referencia': solicitud.whatsappreferencia ? 
-                (typeof solicitud.whatsappreferencia === 'number' ? 
-                    solicitud.whatsappreferencia.toString() : 
+            'WhatsApp Referencia': solicitud.whatsappreferencia ?
+                (typeof solicitud.whatsappreferencia === 'number' ?
+                    solicitud.whatsappreferencia.toString() :
                     solicitud.whatsappreferencia) : 'No especificado'
         };
-        
+
         yPosition = addSection('INFORMACIÓN FAMILIAR Y REFERENCIAS', familiarData, yPosition);
-        
+
         // Datos del crédito
         const { fecha } = parseSolicitudId(solicitud.solicitudid);
         const creditoData = {
             'Fecha de Solicitud': fecha,
-            'Monto Solicitado': solicitud.monto ? 
-                `$${(typeof solicitud.monto === 'number' ? solicitud.monto : parseInt(solicitud.monto)).toLocaleString()}` : 
+            'Monto Solicitado': solicitud.monto ?
+                `$${(typeof solicitud.monto === 'number' ? solicitud.monto : parseInt(solicitud.monto)).toLocaleString()}` :
                 'No especificado',
             'Plazo': (solicitud.plazo || '-') + ' meses',
             'Bien como Garantía': solicitud.bien || 'No especificado',
             'Estado de la Solicitud': solicitud.estado || 'PENDIENTE'
         };
-        
+
         yPosition = addSection('INFORMACIÓN DEL CRÉDITO', creditoData, yPosition);
-        
+
         // --- SECCIÓN: SIMULACIÓN DE PAGOS (NUEVO) ---
         const simularPagos = () => {
             const capital = parseFloat(solicitud.monto || 0);
             const plazo = parseInt(solicitud.plazo || 12);
             const tasaMensual = 0.02; // 2% por defecto para simulación
-            
+
             // Cálculos simplificados para la solicitud
             let gastosAdmin = 0;
             if (capital < 5000) gastosAdmin = capital * 0.038;
             else if (capital < 20000) gastosAdmin = capital * 0.023;
             else gastosAdmin = capital * 0.018;
-            
+
             const interesTotal = capital * tasaMensual * plazo;
             const totalPagar = capital + interesTotal + gastosAdmin;
             const cuotaBase = Math.ceil(totalPagar / plazo);
             const ahorroTotal = (capital + interesTotal) * 0.10;
             const ahorroPorCuota = Math.ceil(ahorroTotal / plazo);
             const cuotaTotal = cuotaBase + ahorroPorCuota;
-            
+
             return {
                 cuotaBase,
                 ahorroPorCuota,
@@ -2816,18 +2816,18 @@ async function generarPDFSolicitud() {
                 ahorroTotal
             };
         };
-        
+
         const sim = simularPagos();
         const simData = {
-            'Cuota Mensual Base': `$${sim.cuotaBase.toLocaleString('es-EC', {minimumFractionDigits: 2})}`,
-            'Ahorro Programado (10%)': `$${sim.ahorroPorCuota.toLocaleString('es-EC', {minimumFractionDigits: 2})}`,
-            'CUOTA TOTAL ESTIMADA': `$${sim.cuotaTotal.toLocaleString('es-EC', {minimumFractionDigits: 2})}`,
-            'Total a Pagar (Crédito)': `$${sim.totalPagar.toLocaleString('es-EC', {minimumFractionDigits: 2})}`,
-            'Total Ahorro a Devolver': `$${sim.ahorroTotal.toLocaleString('es-EC', {minimumFractionDigits: 2})}`
+            'Cuota Mensual Base': `$${sim.cuotaBase.toLocaleString('es-EC', { minimumFractionDigits: 2 })}`,
+            'Ahorro Programado (10%)': `$${sim.ahorroPorCuota.toLocaleString('es-EC', { minimumFractionDigits: 2 })}`,
+            'CUOTA TOTAL ESTIMADA': `$${sim.cuotaTotal.toLocaleString('es-EC', { minimumFractionDigits: 2 })}`,
+            'Total a Pagar (Crédito)': `$${sim.totalPagar.toLocaleString('es-EC', { minimumFractionDigits: 2 })}`,
+            'Total Ahorro a Devolver': `$${sim.ahorroTotal.toLocaleString('es-EC', { minimumFractionDigits: 2 })}`
         };
-        
+
         yPosition = addSection('SIMULACIÓN PRELIMINAR DE PAGOS', simData, yPosition);
-        
+
         // Cargar todas las imágenes de documentos
         const documentosImagenes = [];
         const documentFields = [
@@ -2840,7 +2840,7 @@ async function generarPDFSolicitud() {
             { field: 'fotoidentidadreferencia', title: 'Foto ID Referencia' },
             { field: 'fotobien', title: 'Foto del Bien' }
         ];
-        
+
         // Cargar imágenes disponibles
         for (const docField of documentFields) {
             if (solicitud[docField.field]) {
@@ -2864,7 +2864,7 @@ async function generarPDFSolicitud() {
                         };
                         img.src = imageBase64;
                     });
-                    
+
                     documentosImagenes.push({
                         title: docField.title,
                         data: imageInfo.data,
@@ -2874,33 +2874,33 @@ async function generarPDFSolicitud() {
                 }
             }
         }
-        
+
         // Agregar sección de documentos si hay imágenes
         if (documentosImagenes.length > 0) {
             const calculateImageDimensions = (originalWidth, originalHeight) => {
                 const finalMaxWidthMM = 70;
                 const finalMaxHeightMM = 50;
-                
+
                 const originalWidthMM = originalWidth * 0.264583;
                 const originalHeightMM = originalHeight * 0.264583;
-                
+
                 const widthScale = finalMaxWidthMM / originalWidthMM;
                 const heightScale = finalMaxHeightMM / originalHeightMM;
-                
+
                 const scale = Math.min(widthScale, heightScale, 1);
-                
+
                 return {
                     width: originalWidthMM * scale,
                     height: originalHeightMM * scale
                 };
             };
-            
+
             const columnWidth = (contentWidth - 10) / 2;
             const leftColumnX = margin;
             const rightColumnX = margin + columnWidth + 10;
-            
+
             let maxItemHeight = 0;
-            
+
             for (let i = 0; i < documentosImagenes.length; i++) {
                 const documento = documentosImagenes[i];
                 const dimensions = calculateImageDimensions(documento.width, documento.height);
@@ -2908,15 +2908,15 @@ async function generarPDFSolicitud() {
                 const itemHeight = textHeight + dimensions.height + 10;
                 maxItemHeight = Math.max(maxItemHeight, itemHeight);
             }
-            
+
             const availableSpace = pageHeight - yPosition - 50;
             const minUsefulSpace = 20 + maxItemHeight;
-            
+
             if (availableSpace < minUsefulSpace) {
                 doc.addPage();
                 yPosition = 20;
             }
-            
+
             // Título de la sección de documentos
             doc.setFillColor(...colors.secondary);
             doc.rect(margin, yPosition, contentWidth, 8, 'F');
@@ -2924,30 +2924,30 @@ async function generarPDFSolicitud() {
             doc.setFontSize(11);
             doc.setFont('helvetica', 'bold');
             doc.text('DOCUMENTOS ADJUNTOS', margin + 3, yPosition + 5.5);
-            
+
             yPosition += 15;
-            
+
             let currentColumn = 0;
             let leftColumnY = yPosition;
             let rightColumnY = yPosition;
-            
+
             for (let i = 0; i < documentosImagenes.length; i++) {
                 const documento = documentosImagenes[i];
-                
+
                 const isLeftColumn = currentColumn === 0;
                 const xPosition = isLeftColumn ? leftColumnX : rightColumnX;
                 const currentY = isLeftColumn ? leftColumnY : rightColumnY;
-                
+
                 doc.setTextColor(...colors.textDark);
                 doc.setFontSize(9);
                 doc.setFont('helvetica', 'bold');
-                
+
                 const textLines = doc.splitTextToSize(documento.title, columnWidth);
                 const textHeight = textLines.length * 3;
-                
+
                 const dimensions = calculateImageDimensions(documento.width, documento.height);
                 const totalItemHeight = textHeight + dimensions.height + 10;
-                
+
                 if (currentY + totalItemHeight > pageHeight - 50) {
                     doc.addPage();
                     yPosition = 20;
@@ -2957,20 +2957,20 @@ async function generarPDFSolicitud() {
                     i--;
                     continue;
                 }
-                
+
                 doc.text(textLines, xPosition, currentY);
                 const imageY = currentY + textHeight + 2;
-                
+
                 try {
                     const centeredX = xPosition + (columnWidth - dimensions.width) / 2;
                     doc.addImage(documento.data, 'JPEG', centeredX, imageY, dimensions.width, dimensions.height);
-                    
+
                     if (isLeftColumn) {
                         leftColumnY += totalItemHeight;
                     } else {
                         rightColumnY += totalItemHeight;
                     }
-                    
+
                 } catch (e) {
                     console.error(`Error adding image ${documento.title}:`, e);
                     if (isLeftColumn) {
@@ -2979,13 +2979,13 @@ async function generarPDFSolicitud() {
                         rightColumnY += textHeight + 20;
                     }
                 }
-                
+
                 currentColumn = (currentColumn + 1) % 2;
             }
-            
+
             yPosition = Math.max(leftColumnY, rightColumnY) + 10;
         }
-        
+
         // --- SECCIÓN: FIRMA ELECTRÓNICA ---
         // Extraer tiempo y fecha del ID para la firma electrónica
         let fechaFirmaElectronica = "";
@@ -2997,7 +2997,7 @@ async function generarPDFSolicitud() {
             const mm = sid.substring(10, 12);
             const ss = sid.substring(12, 14);
             const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-            fechaFirmaElectronica = `${dd} de ${meses[mm_num-1]} del ${yyyy} a las ${hh}:${mm}:${ss}`;
+            fechaFirmaElectronica = `${dd} de ${meses[mm_num - 1]} del ${yyyy} a las ${hh}:${mm}:${ss}`;
         } else {
             fechaFirmaElectronica = new Date().toLocaleString();
         }
@@ -3015,37 +3015,37 @@ async function generarPDFSolicitud() {
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
         doc.text('FIRMA ELECTRÓNICA', margin + 3, yPosition + 5.5);
-        
+
         yPosition += 15;
 
         const textoQR = `FIRMADO ELECTRONICAMENTE POR:\n${nombreSocio.toUpperCase()}\nFECHA: ${fechaFirmaElectronica}\nID: ${sid}`;
-        
+
         const qr = new QRious({
             value: textoQR,
             size: 200,
             background: 'white',
             foreground: '#0E5936'
         });
-        
+
         const qrDataURL = qr.toDataURL();
 
         try {
             const qrSize = 25;
             const qrX = (pageWidth - qrSize) / 2;
             doc.addImage(qrDataURL, 'PNG', qrX, yPosition, qrSize, qrSize);
-            
+
             yPosition += qrSize + 5;
-            
+
             doc.setTextColor(...colors.textDark);
             doc.setFontSize(8);
             doc.setFont('helvetica', 'bold');
-            
+
             const firmaLines = [
                 'FIRMADO ELECTRÓNICAMENTE POR:',
                 nombreSocio.toUpperCase(),
                 `FECHA DE CAPTURA: ${fechaFirmaElectronica}`
             ];
-            
+
             firmaLines.forEach(line => {
                 const textWidth = doc.getTextWidth(line);
                 const textX = (pageWidth - textWidth) / 2;
@@ -3064,7 +3064,7 @@ async function generarPDFSolicitud() {
                 doc.text(line, textX, yPosition);
                 yPosition += 3;
             });
-            
+
         } catch (e) {
             console.error('Error adding QR signature:', e);
         }
@@ -3076,18 +3076,18 @@ async function generarPDFSolicitud() {
         const asesorNombre = user ? (user.nombre || user.full_name || 'ASESOR DE CRÉDITO') : 'ASESOR DE CRÉDITO';
         const asesorCedula = user ? (user.cedula || '') : '';
         const asesorLugar = user ? (user.lugar_asesor || 'Ecuador') : 'Ecuador';
-        
+
         const estadoCivil = (solicitud.estadocivil || '').toUpperCase();
         const esCasadoOUnionLibre = estadoCivil === 'CASADO/A' || estadoCivil === 'UNIÓN LIBRE';
-        
+
         // Calcular espacio necesario para constancia y firmas
         const constanciaHeight = esCasadoOUnionLibre ? 95 : 80;
-        
+
         if (yPosition + constanciaHeight > pageHeight - 50) {
             doc.addPage();
             yPosition = 20;
         }
-        
+
         // Título de la sección
         doc.setFillColor(...colors.tertiary);
         doc.rect(margin, yPosition, contentWidth, 8, 'F');
@@ -3095,21 +3095,21 @@ async function generarPDFSolicitud() {
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
         doc.text('CONSTANCIA DE VERACIDAD', margin + 3, yPosition + 5.5);
-        
+
         yPosition += 12;
-        
+
         // Texto de constancia
         doc.setTextColor(...colors.textDark);
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
-        
+
         const parrafo1 = "Para constancia de la veracidad de la información contenida en esta solicitud, el SOCIO suscribe el presente documento de manera libre y voluntaria, declarando que todos los datos proporcionados son verídicos, completos y de procedencia lícita.";
         const parrafo2 = "El ASESOR DE CRÉDITO designado certifica haber verificado la identidad del solicitante y da fe de que la información ha sido proporcionada directamente por el socio, quien manifiesta pleno conocimiento y aceptación de los términos y condiciones del crédito solicitado.";
-        
+
         const lines1 = doc.splitTextToSize(parrafo1, contentWidth - 4);
         doc.text(lines1, margin + 2, yPosition);
         yPosition += (lines1.length * 4) + 4;
-        
+
         const lines2 = doc.splitTextToSize(parrafo2, contentWidth - 4);
         doc.text(lines2, margin + 2, yPosition);
         yPosition += (lines2.length * 4) + 8;
@@ -3120,21 +3120,21 @@ async function generarPDFSolicitud() {
         const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
         const mes = meses[now.getMonth()];
         const anio = now.getFullYear();
-        
+
         doc.setFont('helvetica', 'bold');
         const textoLugarFecha = `Firman en ${asesorLugar}, a los ${dia} días del mes de ${mes} del año ${anio}.`;
         doc.text(textoLugarFecha, margin + 2, yPosition);
-        
+
         yPosition += 15; // Espacio para firmas
-        
+
         // Renderizar Firmas
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setDrawColor(...colors.primary);
         doc.setLineWidth(0.5);
-        
+
         const firmaWidth = 70;
-        
+
         if (esCasadoOUnionLibre) {
             // Fila 1: Socio y Cónyuge
             // Firma Socio (Izquierda)
@@ -3143,7 +3143,7 @@ async function generarPDFSolicitud() {
             doc.setFont('helvetica', 'normal');
             doc.text(nombreSocio.toUpperCase(), margin + (firmaWidth / 2), yPosition + 8, { align: 'center' });
             doc.text(`C.I.: ${solicitud.cedulasocio || ''}`, margin + (firmaWidth / 2), yPosition + 12, { align: 'center' });
-            
+
             // Firma Cónyuge (Derecha)
             doc.setFont('helvetica', 'bold');
             const xConyuge = pageWidth - margin - firmaWidth;
@@ -3152,9 +3152,9 @@ async function generarPDFSolicitud() {
             doc.setFont('helvetica', 'normal');
             doc.text((solicitud.nombreconyuge || 'NOMBRE DEL CÓNYUGE').toUpperCase(), xConyuge + (firmaWidth / 2), yPosition + 8, { align: 'center' });
             doc.text(`C.I.: ${solicitud.cedulaconyuge || ''}`, xConyuge + (firmaWidth / 2), yPosition + 12, { align: 'center' });
-            
+
             yPosition += 25;
-            
+
             // Fila 2: Asesor (Centrado)
             doc.setFont('helvetica', 'bold');
             const xAsesor = (pageWidth - firmaWidth) / 2;
@@ -3163,7 +3163,7 @@ async function generarPDFSolicitud() {
             doc.setFont('helvetica', 'normal');
             doc.text(asesorNombre.toUpperCase(), pageWidth / 2, yPosition + 8, { align: 'center' });
             doc.text(`C.I.: ${asesorCedula}`, pageWidth / 2, yPosition + 12, { align: 'center' });
-            
+
             yPosition += 15;
         } else {
             // Fila única: Socio (Izquierda) y Asesor (Derecha)
@@ -3173,7 +3173,7 @@ async function generarPDFSolicitud() {
             doc.setFont('helvetica', 'normal');
             doc.text(nombreSocio.toUpperCase(), margin + (firmaWidth / 2), yPosition + 8, { align: 'center' });
             doc.text(`C.I.: ${solicitud.cedulasocio || ''}`, margin + (firmaWidth / 2), yPosition + 12, { align: 'center' });
-            
+
             // Firma Asesor
             doc.setFont('helvetica', 'bold');
             const xAsesor = pageWidth - margin - firmaWidth;
@@ -3182,10 +3182,10 @@ async function generarPDFSolicitud() {
             doc.setFont('helvetica', 'normal');
             doc.text(asesorNombre.toUpperCase(), xAsesor + (firmaWidth / 2), yPosition + 8, { align: 'center' });
             doc.text(`C.I.: ${asesorCedula}`, xAsesor + (firmaWidth / 2), yPosition + 12, { align: 'center' });
-            
+
             yPosition += 15;
         }
-        
+
         // Footer en todas las páginas
         const totalPages = doc.getNumberOfPages();
         for (let i = 1; i <= totalPages; i++) {
@@ -3193,7 +3193,7 @@ async function generarPDFSolicitud() {
             const footerY = pageHeight - 25;
             doc.setFillColor(...colors.tertiary);
             doc.rect(0, footerY, pageWidth, 25, 'F');
-            
+
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(8);
             doc.setFont('helvetica', 'normal');
@@ -3201,16 +3201,16 @@ async function generarPDFSolicitud() {
             const now = new Date();
             const fechaStr = formatDateTime(now);
             doc.text(`Generado el: ${fechaStr}`, margin, footerY + 15);
-            
+
             doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin - 20, footerY + 8);
         }
-        
+
         // Guardar el PDF
         const fileName = `Solicitud_${solicitud.solicitudid}_${solicitud.nombresocio?.replace(/\s+/g, '_') || 'Cliente'}.pdf`;
         doc.save(fileName);
-        
+
         showToast('PDF generado exitosamente', 'success');
-        
+
     } catch (error) {
         console.error('Error generating PDF:', error);
         showToast('Error al generar el PDF: ' + error.message, 'error');
@@ -3230,7 +3230,7 @@ let currentCreditoDocumentos = null;
 async function abrirModalDocumentosCredito(idCredito) {
     try {
         const supabase = window.getSupabaseClient();
-        
+
         // Capturar fecha seleccionada si el modal ya está abierto
         const fechaFirmaInput = document.getElementById('fecha-firma-docs');
         const fechaSeleccionada = fechaFirmaInput ? fechaFirmaInput.value : null;
@@ -3240,21 +3240,21 @@ async function abrirModalDocumentosCredito(idCredito) {
             .from('ic_creditos')
             .select(`
                 *,
-                socio:ic_socios!id_socio (*),
-                documentos:ic_creditos_documentos!id_credito (*),
-                garante_info:ic_creditos_garantes!id_credito (*),
-                amortizacion:ic_creditos_amortizacion!id_credito (*)
+                socio:ic_socios (*),
+                documentos:ic_creditos_documentos (*),
+                garante_info:ic_creditos_garantes (*),
+                amortizacion:ic_creditos_amortizacion (*)
             `)
             .eq('id_credito', idCredito)
             .single();
 
         if (error) throw error;
-        
+
         currentCreditoDocumentos = credito;
-        
+
         // Crear y mostrar modal preservando la fecha
         mostrarModalDocumentos(credito, fechaSeleccionada);
-        
+
     } catch (error) {
         console.error('Error cargando datos del crédito:', error);
         showToast('Error al cargar datos del crédito', 'error');
@@ -3264,23 +3264,23 @@ async function abrirModalDocumentosCredito(idCredito) {
 function generarOpcionesFechaFirma(fechaSeleccionada = null) {
     const opciones = [];
     const hoy = new Date();
-    
+
     for (let i = 0; i < 8; i++) {
         const fecha = new Date(hoy);
         fecha.setDate(hoy.getDate() + i);
-        
+
         // Obtener fecha en formato YYYY-MM-DD local
         const anio = fecha.getFullYear();
         const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
         const dia = fecha.getDate().toString().padStart(2, '0');
         const isoDate = `${anio}-${mes}-${dia}`;
-        
+
         const label = formatearFecha(isoDate, 'completo');
         const selected = (fechaSeleccionada === isoDate) ? 'selected' : '';
-        
+
         opciones.push(`<option value="${isoDate}" ${selected}>${label.toUpperCase()}</option>`);
     }
-    
+
     return opciones.join('');
 }
 
@@ -3289,11 +3289,11 @@ function mostrarModalDocumentos(credito, fechaSeleccionada = null) {
     const docs = credito.documentos?.[0] || {};
     const tieneGarante = credito.garante;
     const nombreCompleto = socio.nombre || '';
-    
+
     // Remover modal existente si hay
     const existingModal = document.getElementById('modal-documentos-credito');
     if (existingModal) existingModal.remove();
-    
+
     const modalHTML = `
         <div id="modal-documentos-credito" class="modal">
             <div class="modal-backdrop" onclick="cerrarModalDocumentos()"></div>
@@ -3313,7 +3313,7 @@ function mostrarModalDocumentos(credito, fechaSeleccionada = null) {
                                 <span>${socio.cedula} | ${credito.codigo_credito}</span>
                             </div>
                             <div class="docs-monto">
-                                <span class="valor">$${parseFloat(credito.capital).toLocaleString('es-EC', {minimumFractionDigits: 2})}</span>
+                                <span class="valor">$${parseFloat(credito.capital).toLocaleString('es-EC', { minimumFractionDigits: 2 })}</span>
                                 <span class="label">${credito.plazo} meses</span>
                             </div>
                         </div>
@@ -3409,7 +3409,7 @@ function mostrarModalDocumentos(credito, fechaSeleccionada = null) {
             </div>
         </div>
     `;
-    
+
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
@@ -3445,11 +3445,11 @@ async function generarDocumentoPagare(idCredito) {
     try {
         const credito = currentCreditoDocumentos || await cargarCreditoCompleto(idCredito);
         if (!credito) throw new Error('No se encontró el crédito');
-        
+
         // Obtener fecha de firma del modal o usar hoy
         const fechaFirmaInput = document.getElementById('fecha-firma-docs');
         let fechaFirma = fechaFirmaInput ? fechaFirmaInput.value : null;
-        
+
         if (!fechaFirma) {
             const hoy = new Date();
             fechaFirma = `${hoy.getFullYear()}-${(hoy.getMonth() + 1).toString().padStart(2, '0')}-${hoy.getDate().toString().padStart(2, '0')}`;
@@ -3461,28 +3461,28 @@ async function generarDocumentoPagare(idCredito) {
         const pageHeight = doc.internal.pageSize.getHeight();
         const margin = 30;
         const contentWidth = pageWidth - (margin * 2);
-        
+
         const socio = credito.socio || {};
         const acreedor = getDatosAcreedor();
         const garanteInfo = credito.garante_info?.[0];
-        
+
         const estadoCivil = (socio.estadocivil || '').toUpperCase();
         const esCasado = estadoCivil.includes('CASADO') || estadoCivil.includes('UNION') || estadoCivil.includes('UNIÓN');
-        
+
         const nombreDeudor = (socio.nombre || '').toUpperCase();
         const cedulaDeudor = socio.cedula || '';
         const nombreConyuge = (socio.nombreconyuge || 'CÓNYUGE').toUpperCase();
         const cedulaConyuge = socio.cedulaconyuge || '';
-        
+
         const fechaVencimiento = credito.fecha_fin_credito;
         const capital = parseFloat(credito.capital);
 
         // Determinar firmantes y pluralización
         const firmantes = [];
         const labelFirmante = esCasado ? 'DEUDOR SOLIDARIO' : 'DEUDOR';
-        
+
         firmantes.push({ nombre: nombreDeudor, cedula: cedulaDeudor, label: labelFirmante });
-        
+
         if (esCasado) {
             firmantes.push({ nombre: nombreConyuge, cedula: cedulaConyuge, label: labelFirmante });
         }
@@ -3495,34 +3495,34 @@ async function generarDocumentoPagare(idCredito) {
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
         doc.text(tituloDoc, pageWidth / 2, 30, { align: 'center' });
-        
+
         let y = 45;
-        
+
         // Información de cabecera
         doc.setFontSize(10);
         y = drawField(doc, 'A: ', acreedor.nombre.toUpperCase(), margin, y, contentWidth);
         y = drawField(doc, 'VENCIMIENTO: ', formatearFecha(fechaVencimiento, 'largo').toUpperCase(), margin, y, contentWidth);
-        y = drawField(doc, 'LA CANTIDAD DE: ', `$${capital.toLocaleString('es-EC', {minimumFractionDigits: 2})} (${numeroALetras(capital)})`, margin, y, contentWidth);
-        
+        y = drawField(doc, 'LA CANTIDAD DE: ', `$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})`, margin, y, contentWidth);
+
         y += 10;
-        
+
         // Cuerpo del pagaré
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        
+
         const domicilioDeudor = (socio.domicilio || socio.direccion || 'DIRECCIÓN REGISTRADA').toUpperCase();
-        
+
         let textoPagere = '';
         if (esPlural) {
             const nombresFirmantes = firmantes.map(f => `**${f.nombre}** (C.I. **${f.cedula}**)`).join(', ');
-            textoPagere = `Por este pagaré, nosotros, ${nombresFirmantes}, con domicilio en **${domicilioDeudor}**, nos comprometemos y obligamos a pagar de manera solidaria e incondicional al vencimiento indicado, a la orden de **${acreedor.nombre.toUpperCase()}**, con cédula de identidad número **${acreedor.cedula}**, en la ciudad de **${acreedor.ciudad.toUpperCase()}**, la cantidad de **$${capital.toLocaleString('es-EC', {minimumFractionDigits: 2})} (${numeroALetras(capital)})**.`;
+            textoPagere = `Por este pagaré, nosotros, ${nombresFirmantes}, con domicilio en **${domicilioDeudor}**, nos comprometemos y obligamos a pagar de manera solidaria e incondicional al vencimiento indicado, a la orden de **${acreedor.nombre.toUpperCase()}**, con cédula de identidad número **${acreedor.cedula}**, en la ciudad de **${acreedor.ciudad.toUpperCase()}**, la cantidad de **$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})**.`;
         } else {
-            textoPagere = `Por este pagaré, yo, **${nombreDeudor}**, con cédula de identidad ecuatoriana número **${cedulaDeudor}**, con domicilio en **${domicilioDeudor}**, me comprometo y obligo a pagar de manera incondicional al vencimiento indicado, a la orden de **${acreedor.nombre.toUpperCase()}**, con cédula de identidad número **${acreedor.cedula}**, en la ciudad de **${acreedor.ciudad.toUpperCase()}**, la cantidad de **$${capital.toLocaleString('es-EC', {minimumFractionDigits: 2})} (${numeroALetras(capital)})**.`;
+            textoPagere = `Por este pagaré, yo, **${nombreDeudor}**, con cédula de identidad ecuatoriana número **${cedulaDeudor}**, con domicilio en **${domicilioDeudor}**, me comprometo y obligo a pagar de manera incondicional al vencimiento indicado, a la orden de **${acreedor.nombre.toUpperCase()}**, con cédula de identidad número **${acreedor.cedula}**, en la ciudad de **${acreedor.ciudad.toUpperCase()}**, la cantidad de **$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})**.`;
         }
-        
+
         y = renderJustifiedText(doc, textoPagere, margin, y, contentWidth);
         y += 20;
-        
+
         // --- SECCIÓN DE FIRMAS (2x2) ---
         if (y > pageHeight - 60) {
             doc.addPage();
@@ -3531,14 +3531,14 @@ async function generarDocumentoPagare(idCredito) {
 
         const firmaWidth = 60;
         const spacing = (contentWidth - (firmaWidth * 2)) / 1; // Espacio entre columnas
-        
+
         // Agrupar firmas de 2 en 2
         for (let i = 0; i < firmantes.length; i += 2) {
             const fila = firmantes.slice(i, i + 2);
             const isLastRowOdd = fila.length === 1;
-            
+
             const rowY = y + 25;
-            
+
             fila.forEach((f, index) => {
                 let xPos;
                 if (isLastRowOdd) {
@@ -3546,30 +3546,30 @@ async function generarDocumentoPagare(idCredito) {
                 } else {
                     xPos = margin + (firmaWidth / 2) + (index * (firmaWidth + spacing));
                 }
-                
+
                 // Línea de firma
                 doc.setDrawColor(0);
                 doc.setLineWidth(0.5);
                 doc.line(xPos - (firmaWidth / 2), rowY, xPos + (firmaWidth / 2), rowY);
-                
+
                 // Nombre y C.I.
                 doc.setFontSize(9);
                 doc.setFont('helvetica', 'bold');
-                
+
                 // Dividir nombre si es muy largo para evitar superposición
                 const nombreLineas = doc.splitTextToSize(f.nombre, firmaWidth);
                 doc.text(nombreLineas, xPos, rowY + 5, { align: 'center' });
-                
+
                 // Calcular desplazamiento basado en el número de líneas del nombre
                 const offsetNombre = (nombreLineas.length * 4); // 4mm por línea aprox
-                
+
                 doc.setFont('helvetica', 'normal');
                 doc.text(`C.I.: ${f.cedula}`, xPos, rowY + 5 + offsetNombre, { align: 'center' });
                 doc.text(f.label, xPos, rowY + 9 + offsetNombre, { align: 'center' });
             });
-            
+
             y = rowY + 25; // Espacio para la siguiente fila
-            
+
             if (y > pageHeight - 40 && i + 2 < firmantes.length) {
                 doc.addPage();
                 y = 30;
@@ -3581,16 +3581,16 @@ async function generarDocumentoPagare(idCredito) {
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
         doc.text(`${acreedor.ciudad.toUpperCase()}, ${formatearFecha(fechaFirma, 'completo').toUpperCase()}`, pageWidth / 2, y, { align: 'center' });
-        
+
         // Guardar
         const fileName = `Pagare_${credito.codigo_credito}_${nombreDeudor.replace(/\s+/g, '_')}.pdf`;
         doc.save(fileName);
-        
+
         // Actualizar estado en BD
         await actualizarEstadoDocumento(idCredito, 'pagare_generado', true);
-        
+
         showToast('Pagaré generado exitosamente', 'success');
-        
+
     } catch (error) {
         console.error('Error generando pagaré:', error);
         showToast('Error al generar pagaré: ' + error.message, 'error');
@@ -3602,11 +3602,11 @@ async function generarDocumentoContrato(idCredito) {
     try {
         const credito = currentCreditoDocumentos || await cargarCreditoCompleto(idCredito);
         if (!credito) throw new Error('No se encontró el crédito');
-        
+
         // Obtener fecha de firma del modal o usar hoy
         const fechaFirmaInput = document.getElementById('fecha-firma-docs');
         let fechaFirma = fechaFirmaInput ? fechaFirmaInput.value : null;
-        
+
         if (!fechaFirma) {
             const hoy = new Date();
             fechaFirma = `${hoy.getFullYear()}-${(hoy.getMonth() + 1).toString().padStart(2, '0')}-${hoy.getDate().toString().padStart(2, '0')}`;
@@ -3618,11 +3618,11 @@ async function generarDocumentoContrato(idCredito) {
         const pageHeight = doc.internal.pageSize.getHeight();
         const margin = 30;
         const contentWidth = pageWidth - (margin * 2);
-        
+
         const socio = credito.socio || {};
         const acreedor = getDatosAcreedor();
         const garanteInfo = credito.garante_info?.[0] || null;
-        
+
         const estadoCivil = (socio.estadocivil || '').toUpperCase();
         const esCasado = estadoCivil.includes('CASADO') || estadoCivil.includes('UNION') || estadoCivil.includes('UNIÓN');
         const nombreConyuge = (socio.nombreconyuge || 'CÓNYUGE').toUpperCase();
@@ -3636,69 +3636,69 @@ async function generarDocumentoContrato(idCredito) {
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
         doc.text('ACUERDO DE CRÉDITO', pageWidth / 2, 30, { align: 'center' });
-        
+
         // Fecha arriba a la derecha
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         doc.text(`${acreedor.ciudad.toUpperCase()}, ${formatearFecha(fechaFirma, 'completo').toUpperCase()}`, pageWidth - margin, 40, { align: 'right' });
-        
+
         let y = 50;
-        
+
         // Información de cabecera
         doc.setFontSize(10);
         y = drawField(doc, `DEUDOR: `, nombreDeudor, margin, y, contentWidth);
-        y = drawField(doc, `MONTO: `, `$${capital.toLocaleString('es-EC', {minimumFractionDigits: 2})} (${numeroALetras(capital)})`, margin, y, contentWidth);
+        y = drawField(doc, `MONTO: `, `$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})`, margin, y, contentWidth);
         y = drawField(doc, `PLAZO: `, `${credito.plazo} MESES`, margin, y, contentWidth);
         y = drawField(doc, `INTERÉS MENSUAL EN PORCENTAJE: `, `${credito.tasa_interes_mensual} %`, margin, y, contentWidth);
-        y = drawField(doc, `VALOR MENSUAL A PAGAR: `, `$${cuota.toLocaleString('es-EC', {minimumFractionDigits: 2})} (${numeroALetras(cuota)})`, margin, y, contentWidth);
-        
+        y = drawField(doc, `VALOR MENSUAL A PAGAR: `, `$${cuota.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(cuota)})`, margin, y, contentWidth);
+
         if (garanteInfo) {
             y = drawField(doc, `GARANTE: `, garanteInfo.nombre_garante?.toUpperCase() || 'NO ESPECIFICADO', margin, y, contentWidth);
         }
-        
+
         y += 10;
-        
+
         // Cuerpo del contrato
         doc.setFontSize(10);
         const parrafos = [
             `Yo, **${nombreDeudor}** con Cédula de Identidad Ecuatoriana número **${socio.cedula}** haciendo pleno uso de mis facultades racionales y mentales solicito un crédito a **${acreedor.nombre.toUpperCase()}**.`,
-            
-            `Yo, **${nombreDeudor}** solicito un crédito por **$${capital.toLocaleString('es-EC', {minimumFractionDigits: 2})} (${numeroALetras(capital)})** y una vez que haya firmado este documento acepto que el dinero me fue entregado y así mismo acepto todas las cláusulas y condiciones del mismo.`,
-            
-            `Yo, **${nombreDeudor}** estoy completamente de acuerdo en pagar a **${acreedor.nombre.toUpperCase()}** el valor de **$${cuota.toLocaleString('es-EC', {minimumFractionDigits: 2})} (${numeroALetras(cuota)})** mensualmente durante el plazo establecido.`,
-            
+
+            `Yo, **${nombreDeudor}** solicito un crédito por **$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})** y una vez que haya firmado este documento acepto que el dinero me fue entregado y así mismo acepto todas las cláusulas y condiciones del mismo.`,
+
+            `Yo, **${nombreDeudor}** estoy completamente de acuerdo en pagar a **${acreedor.nombre.toUpperCase()}** el valor de **$${cuota.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(cuota)})** mensualmente durante el plazo establecido.`,
+
             `Yo, **${nombreDeudor}**, doy a conocer voluntariamente mis datos personales como respaldo de que cancelaré mi crédito y bajo juramento declaro que TODOS los datos proporcionados son legítimos:`,
         ];
-        
+
         parrafos.forEach(p => {
             y = renderJustifiedText(doc, p, margin, y, contentWidth);
             y += 5;
         });
-        
+
         // Declaraciones numeradas
         y += 3;
         const declaraciones = [
             `1.- Vivo en **${(socio.domicilio || socio.direccion || 'DIRECCIÓN REGISTRADA').toUpperCase()}** y me comprometo a notificar a **${acreedor.nombre.toUpperCase()}** si llegase a cambiar la dirección de mi domicilio.`,
-            
+
             `2.- Como referencia pongo a **${(socio.nombrereferencia || 'PERSONA DE CONFIANZA').toUpperCase()}**, declaro que me conoce y puede preguntar por mí llamando al **${socio.whatsappreferencia || 'NÚMERO REGISTRADO'}**.`,
-            
+
             `3.- Mi número de contacto es el **${socio.whatsapp || 'NÚMERO REGISTRADO'}** mismo que tiene habilitado Whatsapp ya que tengo conocimiento de que cualquier recordatorio o cambio de datos de pago me serán notificados por este medio, así mismo si hubiese un cambio en este número de contacto me comprometo a notificar a **${acreedor.nombre.toUpperCase()}** oportunamente.`
         ];
-        
+
         declaraciones.forEach(d => {
             y = renderJustifiedText(doc, d, margin, y, contentWidth);
             y += 4;
         });
-        
+
         y += 5;
-        
+
         // Declaraciones finales
         const finales = [
             `Yo, **${nombreDeudor}**, declaro bajo juramento que destinaré los fondos que me entregaron mediante este crédito a fines lícitos y fuera de todo tipo de actividades que sean ilegales.`,
-            
+
             `Yo, **${nombreDeudor}**, eximo a **${acreedor.nombre.toUpperCase()}**, incluyendo a terceros sobre cualquier problema que se presente en caso de que la información proporcionada por mi persona sea errónea.`
         ];
-        
+
         finales.forEach(p => {
             if (y > pageHeight - 40) {
                 doc.addPage();
@@ -3707,7 +3707,7 @@ async function generarDocumentoContrato(idCredito) {
             y = renderJustifiedText(doc, p, margin, y, contentWidth);
             y += 5;
         });
-        
+
         // Firmas
         y += 15;
         if (y > pageHeight - 60) {
@@ -3718,19 +3718,19 @@ async function generarDocumentoContrato(idCredito) {
         doc.setFont('helvetica', 'bold');
         doc.text('Firman:', margin, y);
         y += 35;
-        
+
         // Lista de firmas a generar
         const firmas = [];
         firmas.push({ nombre: nombreDeudor, cedula: socio.cedula || '', label: '(DEUDOR)' });
-        
+
         if (esCasado) {
             firmas.push({ nombre: nombreConyuge, cedula: socio.cedulaconyuge || '', label: '(CÓNYUGE)' });
         }
-        
+
         if (garanteInfo) {
             firmas.push({ nombre: (garanteInfo.nombre_garante || 'GARANTE').toUpperCase(), cedula: garanteInfo.cedula_garante || '', label: '(GARANTE)' });
         }
-        
+
         firmas.push({ nombre: acreedor.nombre.toUpperCase(), cedula: acreedor.cedula || '', label: '(ACREEDOR)' });
 
         // Dibujar firmas de 2 en 2
@@ -3738,50 +3738,50 @@ async function generarDocumentoContrato(idCredito) {
         for (let i = 0; i < firmas.length; i += 2) {
             let rowFirmas = firmas.slice(i, i + 2);
             let rowY = y;
-            
+
             if (rowY > pageHeight - 50) {
                 doc.addPage();
                 rowY = 30;
             }
 
             rowFirmas.forEach((f, idx) => {
-                const xPos = (rowFirmas.length === 1) 
-                    ? pageWidth / 2 
+                const xPos = (rowFirmas.length === 1)
+                    ? pageWidth / 2
                     : (idx === 0 ? margin + (contentWidth / 4) : margin + (3 * contentWidth / 4));
-                
+
                 // Línea de firma
                 doc.setDrawColor(0);
                 doc.setLineWidth(0.5);
                 doc.line(xPos - (firmaWidth / 2), rowY, xPos + (firmaWidth / 2), rowY);
-                
+
                 // Nombre y C.I.
                 doc.setFontSize(9);
                 doc.setFont('helvetica', 'bold');
-                
+
                 // Dividir nombre si es muy largo para evitar superposición
                 const nombreLineas = doc.splitTextToSize(f.nombre, firmaWidth);
                 doc.text(nombreLineas, xPos, rowY + 5, { align: 'center' });
-                
+
                 // Calcular desplazamiento basado en el número de líneas del nombre
-                const offsetNombre = (nombreLineas.length * 4); 
-                
+                const offsetNombre = (nombreLineas.length * 4);
+
                 doc.setFont('helvetica', 'normal');
                 doc.text(`C.I.: ${f.cedula}`, xPos, rowY + 5 + offsetNombre, { align: 'center' });
                 doc.text(f.label, xPos, rowY + 9 + offsetNombre, { align: 'center' });
             });
-            
+
             y = rowY + 35; // Espacio para la siguiente fila
         }
-        
+
         // Guardar
         const fileName = `Contrato_${credito.codigo_credito}_${nombreDeudor.replace(/\s+/g, '_')}.pdf`;
         doc.save(fileName);
-        
+
         // Actualizar estado en BD
         await actualizarEstadoDocumento(idCredito, 'contrato_generado', true);
-        
+
         showToast('Contrato generado exitosamente', 'success');
-        
+
     } catch (error) {
         console.error('Error generando contrato:', error);
         showToast('Error al generar contrato: ' + error.message, 'error');
@@ -3794,11 +3794,11 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
     try {
         const credito = currentCreditoDocumentos || await cargarCreditoCompleto(idCredito);
         if (!credito) throw new Error('No se encontró el crédito');
-        
+
         // Obtener fecha de firma del modal o usar hoy
         const fechaFirmaInput = document.getElementById('fecha-firma-docs');
         let fechaFirma = fechaFirmaInput ? fechaFirmaInput.value : null;
-        
+
         if (!fechaFirma) {
             const hoy = new Date();
             fechaFirma = `${hoy.getFullYear()}-${(hoy.getMonth() + 1).toString().padStart(2, '0')}-${hoy.getDate().toString().padStart(2, '0')}`;
@@ -3810,7 +3810,7 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
         const pageHeight = 297;
         const margin = 20;
         const contentWidth = pageWidth - (margin * 2);
-        
+
         const colors = {
             primary: [14, 89, 54],      // #0E5936
             secondary: [22, 115, 54],   // #167336
@@ -3824,7 +3824,7 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
         const socio = credito.socio || {};
         const acreedor = getDatosAcreedor();
         const garanteInfo = credito.garante_info?.[0] || null;
-        
+
         const estadoCivil = (socio.estadocivil || '').toUpperCase();
         const esCasado = estadoCivil.includes('CASADO') || estadoCivil.includes('UNION') || estadoCivil.includes('UNIÓN');
         const nombreConyuge = (socio.nombreconyuge || 'CÓNYUGE').toUpperCase();
@@ -3832,7 +3832,7 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
         const nombreDeudor = (socio.nombre || '').toUpperCase();
         const capital = parseFloat(credito.capital);
         const amortizacion = credito.amortizacion || [];
-        
+
         // Función para cargar imagen
         const loadImage = (url) => {
             return new Promise((resolve) => {
@@ -3843,7 +3843,7 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
                 img.src = url;
             });
         };
-        
+
         // Cargar logo
         showToast('Generando Tabla de Amortización...', 'info');
         const logoUrl = 'https://lh3.googleusercontent.com/d/15J6Aj6ZwkVrmDfs6uyVk-oG0Mqr-i9Jn=w2048?name=inka%20corp%20normal.png';
@@ -3852,80 +3852,80 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
         // --- HEADER CORPORATIVO ---
         doc.setFillColor(255, 255, 255);
         doc.rect(0, 0, pageWidth, 40, 'F');
-        
+
         // Línea decorativa superior
         doc.setFillColor(...colors.primary);
         doc.rect(0, 0, pageWidth, 2, 'F');
-        
+
         // Logo
         if (logoImg) {
             doc.addImage(logoImg, 'PNG', 15, 6, 28, 28);
         }
-        
+
         // Título principal
         doc.setTextColor(...colors.primary);
         doc.setFontSize(20);
         doc.setFont('helvetica', 'bold');
         doc.text('TABLA DE AMORTIZACIÓN', 55, 22);
-        
+
         // Fecha y Referencia
         doc.setTextColor(100, 100, 100);
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         doc.text(`${acreedor.ciudad.toUpperCase()}, ${formatearFecha(fechaFirma, 'completo').toUpperCase()}`, 55, 31);
-        
+
         // Línea divisoria
         doc.setDrawColor(...colors.lightGray);
         doc.setLineWidth(0.5);
         doc.line(margin, 38, pageWidth - margin, 38);
-        
+
         // Línea de acento dorada
         doc.setDrawColor(...colors.contrast2);
         doc.setLineWidth(1.5);
         doc.line(margin, 45, pageWidth - margin, 45);
 
         let y = 55;
-        
+
         // --- DATOS DEL CRÉDITO ---
         doc.setFillColor(250, 250, 250);
         doc.roundedRect(margin, y, contentWidth, 32, 2, 2, 'F');
         doc.setDrawColor(...colors.lightGray);
         doc.setLineWidth(0.2);
         doc.roundedRect(margin, y, contentWidth, 32, 2, 2, 'S');
-        
+
         y += 8;
         doc.setFontSize(9);
         const col1 = margin + 5;
         const col2 = margin + contentWidth / 2 + 5;
-        
+
         let yData = y;
-        drawField(doc, 'SOCIO: ', nombreDeudor, col1, yData, contentWidth/2 - 10);
-        drawField(doc, 'INTERÉS: ', `${credito.tasa_interes_mensual} %`, col2, yData, contentWidth/2 - 10);
-        
+        drawField(doc, 'SOCIO: ', nombreDeudor, col1, yData, contentWidth / 2 - 10);
+        drawField(doc, 'INTERÉS: ', `${credito.tasa_interes_mensual} %`, col2, yData, contentWidth / 2 - 10);
+
         yData += 7;
-        drawField(doc, 'CÉDULA: ', socio.cedula || '-', col1, yData, contentWidth/2 - 10);
-        drawField(doc, 'PLAZO: ', `${credito.plazo} MESES`, col2, yData, contentWidth/2 - 10);
-        
+        drawField(doc, 'CÉDULA: ', socio.cedula || '-', col1, yData, contentWidth / 2 - 10);
+        drawField(doc, 'PLAZO: ', `${credito.plazo} MESES`, col2, yData, contentWidth / 2 - 10);
+
         yData += 7;
-        drawField(doc, 'MONTO: ', `$${capital.toLocaleString('es-EC', {minimumFractionDigits: 2})} (${numeroALetras(capital)})`, col1, yData, contentWidth - 10);
-        
+        drawField(doc, 'MONTO: ', `$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})`, col1, yData, contentWidth - 10);
+
         y = yData + 15;
-        
+
         // --- TEXTO INTRODUCTORIO ---
         doc.setTextColor(...colors.textDark);
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.text(`ESTIMADO SOCIO/A ${nombreDeudor}:`, margin, y);
         y += 6;
-        
+
         doc.setFont('helvetica', 'normal');
-        
+
         const introText = [
-            `Esta tabla muestra el plan de pagos para su préstamo realizado por la suma de **$${capital.toLocaleString('es-EC', {minimumFractionDigits: 2})}** otorgado por **INKA CORP** en la fecha **${formatearFecha(credito.fecha_desembolso || fechaFirma, 'largo')}**.`,
+            `Esta tabla muestra el plan de pagos para su préstamo realizado por la suma de **$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })}** otorgado por **INKA CORP** en la fecha **${formatearFecha(credito.fecha_desembolso || fechaFirma, 'largo')}**.`,
             `El valor total a pagar por el socio comprende el **CAPITAL** más los **INTERESES** y **GASTOS ADMINISTRATIVOS** generados en el proceso de tramitación de crédito.`,
             `Desglose de **GASTOS ADMINISTRATIVOS** en porcentaje según el capital solicitado:\n- Menor a $5000: 0.16%\n- Menor a $20000 e igual o mayor a $5000: 0.12%\n- Igual o superior a $20000: 0.08%`,
             `El préstamo tiene un plazo de **${credito.plazo} meses** con una tasa de interés porcentual del **${credito.tasa_interes_mensual} %**. La amortización es en cuotas niveladas mensuales.`,
-            `El pago mensual es de **$${parseFloat(credito.cuota_con_ahorro).toLocaleString('es-EC', {minimumFractionDigits: 2})}**. Este pago mensual se aplica primero a los intereses acumulados y el resto se aplica al capital del préstamo.`,
+            `El pago mensual es de **$${parseFloat(credito.cuota_con_ahorro).toLocaleString('es-EC', { minimumFractionDigits: 2 })}**. Este pago mensual se aplica primero a los intereses acumulados y el resto se aplica al capital del préstamo.`,
             `Los intereses se calculan sobre el saldo insoluto del préstamo al inicio de cada período. A medida que se van pagando las cuotas, una porción del pago se destina a cubrir los intereses y la otra parte reduce el capital, por lo que el saldo insoluto del préstamo va disminuyendo en cada período.`,
             `Por políticas de contabilidad de la empresa, el pago de los créditos se reciben únicamente el día **${credito.dia_pago} de cada mes** sin importar la fecha en la que se realiza el crédito, para ser justo con el socio **INKA CORP** adaptará la primera cuota a una fecha adecuada para no perjudicarlo, así mismo las siguientes cuotas se pagarán máximo el día **${credito.dia_pago} de cada mes**, por consecuencia el crédito finalizará un día **${credito.dia_pago}**.`,
             `Por políticas de seguridad de la empresa **INKA CORP** realizará los cobros únicamente mediante **transferencia o depósito a una cuenta en CHASE O ZELLE**, los datos de pago serán enviados oportunamente antes de el pago de cada cuota. Es solo responsabilidad del socio revisar bien los datos de pago proporcionados en dicho mensaje.`,
@@ -3945,41 +3945,41 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
         });
 
         y += 5;
-        
+
         // --- TABLA DE PAGOS ---
         const colWidths = [10, 30, 18, 18, 18, 20, 18, 20, 18];
         const headers = ['CUOTA', 'FECHA', 'CAPITAL', 'INTERÉS', 'GASTOS', 'C. BASE', 'AHORRO', 'TOTAL', 'SALDO'];
-        
+
         doc.setFillColor(...colors.primary);
         doc.rect(margin, y - 5, contentWidth, 10, 'F');
-        
+
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(7);
         doc.setFont('helvetica', 'bold');
-        
+
         let colX = margin;
         headers.forEach((h, i) => {
             doc.text(h, colX + colWidths[i] / 2, y, { align: 'center' });
             colX += colWidths[i];
         });
         y += 8;
-        
+
         // Datos de la tabla
         doc.setTextColor(...colors.textDark);
         doc.setFontSize(7);
         doc.setFont('helvetica', 'normal');
-        
+
         let totalInteres = 0;
         let totalCapital = 0;
         let totalGastos = 0;
         let totalAhorro = 0;
         let totalCuota = 0;
-        
+
         amortizacion.sort((a, b) => a.numero_cuota - b.numero_cuota).forEach((cuota, index) => {
             if (y > pageHeight - 40) {
                 doc.addPage();
                 y = 20;
-                
+
                 // Header simplificado en nuevas páginas
                 if (logoImg) {
                     doc.addImage(logoImg, 'PNG', margin, 10, 15, 15);
@@ -3990,9 +3990,9 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
                 doc.text('INKA CORP', pageWidth / 2, 18, { align: 'center' });
                 doc.setFontSize(10);
                 doc.text('TABLA DE AMORTIZACIÓN (Continuación)', margin, 30);
-                
+
                 y = 40;
-                
+
                 // Repetir cabecera de tabla
                 doc.setFillColor(...colors.primary);
                 doc.rect(margin, y - 5, contentWidth, 10, 'F');
@@ -4008,7 +4008,7 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
                 doc.setTextColor(...colors.textDark);
                 doc.setFont('helvetica', 'normal');
             }
-            
+
             // Alternar color de fondo
             if (index % 2 === 0) {
                 doc.setFillColor(248, 248, 248);
@@ -4026,13 +4026,13 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
                 `$${parseFloat(cuota.cuota_total || 0).toFixed(2)}`,
                 `$${parseFloat(cuota.saldo_pendiente || cuota.saldo_capital || 0).toFixed(2)}`
             ];
-            
+
             let rowX = margin;
             rowData.forEach((data, i) => {
                 doc.text(data, rowX + colWidths[i] / 2, y, { align: 'center' });
                 rowX += colWidths[i];
             });
-            
+
             totalInteres += parseFloat(cuota.interes || cuota.pago_interes || 0);
             totalCapital += parseFloat(cuota.capital || cuota.pago_capital || 0);
             totalGastos += parseFloat(cuota.pago_gastos_admin || 0);
@@ -4040,56 +4040,56 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
             totalCuota += parseFloat(cuota.cuota_total || 0);
             y += 6;
         });
-        
+
         // Totales
         doc.setDrawColor(...colors.primary);
         doc.setLineWidth(0.5);
         doc.line(margin, y - 2, pageWidth - margin, y - 2);
-        
+
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7);
-        
+
         let totalX = margin;
         doc.text('TOTALES:', totalX + colWidths[0] + colWidths[1] / 2, y + 2, { align: 'center' });
         totalX += colWidths[0] + colWidths[1];
-        
+
         doc.text(`$${totalCapital.toFixed(2)}`, totalX + colWidths[2] / 2, y + 2, { align: 'center' });
         totalX += colWidths[2];
-        
+
         doc.text(`$${totalInteres.toFixed(2)}`, totalX + colWidths[3] / 2, y + 2, { align: 'center' });
         totalX += colWidths[3];
-        
+
         doc.text(`$${totalGastos.toFixed(2)}`, totalX + colWidths[4] / 2, y + 2, { align: 'center' });
         totalX += colWidths[4];
-        
+
         doc.text(`$${(totalCapital + totalInteres + totalGastos).toFixed(2)}`, totalX + colWidths[5] / 2, y + 2, { align: 'center' });
         totalX += colWidths[5];
-        
+
         doc.text(`$${totalAhorro.toFixed(2)}`, totalX + colWidths[6] / 2, y + 2, { align: 'center' });
         totalX += colWidths[6];
-        
+
         doc.text(`$${totalCuota.toFixed(2)}`, totalX + colWidths[7] / 2, y + 2, { align: 'center' });
-        
+
         y += 25;
-        
+
         // --- SECCIÓN DE FIRMAS ---
         if (y > pageHeight - 50) {
             doc.addPage();
             y = 30;
         }
-        
+
         // Lista de firmas a generar
         const firmas = [];
         firmas.push({ nombre: nombreDeudor, cedula: socio.cedula || '', label: '(DEUDOR)' });
-        
+
         if (esCasado) {
             firmas.push({ nombre: nombreConyuge, cedula: socio.cedulaconyuge || '', label: '(CÓNYUGE)' });
         }
-        
+
         if (garanteInfo) {
             firmas.push({ nombre: (garanteInfo.nombre_garante || 'GARANTE').toUpperCase(), cedula: garanteInfo.cedula_garante || '', label: '(GARANTE)' });
         }
-        
+
         firmas.push({ nombre: acreedor.nombre.toUpperCase(), cedula: acreedor.cedula || '', label: '(ASESOR DE CRÉDITO)' });
 
         // Dibujar firmas de 2 en 2
@@ -4097,62 +4097,62 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
         for (let i = 0; i < firmas.length; i += 2) {
             let rowFirmas = firmas.slice(i, i + 2);
             let rowY = y;
-            
+
             if (rowY > pageHeight - 50) {
                 doc.addPage();
                 rowY = 30;
             }
 
             rowFirmas.forEach((f, idx) => {
-                const xPos = (rowFirmas.length === 1) 
-                    ? pageWidth / 2 
+                const xPos = (rowFirmas.length === 1)
+                    ? pageWidth / 2
                     : (idx === 0 ? margin + (contentWidth / 4) : margin + (3 * contentWidth / 4));
-                
+
                 // Línea de firma
                 doc.setDrawColor(0);
                 doc.setLineWidth(0.3);
                 doc.line(xPos - (firmaWidth / 2), rowY, xPos + (firmaWidth / 2), rowY);
-                
+
                 // Nombre y C.I.
                 doc.setFontSize(8);
                 doc.setFont('helvetica', 'bold');
-                
+
                 // Dividir nombre si es muy largo para evitar superposición
                 const nombreLineas = doc.splitTextToSize(f.nombre, firmaWidth);
                 doc.text(nombreLineas, xPos, rowY + 5, { align: 'center' });
-                
+
                 // Calcular desplazamiento basado en el número de líneas del nombre
-                const offsetNombre = (nombreLineas.length * 4); 
-                
+                const offsetNombre = (nombreLineas.length * 4);
+
                 doc.setFont('helvetica', 'normal');
                 doc.text(`C.I.: ${f.cedula}`, xPos, rowY + 5 + offsetNombre, { align: 'center' });
                 doc.text(f.label, xPos, rowY + 9 + offsetNombre, { align: 'center' });
             });
-            
+
             y = rowY + 35; // Espacio para la siguiente fila
         }
-        
+
         // Añadir pie de página a todas las páginas
         const totalPages = doc.internal.getNumberOfPages();
         for (let i = 1; i <= totalPages; i++) {
             doc.setPage(i);
-            
+
             // Línea divisoria footer
             doc.setDrawColor(...colors.lightGray);
             doc.setLineWidth(0.5);
             doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
-            
+
             // Logo footer
             if (logoImg) {
                 doc.addImage(logoImg, 'PNG', margin, pageHeight - 18, 12, 12);
             }
-            
+
             // Texto footer
             doc.setFontSize(10);
             doc.setTextColor(...colors.primary);
             doc.setFont('helvetica', 'bold');
             doc.text('INKA CORP', margin + 15, pageHeight - 10);
-            
+
             // Numeración
             doc.setFontSize(8);
             doc.setTextColor(150, 150, 150);
@@ -4163,12 +4163,12 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
         // Guardar
         const fileName = `TablaAmortizacion_${credito.codigo_credito}_${nombreDeudor.replace(/\s+/g, '_')}.pdf`;
         doc.save(fileName);
-        
+
         // Actualizar estado en BD
         await actualizarEstadoDocumento(idCredito, 'tabla_amortizacion_generada', true);
-        
+
         showToast('Tabla de amortización generada exitosamente', 'success');
-        
+
     } catch (error) {
         console.error('Error generando tabla de amortización:', error);
         showToast('Error al generar tabla: ' + error.message, 'error');
@@ -4180,11 +4180,11 @@ async function generarDocumentoGarantia(idCredito) {
     try {
         const credito = currentCreditoDocumentos || await cargarCreditoCompleto(idCredito);
         if (!credito) throw new Error('No se encontró el crédito');
-        
+
         // Obtener fecha de firma del modal o usar hoy
         const fechaFirmaInput = document.getElementById('fecha-firma-docs');
         let fechaFirma = fechaFirmaInput ? fechaFirmaInput.value : null;
-        
+
         if (!fechaFirma) {
             const hoy = new Date();
             fechaFirma = `${hoy.getFullYear()}-${(hoy.getMonth() + 1).toString().padStart(2, '0')}-${hoy.getDate().toString().padStart(2, '0')}`;
@@ -4195,17 +4195,17 @@ async function generarDocumentoGarantia(idCredito) {
             showToast('Este crédito no tiene garante registrado', 'warning');
             return;
         }
-        
+
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'letter');
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         const margin = 30;
         const contentWidth = pageWidth - (margin * 2);
-        
+
         const socio = credito.socio || {};
         const acreedor = getDatosAcreedor();
-        
+
         const estadoCivil = (socio.estadocivil || '').toUpperCase();
         const esCasado = estadoCivil.includes('CASADO') || estadoCivil.includes('UNION') || estadoCivil.includes('UNIÓN');
         const nombreConyuge = (socio.nombreconyuge || 'CÓNYUGE').toUpperCase();
@@ -4220,14 +4220,14 @@ async function generarDocumentoGarantia(idCredito) {
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
         doc.text('CONTRATO DE GARANTÍA', pageWidth / 2, 30, { align: 'center' });
-        
+
         // Fecha arriba a la derecha
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         doc.text(`${acreedor.ciudad.toUpperCase()}, ${formatearFecha(fechaFirma, 'completo').toUpperCase()}`, pageWidth - margin, 40, { align: 'right' });
-        
+
         let y = 50;
-        
+
         // Información de cabecera
         doc.setFontSize(10);
         y = drawField(doc, `GARANTE: `, nombreGarante, margin, y, contentWidth);
@@ -4235,42 +4235,42 @@ async function generarDocumentoGarantia(idCredito) {
         y = drawField(doc, `DOMICILIO: `, (garanteInfo.domicilio_garante || 'No especificado').toUpperCase(), margin, y, contentWidth);
         y = drawField(doc, `TELÉFONO: `, garanteInfo.telefono_garante || garanteInfo.whatsapp_garante || '-', margin, y, contentWidth);
         y += 4;
-        
+
         y = drawField(doc, `DEUDOR: `, nombreDeudor, margin, y, contentWidth);
-        y = drawField(doc, `MONTO DEL CRÉDITO: `, `$${capital.toLocaleString('es-EC', {minimumFractionDigits: 2})} (${numeroALetras(capital)})`, margin, y, contentWidth);
+        y = drawField(doc, `MONTO DEL CRÉDITO: `, `$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})`, margin, y, contentWidth);
         y = drawField(doc, `PLAZO DEL CRÉDITO: `, `${credito.plazo} MESES`, margin, y, contentWidth);
         y = drawField(doc, `INTERÉS MENSUAL EN PORCENTAJE: `, `${credito.tasa_interes_mensual} %`, margin, y, contentWidth);
-        y = drawField(doc, `VALOR MENSUAL A PAGAR: `, `$${cuota.toLocaleString('es-EC', {minimumFractionDigits: 2})} (${numeroALetras(cuota)})`, margin, y, contentWidth);
-        
+        y = drawField(doc, `VALOR MENSUAL A PAGAR: `, `$${cuota.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(cuota)})`, margin, y, contentWidth);
+
         y += 10;
-        
+
         // Declaración del garante
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         const declaracion = `Yo, **${nombreGarante}**, con Cédula de Identidad Ecuatoriana número **${garanteInfo.cedula_garante || '-'}**, en mi calidad de GARANTE, me obligo solidariamente con el Deudor **${nombreDeudor}**, en relación al crédito otorgado por **${acreedor.nombre.toUpperCase()}**.`;
         y = renderJustifiedText(doc, declaracion, margin, y, contentWidth);
         y += 10;
-        
+
         // Obligaciones
         doc.setFont('helvetica', 'bold');
         doc.text('DECLARACIONES Y OBLIGACIONES DEL GARANTE:', margin, y);
         y += 8;
-        
+
         doc.setFont('helvetica', 'normal');
         const obligaciones = [
-            `1. Garantía de Pago: Me comprometo a garantizar el pago total del crédito por un monto de **$${capital.toLocaleString('es-EC', {minimumFractionDigits: 2})} (${numeroALetras(capital)})**, más los intereses correspondientes y cualquier otro cargo aplicable, en caso de incumplimiento por parte del Deudor.`,
-            
+            `1. Garantía de Pago: Me comprometo a garantizar el pago total del crédito por un monto de **$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})**, más los intereses correspondientes y cualquier otro cargo aplicable, en caso de incumplimiento por parte del Deudor.`,
+
             `2. Solidaridad: Acepto que mi responsabilidad es solidaria, lo que significa que **${acreedor.nombre.toUpperCase()}** puede requerir el pago total o parcial del crédito directamente de mi persona sin necesidad de agotar las vías de cobro contra el Deudor.`,
-            
+
             `3. Datos Personales: Declaro bajo juramento que todos mis datos personales proporcionados en este contrato son verdaderos y me comprometo a notificar cualquier cambio de domicilio o número de contacto a **${acreedor.nombre.toUpperCase()}**.`,
-            
+
             `4. Información del Deudor: Confirmo que conozco personalmente al Deudor **${nombreDeudor}** y estoy al tanto de su situación económica. Pongo a disposición de **${acreedor.nombre.toUpperCase()}** mi número de contacto **${garanteInfo.telefono_garante || garanteInfo.whatsapp_garante || '-'}** para cualquier comunicación necesaria.`,
-            
-            `5. Compromiso de Pago: En caso de incumplimiento por parte del Deudor, me comprometo a realizar los pagos mensuales de **$${cuota.toLocaleString('es-EC', {minimumFractionDigits: 2})} (${numeroALetras(cuota)})** durante el plazo establecido de **${credito.plazo} meses**, o el pago total del saldo pendiente si así lo solicita **${acreedor.nombre.toUpperCase()}**.`,
-            
+
+            `5. Compromiso de Pago: En caso de incumplimiento por parte del Deudor, me comprometo a realizar los pagos mensuales de **$${cuota.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(cuota)})** durante el plazo establecido de **${credito.plazo} meses**, o el pago total del saldo pendiente si así lo solicita **${acreedor.nombre.toUpperCase()}**.`,
+
             `6. Exoneración de Responsabilidad: Eximo a **${acreedor.nombre.toUpperCase()}** y a terceros de cualquier problema que se presente en caso de que la información proporcionada por mi persona sea errónea.`
         ];
-        
+
         obligaciones.forEach(o => {
             if (y > pageHeight - 30) {
                 doc.addPage();
@@ -4279,7 +4279,7 @@ async function generarDocumentoGarantia(idCredito) {
             y = renderJustifiedText(doc, o, margin, y, contentWidth);
             y += 4;
         });
-        
+
         // Firmas
         y += 15;
         if (y > pageHeight - 60) {
@@ -4290,15 +4290,15 @@ async function generarDocumentoGarantia(idCredito) {
         doc.setFont('helvetica', 'bold');
         doc.text('Firman:', margin, y);
         y += 35;
-        
+
         // Lista de firmas a generar
         const firmas = [];
         firmas.push({ nombre: nombreDeudor, cedula: socio.cedula || '', label: '(DEUDOR)' });
-        
+
         if (esCasado) {
             firmas.push({ nombre: nombreConyuge, cedula: socio.cedulaconyuge || '', label: '(CÓNYUGE)' });
         }
-        
+
         firmas.push({ nombre: nombreGarante, cedula: garanteInfo.cedula_garante || '', label: 'GARANTE (DEUDOR)' });
         firmas.push({ nombre: acreedor.nombre.toUpperCase(), cedula: acreedor.cedula || '', label: '(ACREEDOR)' });
 
@@ -4307,50 +4307,50 @@ async function generarDocumentoGarantia(idCredito) {
         for (let i = 0; i < firmas.length; i += 2) {
             let rowFirmas = firmas.slice(i, i + 2);
             let rowY = y;
-            
+
             if (rowY > pageHeight - 50) {
                 doc.addPage();
                 rowY = 30;
             }
 
             rowFirmas.forEach((f, idx) => {
-                const xPos = (rowFirmas.length === 1) 
-                    ? pageWidth / 2 
+                const xPos = (rowFirmas.length === 1)
+                    ? pageWidth / 2
                     : (idx === 0 ? margin + (contentWidth / 4) : margin + (3 * contentWidth / 4));
-                
+
                 // Línea de firma
                 doc.setDrawColor(0);
                 doc.setLineWidth(0.5);
                 doc.line(xPos - (firmaWidth / 2), rowY, xPos + (firmaWidth / 2), rowY);
-                
+
                 // Nombre y C.I.
                 doc.setFontSize(9);
                 doc.setFont('helvetica', 'bold');
-                
+
                 // Dividir nombre si es muy largo para evitar superposición
                 const nombreLineas = doc.splitTextToSize(f.nombre, firmaWidth);
                 doc.text(nombreLineas, xPos, rowY + 5, { align: 'center' });
-                
+
                 // Calcular desplazamiento basado en el número de líneas del nombre
-                const offsetNombre = (nombreLineas.length * 4); 
-                
+                const offsetNombre = (nombreLineas.length * 4);
+
                 doc.setFont('helvetica', 'normal');
                 doc.text(`C.I.: ${f.cedula}`, xPos, rowY + 5 + offsetNombre, { align: 'center' });
                 doc.text(f.label, xPos, rowY + 9 + offsetNombre, { align: 'center' });
             });
-            
+
             y = rowY + 35; // Espacio para la siguiente fila
         }
-        
+
         // Guardar
         const fileName = `ContratoGarantia_${credito.codigo_credito}_${nombreGarante.replace(/\s+/g, '_')}.pdf`;
         doc.save(fileName);
-        
+
         // Actualizar estado en BD
         await actualizarEstadoDocumento(idCredito, 'documento_garante_firmado', true);
-        
+
         showToast('Contrato de garantía generado exitosamente', 'success');
-        
+
     } catch (error) {
         console.error('Error generando contrato de garantía:', error);
         showToast('Error al generar contrato de garantía: ' + error.message, 'error');
@@ -4361,21 +4361,21 @@ async function generarDocumentoGarantia(idCredito) {
 
 async function cargarCreditoCompleto(idCredito) {
     const supabase = window.getSupabaseClient();
-    
+
     // Cargar crédito básico
     const { data: credito, error } = await supabase
         .from('ic_creditos')
         .select('*')
         .eq('id_credito', idCredito)
         .single();
-    
+
     if (error) throw error;
     if (!credito) return null;
-    
+
     // Cargar socio - primero intentar desde DB, luego desde caché
     let socioData = null;
     const cachedSocios = window.dataCache?.socios || [];
-    
+
     // Intentar desde DB si es UUID válido
     if (credito.id_socio && credito.id_socio.length > 30) {
         const { data: socio } = await supabase
@@ -4385,39 +4385,39 @@ async function cargarCreditoCompleto(idCredito) {
             .single();
         socioData = socio;
     }
-    
+
     // Fallback a caché
     if (!socioData) {
-        socioData = cachedSocios.find(s => 
+        socioData = cachedSocios.find(s =>
             s.idsocio === credito.id_socio || s.cedula === credito.id_socio
         );
     }
-    
+
     // Cargar documentos
     const { data: documentos } = await supabase
         .from('ic_creditos_documentos')
         .select('*')
         .eq('id_credito', idCredito);
-    
+
     // Cargar garante
     const { data: garantes } = await supabase
         .from('ic_creditos_garantes')
         .select('*')
         .eq('id_credito', idCredito);
-    
+
     // Cargar amortización
     const { data: amortizacion } = await supabase
         .from('ic_creditos_amortizacion')
         .select('*')
         .eq('id_credito', idCredito)
         .order('numero_cuota', { ascending: true });
-    
+
     // Ensamblar objeto completo
     credito.socio = socioData || {};
     credito.documentos = documentos || [];
     credito.garante_info = garantes || [];
     credito.amortizacion = amortizacion || [];
-    
+
     return credito;
 }
 
@@ -4425,16 +4425,16 @@ async function actualizarEstadoDocumento(idCredito, campo, valor) {
     const supabase = window.getSupabaseClient();
     const updateData = {};
     updateData[campo] = valor;
-    
+
     const { error } = await supabase
         .from('ic_creditos_documentos')
         .update(updateData)
         .eq('id_credito', idCredito);
-    
+
     if (error) {
         console.warn('Error actualizando estado de documento:', error);
     }
-    
+
     // Refrescar modal si está abierto
     if (currentCreditoDocumentos && currentCreditoDocumentos.id_credito === idCredito) {
         await abrirModalDocumentosCredito(idCredito);
@@ -4444,28 +4444,28 @@ async function actualizarEstadoDocumento(idCredito, campo, valor) {
 async function generarTodosDocumentos(idCredito) {
     try {
         showToast('Generando todos los documentos...', 'info');
-        
+
         await generarDocumentoContrato(idCredito);
         await generarDocumentoPagare(idCredito);
         await generarDocumentoTablaAmortizacion(idCredito);
-        
+
         const credito = currentCreditoDocumentos || await cargarCreditoCompleto(idCredito);
         if (credito?.garante) {
             await generarDocumentoGarantia(idCredito);
         }
-        
+
         // Marcar documentos como generados en el crédito
         const supabase = window.getSupabaseClient();
         await supabase
             .from('ic_creditos')
             .update({ documentos_generados: true })
             .eq('id_credito', idCredito);
-        
+
         showToast('Todos los documentos generados exitosamente', 'success');
-        
+
         // Refrescar lista de pendientes
         await loadPendientesDesembolso();
-        
+
     } catch (error) {
         console.error('Error generando documentos:', error);
         showToast('Error al generar documentos: ' + error.message, 'error');
@@ -4526,13 +4526,13 @@ function renderJustifiedText(doc, text, x, y, width, lineHeight = 6) {
     words.forEach(word => {
         doc.setFont('helvetica', word.bold ? 'bold' : 'normal');
         const wordWidth = doc.getTextWidth(word.text);
-        
+
         if (currentLineWidth + wordWidth > width && currentLine.length > 0) {
             lines.push(currentLine);
             currentLine = [];
             currentLineWidth = 0;
         }
-        
+
         if (currentLine.length === 0 && word.text.trim() === '') return;
 
         currentLine.push({ ...word, width: wordWidth });
@@ -4544,17 +4544,17 @@ function renderJustifiedText(doc, text, x, y, width, lineHeight = 6) {
     lines.forEach((line, lineIndex) => {
         let currentX = x;
         const isLastLine = lineIndex === lines.length - 1;
-        
+
         // Limpiar espacios al final de la línea para el cálculo de justificación
         let wordsInLine = [...line];
         while (wordsInLine.length > 0 && wordsInLine[wordsInLine.length - 1].text.trim() === '') {
             wordsInLine.pop();
         }
-        
+
         const totalWordsWidth = wordsInLine.reduce((sum, w) => sum + w.width, 0);
         const spacesInLine = wordsInLine.filter(w => w.text.trim() === '');
         const spacesCount = spacesInLine.length;
-        
+
         let extraSpacePerSpace = 0;
         if (!isLastLine && spacesCount > 0) {
             extraSpacePerSpace = (width - totalWordsWidth) / spacesCount;
@@ -4565,7 +4565,7 @@ function renderJustifiedText(doc, text, x, y, width, lineHeight = 6) {
             doc.text(word.text, currentX, y);
             currentX += word.width + (word.text.trim() === '' ? extraSpacePerSpace : 0);
         });
-        
+
         y += lineHeight;
     });
 
@@ -4629,13 +4629,13 @@ function numeroALetras(num) {
 
 function formatearFecha(fechaStr, formato = 'corto') {
     if (!fechaStr) return '-';
-    
+
     // Usar el parser centralizado que ya maneja la zona horaria de Ecuador
     const fecha = parseDate(fechaStr);
     if (!fecha) return '-';
-    
+
     const tz = 'America/Guayaquil';
-    
+
     if (formato === 'largo' || formato === 'completo') {
         const opciones = {
             timeZone: tz,
@@ -4643,19 +4643,19 @@ function formatearFecha(fechaStr, formato = 'corto') {
             month: 'long',
             year: 'numeric'
         };
-        
+
         if (formato === 'completo') {
             opciones.weekday = 'long';
         }
-        
+
         return fecha.toLocaleDateString('es-EC', opciones);
     }
-    
-    return fecha.toLocaleDateString('es-EC', { 
-        day: '2-digit', 
-        month: '2-digit', 
+
+    return fecha.toLocaleDateString('es-EC', {
+        day: '2-digit',
+        month: '2-digit',
         year: 'numeric',
-        timeZone: tz 
+        timeZone: tz
     });
 }
 
@@ -4665,14 +4665,14 @@ function formatearFecha(fechaStr, formato = 'corto') {
 async function desembolsarCredito(idCredito) {
     try {
         const supabase = window.getSupabaseClient();
-        
+
         // 1. Obtener datos del crédito, socio y garante
         const { data: credito, error: errorFetch } = await supabase
             .from('ic_creditos')
-            .select('*, socio:ic_socios!id_socio(nombre)')
+            .select('*, socio:ic_socios(nombre)')
             .eq('id_credito', idCredito)
             .single();
-            
+
         if (errorFetch) throw errorFetch;
 
         const { data: garante } = await supabase
@@ -4680,13 +4680,13 @@ async function desembolsarCredito(idCredito) {
             .select('*')
             .eq('id_credito', idCredito)
             .maybeSingle();
-        
+
         const nombreSocio = (credito.socio?.nombre || 'SOCIO').toUpperCase().replace(/\s+/g, '_');
         const tieneGarante = !!garante;
-        
+
         // 2. Mostrar modal de carga de archivos
         mostrarModalDesembolsoArchivos(credito, nombreSocio, tieneGarante);
-        
+
     } catch (error) {
         console.error('Error iniciando desembolso:', error);
         showToast('Error al iniciar desembolso: ' + error.message, 'error');
@@ -4701,21 +4701,21 @@ function mostrarModalDesembolsoArchivos(credito, nombreSocio, tieneGarante) {
         tabla: null,
         garante: null
     };
-    
+
     // Remover modal existente si hay
     const existingModal = document.getElementById('modal-desembolso-archivos');
     if (existingModal) existingModal.remove();
-    
+
     const docs = [
         { id: 'contrato', label: 'Solicitud / Contrato', icon: 'fa-file-contract' },
         { id: 'pagare', label: 'Pagaré Firmado', icon: 'fa-file-signature' },
         { id: 'tabla', label: 'Tabla de Amortización', icon: 'fa-table' }
     ];
-    
+
     if (tieneGarante) {
         docs.push({ id: 'garante', label: 'Documento Garante', icon: 'fa-user-shield' });
     }
-    
+
     const modalHTML = `
         <div id="modal-desembolso-archivos" class="modal" style="display: flex; align-items: center; justify-content: center; z-index: 10000;">
             <div class="modal-backdrop" onclick="cerrarModalDesembolsoArchivos()" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);"></div>
@@ -4770,7 +4770,7 @@ function mostrarModalDesembolsoArchivos(credito, nombreSocio, tieneGarante) {
             </div>
         </div>
     `;
-    
+
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
@@ -4780,12 +4780,12 @@ function handleFileSelectSlot(slotId, input) {
     if (input.files && input.files[0]) {
         const file = input.files[0];
         selectedFilesForDesembolso[slotId] = file;
-        
+
         // Actualizar UI del slot
         const statusEl = document.getElementById(`status-${slotId}`);
         const actionEl = document.getElementById(`action-${slotId}`);
         const slotEl = document.getElementById(`slot-${slotId}`);
-        
+
         statusEl.innerHTML = `<span style="color: #059669; font-weight: 600;"><i class="fas fa-check"></i> ${file.name}</span>`;
         actionEl.innerHTML = `
             <button onclick="document.getElementById('input-${slotId}').click()" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 0.85rem; padding: 0.4rem;"><i class="fas fa-sync-alt"></i></button>
@@ -4793,18 +4793,18 @@ function handleFileSelectSlot(slotId, input) {
         `;
         slotEl.style.borderColor = '#059669';
         slotEl.style.background = '#f0fdf4';
-        
+
         checkAllFilesReady();
     }
 }
 
 function removeFileFromSlot(slotId) {
     selectedFilesForDesembolso[slotId] = null;
-    
+
     const statusEl = document.getElementById(`status-${slotId}`);
     const actionEl = document.getElementById(`action-${slotId}`);
     const slotEl = document.getElementById(`slot-${slotId}`);
-    
+
     statusEl.innerHTML = 'Pendiente de carga';
     statusEl.style.color = 'var(--gray-500)';
     actionEl.innerHTML = `
@@ -4814,7 +4814,7 @@ function removeFileFromSlot(slotId) {
     `;
     slotEl.style.borderColor = 'var(--gray-800)';
     slotEl.style.background = '#f9fafb';
-    
+
     checkAllFilesReady();
 }
 
@@ -4822,14 +4822,14 @@ function checkAllFilesReady() {
     const btn = document.getElementById('btn-confirmar-desembolso-final');
     const slots = document.querySelectorAll('.doc-slot');
     let allReady = true;
-    
+
     slots.forEach(slot => {
         const id = slot.id.replace('slot-', '');
         if (!selectedFilesForDesembolso[id]) {
             allReady = false;
         }
     });
-    
+
     if (allReady) {
         btn.disabled = false;
         btn.style.opacity = '1';
@@ -4849,18 +4849,18 @@ async function ejecutarDesembolsoConArchivos(idCredito, nombreSocio, tieneGarant
     const btn = document.getElementById('btn-confirmar-desembolso-final');
     const originalContent = btn.innerHTML;
     const supabase = window.getSupabaseClient();
-    
+
     try {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
-        
+
         const hoy = new Date();
         const fechaStr = `${hoy.getDate().toString().padStart(2, '0')}-${(hoy.getMonth() + 1).toString().padStart(2, '0')}-${hoy.getFullYear()}`;
         const webhookUrl = 'https://lpwebhook.luispinta.com/webhook/documentos_creditos';
-        
+
         const slots = ['contrato', 'pagare', 'tabla'];
         if (tieneGarante) slots.push('garante');
-        
+
         const columnMap = {
             contrato: { url: 'contrato_url', firmado: 'contrato_firmado' },
             pagare: { url: 'pagare_url', firmado: 'pagare_firmado' },
@@ -4877,7 +4877,7 @@ async function ejecutarDesembolsoConArchivos(idCredito, nombreSocio, tieneGarant
             const progressBar = document.getElementById(`progress-bar-${slotId}`);
             const statusEl = document.getElementById(`status-${slotId}`);
             const actionEl = document.getElementById(`action-${slotId}`);
-            
+
             progressContainer.style.display = 'block';
             progressBar.style.width = '30%';
             statusEl.innerHTML = '<i class="fas fa-sync fa-spin"></i> Subiendo archivo...';
@@ -4887,7 +4887,7 @@ async function ejecutarDesembolsoConArchivos(idCredito, nombreSocio, tieneGarant
             const formData = new FormData();
             const extension = file.name.split('.').pop();
             const newFileName = `${nombreSocio}_${slotId.toUpperCase()}_${fechaStr}.${extension}`;
-            
+
             formData.append('file', file, newFileName);
             formData.append('filename', newFileName);
             formData.append('id_credito', idCredito);
@@ -4900,10 +4900,10 @@ async function ejecutarDesembolsoConArchivos(idCredito, nombreSocio, tieneGarant
             });
 
             if (!response.ok) throw new Error(`Error al subir ${slotId}`);
-            
+
             const result = await response.json();
             const fileLink = result.link;
-            
+
             progressBar.style.width = '70%';
             statusEl.innerHTML = '<i class="fas fa-database"></i> Registrando en base de datos...';
 
@@ -4911,7 +4911,7 @@ async function ejecutarDesembolsoConArchivos(idCredito, nombreSocio, tieneGarant
             const updateData = {};
             updateData[columnMap[slotId].url] = fileLink;
             updateData[columnMap[slotId].firmado] = true;
-            
+
             const { error: updateError } = await supabase
                 .from('ic_creditos_documentos')
                 .update(updateData)
@@ -4921,22 +4921,22 @@ async function ejecutarDesembolsoConArchivos(idCredito, nombreSocio, tieneGarant
 
             progressBar.style.width = '100%';
             statusEl.innerHTML = `<span style="color: #059669;"><i class="fas fa-check-double"></i> Completado</span>`;
-            
+
             // Pequeña pausa para la animación
             await new Promise(resolve => setTimeout(resolve, 500));
         }
 
         // 4. Activación real del crédito
         await completarActivacionCredito(idCredito);
-        
+
         showToast('✅ Todos los documentos han sido procesados y el crédito ha sido activado', 'success');
-        
+
         // Si todo salió bien, podemos cerrar el modal después de un momento
         setTimeout(() => {
             cerrarModalDesembolsoArchivos();
             // Opcional: habilitar un botón de "Activar Ahora" si estamos en modo real
         }, 1500);
-        
+
     } catch (error) {
         console.error('Error en el proceso de desembolso:', error);
         showToast('Error: ' + error.message, 'error');
@@ -4950,7 +4950,7 @@ async function completarActivacionCredito(idCredito) {
     const currentUser = window.getCurrentUser();
     const now = new Date().toISOString();
     const todayStr = new Date().toISOString().split('T')[0];
-    
+
     // Actualizar estado del crédito a ACTIVO
     const { error: errorCredito } = await supabase
         .from('ic_creditos')
@@ -4960,9 +4960,9 @@ async function completarActivacionCredito(idCredito) {
             updated_at: now
         })
         .eq('id_credito', idCredito);
-    
+
     if (errorCredito) throw errorCredito;
-    
+
     // Registrar en historial
     await supabase.from('ic_creditos_historial').insert({
         id_credito: idCredito,
@@ -4972,14 +4972,14 @@ async function completarActivacionCredito(idCredito) {
         usuario: currentUser?.id || null,
         motivo: `Desembolso completado con carga de documentos. Procesado por: ${currentUser?.nombre || 'Sistema'}`
     });
-    
+
     // Actualizar solicitud
     const { data: creditoData } = await supabase
         .from('ic_creditos')
         .select('id_solicitud')
         .eq('id_credito', idCredito)
         .single();
-    
+
     if (creditoData?.id_solicitud) {
         await supabase
             .from('ic_solicitud_de_credito')
@@ -4991,22 +4991,22 @@ async function completarActivacionCredito(idCredito) {
         if (index !== -1) {
             allSolicitudes[index].estado = 'DESEMBOLSADA';
             filteredSolicitudes = [...allSolicitudes];
-            
+
             // Actualizar caché
             if (window.setCacheData) {
                 window.setCacheData('solicitudes', allSolicitudes);
             }
-            
+
             updateSolicitudesStats();
             updateSolicitudesCounts();
             applyFiltersSolicitud();
         }
     }
-    
+
     // Refrescar vistas
     if (typeof loadPendientesDesembolso === 'function') await loadPendientesDesembolso();
     if (typeof loadDesembolsosPendientes === 'function') await window.loadDesembolsosPendientes?.();
-    
+
     cerrarModalDocumentos();
 }
 

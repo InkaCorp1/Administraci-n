@@ -149,7 +149,7 @@ async function cargarDatosAportes() {
         // Usamos una tabla hipotética ic_aportes_semanales
         const { data, error } = await supabase
             .from('ic_aportes_semanales')
-            .select('*, socio:ic_socios(nombre)')
+            .select('*, socio:ic_socios!id_socio(nombre)')
             .order('fecha', { ascending: false });
 
         if (error) {
@@ -383,7 +383,7 @@ async function cargarHistorialCompleto() {
 
         let query = supabase
             .from('ic_aportes_semanales')
-            .select('*, socio:ic_socios(nombre)')
+            .select('*, socio:ic_socios!id_socio(nombre)')
             .order('fecha', { ascending: false });
 
         if (socioId) query = query.eq('id_socio', socioId);
