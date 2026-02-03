@@ -10,8 +10,8 @@ const STORAGE_BUCKET = 'inkacorp';
 const COMPRESSION_CONFIG = {
     maxWidth: 1200,
     maxHeight: 1200,
-    quality: 0.75,
-    mimeType: 'image/jpeg'
+    quality: 0.8,
+    mimeType: 'image/webp'
 };
 
 // ==========================================
@@ -150,7 +150,8 @@ async function uploadImageToStorage(file, folder, id, bucketName = STORAGE_BUCKE
 
         // Generar nombre único de archivo
         const timestamp = Date.now();
-        const extension = file.type === 'image/png' ? 'png' : 'jpg';
+        // Forzamos extensión webp ya que compressImage ahora usa image/webp por defecto
+        const extension = 'webp';
         const fileName = `${folder}/${id}/${timestamp}.${extension}`;
 
         console.log(`uploadImageToStorage: Subiendo ${fileName} (${compressedSize} bytes, comprimido: ${wasCompressed})`);
@@ -161,7 +162,7 @@ async function uploadImageToStorage(file, folder, id, bucketName = STORAGE_BUCKE
             .upload(fileName, blob, {
                 cacheControl: '3600',
                 upsert: false,
-                contentType: blob.type || 'image/jpeg'
+                contentType: 'image/webp'
             });
 
         if (error) {

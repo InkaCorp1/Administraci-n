@@ -315,6 +315,46 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    position: relative;
+    /* Ensure it stays above background if needed, but we use absolute on card */
+}
+
+/* Logo en la tarjeta */
+.bank-card-logo {
+    position: absolute;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    height: 35px;
+    width: auto;
+    max-width: 100px;
+    opacity: 0.6;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    z-index: 2;
+    transition: all 0.3s ease;
+    transform-origin: bottom right;
+    /* Ensure zoom stays in corner */
+}
+
+/* Clases de Zoom para logos pequeños */
+.bank-card-logo.zoom-low {
+    height: 45px;
+    opacity: 0.7;
+}
+
+.bank-card-logo.zoom-high {
+    height: 55px;
+    opacity: 0.8;
+}
+
+.bank-card-logo.zoom-max {
+    height: 65px;
+    opacity: 0.8;
+}
+
+.bank-card:hover .bank-card-logo {
+    opacity: 1;
+    transform: scale(1.05);
 }
 
 .debtor-label {
@@ -333,37 +373,73 @@
     background: #ff4d4f;
     color: white;
     border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    font-size: 0.75rem;
-    font-weight: 600;
+    padding: 0.45rem 1rem;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     cursor: pointer;
-    margin-top: 0.5rem;
-    transition: background 0.2s;
-    width: 100%;
-    margin-top: 10px;
+    margin-top: 0.75rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: fit-content;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 12px rgba(255, 77, 79, 0.2);
 }
 
 .btn-delete-credit:hover {
     background: #ff1f1f;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(255, 77, 79, 0.3);
+}
+
+.btn-delete-credit i {
+    font-size: 0.75rem;
+}
+
+.btn-unarchive-credit {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 0.45rem 1rem;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: fit-content;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-unarchive-credit:hover {
+    background: var(--primary-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(11, 78, 50, 0.2);
 }
 
 .btn-history-toggle {
-    background: white;
+    background: linear-gradient(145deg, #ffffff, #f1f5f9);
     border: 1px solid var(--border-color);
-    color: var(--gray-500);
+    color: var(--primary);
     width: 45px;
     /* Match screen sync btn height */
     height: 45px;
     border-radius: 12px;
     /* Match layout */
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.1rem;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
 }
 
 .btn-history-toggle:hover {
@@ -377,6 +453,27 @@
     color: var(--white);
     border-color: var(--gold);
     box-shadow: 0 0 15px rgba(242, 187, 58, 0.4);
+    animation: pulse-gold 2s infinite;
+}
+
+.btn-history-toggle.active:hover {
+    background: var(--gold-dark);
+    transform: translateY(-2px) scale(1.1);
+    box-shadow: 0 0 25px rgba(242, 187, 58, 0.6);
+}
+
+@keyframes pulse-gold {
+    0% {
+        box-shadow: 0 0 0 0 rgba(242, 187, 58, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(242, 187, 58, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(242, 187, 58, 0);
+    }
 }
 
 .archived-badge {
@@ -554,7 +651,8 @@
     grid-column: span 2;
 }
 
-.detail-item label, .detail-item .detail-label-static {
+.detail-item label,
+.detail-item .detail-label-static {
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--gray-500);
@@ -601,7 +699,8 @@
     flex-direction: column;
 }
 
-.value-item label, .value-item .value-label-static {
+.value-item label,
+.value-item .value-label-static {
     font-size: 0.75rem;
     color: var(--gray-500);
 }
@@ -716,17 +815,18 @@
     text-align: center;
     background: var(--black-soft);
     transition: all 0.3s;
+    cursor: pointer;
 }
 
 .upload-area-premium:hover {
     border-color: var(--primary);
 }
 
-.upload-buttons {
+.premium-form .upload-buttons {
     display: flex;
     justify-content: center;
-    gap: 1rem;
-    margin-top: 1rem;
+    gap: 1.5rem;
+    margin-top: 3.5rem;
 }
 
 .btn-icon {

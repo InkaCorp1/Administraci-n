@@ -12,7 +12,6 @@ let selectedAporteFile = null;
  * Inicializa el módulo de Aportes Semanales
  */
 async function initAportesModule() {
-    console.log('Inicializando Módulo de Aportes Semanales...');
 
     // Configurar event listeners
     setupAportesEventListeners();

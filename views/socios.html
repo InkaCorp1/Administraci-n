@@ -1,30 +1,33 @@
 <!-- Socios Module - INKA CORP -->
 <div class="content-wrapper socios-container">
-    <!-- Hero Section -->
-    <div class="socios-hero">
-        <div class="hero-icon-socios">
-            <i class="fas fa-users"></i>
+    <!-- Hero Header del Módulo (Usa "standard-hero" para consistencia global) -->
+    <div class="standard-hero socios-hero">
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+            <div class="hero-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <h1 class="hero-title">Socios</h1>
+            <p class="hero-subtitle">Gestión de socios</p>
         </div>
-        <h1 class="hero-title-socios">Socios</h1>
-        <p class="hero-subtitle-socios">Gestión de socios</p>
 
         <!-- Stats -->
-        <div class="socios-hero-stats">
-            <div class="socios-hero-stat">
-                <span class="socios-hero-value" id="stat-total-socios">0</span>
-                <span class="socios-hero-label">Total</span>
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <span class="hero-value" id="stat-total-socios">0</span>
+                <span class="hero-label">Total</span>
             </div>
-            <div class="socios-hero-stat success">
-                <span class="socios-hero-value" id="stat-con-creditos">0</span>
-                <span class="socios-hero-label">Con Créditos</span>
+            <div class="hero-stat highlight">
+                <span class="hero-value" id="stat-con-creditos">0</span>
+                <span class="hero-label">Con Créditos</span>
             </div>
-            <div class="socios-hero-stat">
-                <span class="socios-hero-value" id="stat-sin-creditos">0</span>
-                <span class="socios-hero-label">Sin Créditos</span>
+            <div class="hero-stat">
+                <span class="hero-value" id="stat-sin-creditos">0</span>
+                <span class="hero-label">Sin Créditos</span>
             </div>
-            <div class="socios-hero-stat warning">
-                <span class="socios-hero-value" id="stat-morosos">0</span>
-                <span class="socios-hero-label">Morosos</span>
+            <div class="hero-stat warning">
+                <span class="hero-value" id="stat-morosos">0</span>
+                <span class="hero-label">Morosos</span>
             </div>
         </div>
     </div>
@@ -78,6 +81,9 @@
             <input type="text" id="search-socios" placeholder="Buscar por nombre o cédula..."
                 oninput="searchSocios(this.value)">
         </div>
+        <button class="toolbar-btn btn-pdf" id="btn-export-socios-pdf" onclick="openExportSociosModal()" title="Configurar Exportación PDF">
+            <i class="fas fa-file-pdf"></i>
+        </button>
     </div>
 
     <!-- Secciones de Socios (se generan dinámicamente) -->
@@ -89,15 +95,98 @@
     </div>
 </div>
 
+<!-- Modal de Exportación PDF -->
+<div id="modal-export-socios" class="modal hidden">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card modal-export-card">
+        <div class="modal-header">
+            <h2 class="modal-title">
+                <i class="fas fa-file-export"></i>
+                <span>Exportar Listado de Socios</span>
+            </h2>
+            <button class="modal-close" data-close-modal>
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p class="export-description">Seleccione los criterios para el reporte. Los botones resaltados indican el filtro activo.</p>
+            
+            <div class="export-options-grid">
+                <!-- Filtro por Categoría -->
+                <div class="export-option-group">
+                    <label class="export-label">
+                        <i class="fas fa-tags"></i> Categoría de Socios
+                    </label>
+                    <div class="export-selector-group" id="export-selector-status">
+                        <button class="export-selector-btn active" data-value="todos">Todos</button>
+                        <button class="export-selector-btn" data-value="con_credito">Con Crédito</button>
+                        <button class="export-selector-btn" data-value="sin_credito">Sin Crédito</button>
+                    </div>
+                </div>
+
+                <!-- Filtro por País -->
+                <div class="export-option-group">
+                    <label class="export-label">
+                        <i class="fas fa-globe"></i> País de Residencia
+                    </label>
+                    <div class="export-selector-group" id="export-selector-pais">
+                        <button class="export-selector-btn active" data-value="todos">Todos</button>
+                        <button class="export-selector-btn" data-value="ECUADOR">Ecuador</button>
+                        <button class="export-selector-btn" data-value="USA">USA</button>
+                        <button class="export-selector-btn" data-value="PERU">Perú</button>
+                    </div>
+                </div>
+
+                <!-- Filtro por Estado de Pago -->
+                <div class="export-option-group">
+                    <label class="export-label">
+                        <i class="fas fa-money-check-alt"></i> Estado de Pago
+                    </label>
+                    <div class="export-selector-group" id="export-selector-mora">
+                        <button class="export-selector-btn active" data-value="todos">Todos</button>
+                        <button class="export-selector-btn" data-value="puntuales">Al Día</button>
+                        <button class="export-selector-btn" data-value="morosos">En Mora</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="export-preview-info">
+                <div class="info-item">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Se generará un documento PDF de alta calidad con ${filteredSocios.length} socios sugeridos inicialmente.</span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" data-close-modal>Cancelar</button>
+            <button class="btn btn-primary" onclick="processSociosExport()">
+                <i class="fas fa-file-pdf"></i> Generar PDF
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Modal de Detalles del Socio -->
 <div id="modal-socio-detalle" class="modal hidden">
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-card modal-socio-card">
         <div class="modal-header modal-header-socio">
-            <h2 class="modal-title">
-                <i class="fas fa-user-circle"></i>
-                <span id="modal-socio-nombre">Detalles del Socio</span>
-            </h2>
+            <div class="modal-title-container">
+                <h2 class="modal-title">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="modal-socio-nombre">Detalles del Socio</span>
+                </h2>
+                <div class="modal-header-actions">
+                    <button id="btn-edit-socio" class="btn-edit-socio" title="Actualizar Datos del Socio">
+                        <i class="fas fa-edit"></i>
+                        <span>Actualizar</span>
+                    </button>
+                    <button id="btn-descargar-ficha" class="btn-ficha-pdf" title="Descargar Ficha Completa">
+                        <i class="fas fa-file-pdf"></i>
+                        <span>Ficha del Socio</span>
+                    </button>
+                </div>
+            </div>
             <button class="modal-close" data-close-modal>
                 <i class="fas fa-times"></i>
             </button>

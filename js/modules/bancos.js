@@ -14,7 +14,6 @@ let showingArchived = false; // State for history view
  * Inicializa el módulo de Bancos
  */
 async function initBancosModule() {
-    console.log('Inicializando Módulo Situación Bancaria...');
 
     // Configurar event listeners
     setupBancosEventListeners();
@@ -61,7 +60,7 @@ function setupBancosEventListeners() {
                 historyBtn.title = 'Ver Historial Pagados';
             }
 
-            loadBancosData(false); // Reload with new filter
+            loadBancosData(true); // Forced reload when switching views to ensure display fixes apply
         });
     }
 
@@ -100,6 +99,17 @@ function setupBancosEventListeners() {
         removePreviewBtn.addEventListener('click', clearBancoPreview);
     }
 
+    // Dropzone logic (hacer todo el cuadro clickable)
+    const bancoDropzone = document.getElementById('pago-banco-dropzone');
+    if (bancoDropzone) {
+        bancoDropzone.addEventListener('click', (e) => {
+            // Solo disparar si no se hizo clic en el botón de eliminar preview
+            if (!e.target.closest('.btn-remove-preview')) {
+                document.getElementById('banco-gallery').click();
+            }
+        });
+    }
+
     // Botón Precancelar (abre el modal)
     const btnPrecancelar = document.getElementById('btn-precancelar-banco');
     if (btnPrecancelar) {
@@ -126,6 +136,15 @@ function setupBancosEventListeners() {
 
     const removePrepayBtn = document.getElementById('remove-prepay-preview');
     if (removePrepayBtn) removePrepayBtn.addEventListener('click', clearPrepayPreview);
+
+    const prepayDropzone = document.getElementById('prepay-dropzone');
+    if (prepayDropzone) {
+        prepayDropzone.addEventListener('click', (e) => {
+            if (!e.target.closest('.btn-remove-preview')) {
+                document.getElementById('prepay-gallery').click();
+            }
+        });
+    }
 }
 
 /**
@@ -135,32 +154,30 @@ async function loadBancosData(forceRefresh = false) {
     const grid = document.getElementById('bancos-grid');
     const emptyMsg = document.getElementById('bancos-empty');
 
-    if (grid) {
+    if (!grid) return;
+
+    // PASO 1: Usar caché si está disponible y es válido
+    if (!forceRefresh && window.hasCacheData && window.hasCacheData('bancos')) {
+        bancosData = window.getCacheData('bancos');
+        const cachedPagosMap = window.dataCache.bancosPagosMap || {};
+        window.currentPagosMap = cachedPagosMap; // Sync current map even from cache
+
+        renderBancosCards(bancosData, cachedPagosMap);
+        updateBancosStats(bancosData);
+
+        // Si el caché es reciente, no re-consultar
+        if (window.isCacheValid && window.isCacheValid('bancos')) {
+            return;
+        }
+    }
+
+    if (!bancosData.length) {
         grid.innerHTML = '<div class="loading-placeholder"><div class="spinner"></div><span>Cargando créditos bancarios...</span></div>';
     }
 
     try {
         const supabase = window.getSupabaseClient();
         if (!supabase) throw new Error('Cliente Supabase no disponible');
-
-        // En un entorno de producción, estos vendrían de tablas reales.
-        // Aquí simulamos la carga basada en la estructura de los CSVs.
-        // Asumimos nombres de tabla: ic_bancos e ic_bancos_detalle (o similar en schemas.txt)
-
-        // El schemas.txt muestra ic_creditos, ic_creditos_amortizacion etc. 
-        // Para este módulo específico usaremos tablas ic_situacion_bancaria e ic_situacion_bancaria_detalle
-        // (Ajustar según nombres reales si existen en Supabase)
-
-        // 1. Fetch Banks
-        // 1. Fetch Banks based on state
-        // If showingArchived is true, fetch 'ARCHIVADO' or 'COMPLETADO', else 'ACTIVO' (default)
-        // Note: The CSV migration might not have 'ARCHIVADO' status yet, so default is ACTIVO.
-
-        let queryState = showingArchived ? 'ARCHIVADO' : 'ACTIVO';
-
-        // If showingArchived is true, we want to see items we manually archived (set to ARCHIVADO).
-        // If false, we show ACTIVO (or basically anything NOT archived).
-        // Let's use simple logic:
 
         let query = supabase
             .from('ic_situacion_bancaria')
@@ -170,7 +187,7 @@ async function loadBancosData(forceRefresh = false) {
         if (showingArchived) {
             query = query.eq('estado', 'ARCHIVADO');
         } else {
-            query = query.neq('estado', 'ARCHIVADO'); // Show everything except archived
+            query = query.neq('estado', 'ARCHIVADO');
         }
 
         const { data: bancos, error: errorBancos } = await query;
@@ -179,10 +196,6 @@ async function loadBancosData(forceRefresh = false) {
 
         bancosData = bancos || [];
 
-        // 2. Fetch Paid Counts for these banks
-        // We want to count rows in ic_situacion_bancaria_detalle where estado = 'PAGADO'
-        // For efficiency, we can fetch all paid details for these transaction IDs.
-        // Assuming not massive data volume for this specific module.
         const transaccionIds = bancosData.map(b => b.id_transaccion);
         let pagosMap = {};
 
@@ -194,29 +207,34 @@ async function loadBancosData(forceRefresh = false) {
                 .in('transaccion', transaccionIds);
 
             if (!errorPagos && pagos) {
-                // Count per transaction
                 pagos.forEach(p => {
-                    pagosMap[p.transaccion] = (pagosMap[p.transaccion] || 0) + 1;
+                    const key = String(p.transaccion);
+                    pagosMap[key] = (pagosMap[key] || 0) + 1;
                 });
+            } else if (errorPagos) {
+                console.error('[BANCOS] Error fetching pagos detalle:', errorPagos);
             }
         }
 
-        window.currentPagosMap = pagosMap; // Store globally for filtering
+        window.currentPagosMap = pagosMap;
+
+        // Guardar en caché global (Asegurar que el mapa de pagos se guarde ANTES de persistir a disco)
+        if (window.setCacheData) {
+            window.dataCache.bancosPagosMap = pagosMap;
+            window.setCacheData('bancos', bancosData);
+        }
 
         // Sort: Active (incomplete) first, then Paid (complete)
         bancosData.sort((a, b) => {
             const totalA = parseInt(a.contador || 0);
-            const pagadasA = pagosMap[a.id_transaccion] || 0;
+            const pagadasA = pagosMap[String(a.id_transaccion)] || 0;
             const isCompleteA = totalA > 0 && pagadasA >= totalA;
 
             const totalB = parseInt(b.contador || 0);
-            const pagadasB = pagosMap[b.id_transaccion] || 0;
+            const pagadasB = pagosMap[String(b.id_transaccion)] || 0;
             const isCompleteB = totalB > 0 && pagadasB >= totalB;
 
-            // If both have same status, keep original order (or sort by name/date if preferred)
             if (isCompleteA === isCompleteB) return 0;
-
-            // False (Incomplete) comes before True (Complete)
             return isCompleteA ? 1 : -1;
         });
 
@@ -343,6 +361,18 @@ function getBankTheme(bankName) {
 }
 
 /**
+ * Obtiene la clase de zoom para logos específicos que se ven pequeños
+ */
+function getLogoZoomClass(bankName) {
+    const name = (bankName || '').toUpperCase();
+    if (name.includes('DAQUILEMA')) return 'zoom-max';
+    if (name.includes('MUSHUC')) return 'zoom-high';
+    if (name.includes('PACIFICO')) return 'zoom-high';
+    if (name.includes('PRODUBANCO')) return 'zoom-low';
+    return '';
+}
+
+/**
  * Renderiza las tarjetas de bancos
  */
 function renderBancosCards(data, pagosMap = {}) {
@@ -367,7 +397,17 @@ function renderBancosCards(data, pagosMap = {}) {
 
         // Calcular progreso real con los datos obtenidos
         const totalCuotas = parseInt(banco.contador || 0);
-        const pagadas = pagosMap[banco.id_transaccion] || 0;
+        let pagadas = pagosMap[String(banco.id_transaccion)] || 0;
+
+        // Evitar parpadeo: Si el mapa de pagos está vacío pero hay cuotas, 
+        // y no estamos forzando refresco, podría ser un estado de carga inicial.
+        // Sin embargo, si ya tenemos datos en pagosMap (aunque sea de cache), se usará.
+
+        // Si el crédito está ARCHIVADO y estamos en la vista de historial, forzar estado de completado para visualización
+        if (showingArchived && (banco.estado || '').toUpperCase() === 'ARCHIVADO') {
+            pagadas = totalCuotas;
+        }
+
         const pct = totalCuotas > 0 ? Math.round((pagadas / totalCuotas) * 100) : 0;
 
         // Saldo pendiente estimado (Monto final - (pagadas * mensual))
@@ -377,7 +417,9 @@ function renderBancosCards(data, pagosMap = {}) {
         const mensual = parseFloat(banco.mensual || 0);
         const montoFinal = parseFloat(banco.monto_final || 0);
         let pendiente = montoFinal - (pagadas * mensual);
-        if (pendiente < 0) pendiente = 0;
+        if (pendiente < 0 || (showingArchived && (banco.estado || '').toUpperCase() === 'ARCHIVADO')) {
+            pendiente = 0;
+        }
 
         card.innerHTML = `
             <div class="bank-card-header">
@@ -410,8 +452,23 @@ function renderBancosCards(data, pagosMap = {}) {
                 <span class="debtor-label">DEUDOR</span>
                 <span class="debtor-name">${banco.a_nombre_de || 'N/A'}</span>
                 ${pct >= 100 && !showingArchived ? `<button class="btn-delete-credit" onclick="archiveBanco(event, '${banco.id_transaccion}')"><i class="fas fa-archive"></i> Mover al Historial</button>` : ''}
-                ${showingArchived ? `<div class="archived-badge"><i class="fas fa-check-circle"></i> Archivado</div>` : ''}
+                ${showingArchived ? `
+                    <div class="archived-badge"><i class="fas fa-check-circle"></i> Archivado</div>
+                    <button class="btn-unarchive-credit" onclick="unarchiveBanco(event, '${banco.id_transaccion}')">
+                        <i class="fas fa-undo"></i> Mover a Activos
+                    </button>
+                ` : ''}
             </div>
+
+            <!-- Logo en la esquina inferior derecha -->
+            ${(() => {
+                let logoUrl = banco.logo_banco || 'img/bank-placeholder.png';
+                if ((banco.nombre_banco || '').toUpperCase().includes('PICHINCHA')) {
+                    logoUrl = 'https://lh3.googleusercontent.com/d/10zy2rxIR2dp_MfdGO7JiOjVvovGSIGCZ=w2048?name=Pichincha.png';
+                }
+                const zoomClass = getLogoZoomClass(banco.nombre_banco);
+                return `<img src="${logoUrl}" class="bank-card-logo ${zoomClass}" alt="Logo">`;
+            })()}
         `;
         grid.appendChild(card);
     });
@@ -448,6 +505,40 @@ async function archiveBanco(event, id) {
     } catch (error) {
         console.error('Error al archivar crédito:', error);
         window.showAlert('No se pudo archivar: ' + error.message, 'Error', 'error');
+    }
+}
+
+/**
+ * Desarchiva un crédito (Mueve de ARCHIVADO a ACTIVO)
+ */
+async function unarchiveBanco(event, id) {
+    event.stopPropagation();
+
+    const confirmed = await window.showConfirm(
+        '¿Deseas mover este crédito de vuelta a la lista de activos?',
+        'Mover a Activos',
+        { confirmText: 'Mover a Activos', cancelText: 'Cancelar', type: 'question' }
+    );
+
+    if (!confirmed) return;
+
+    try {
+        const supabase = window.getSupabaseClient();
+
+        // Update status to 'ACTIVO' or simply remove state if null is allowed
+        const { error } = await supabase
+            .from('ic_situacion_bancaria')
+            .update({ estado: 'ACTIVO' })
+            .eq('id_transaccion', id);
+
+        if (error) throw error;
+
+        window.showToast('Crédito movido a activos', 'success');
+        await loadBancosData(true);
+
+    } catch (error) {
+        console.error('Error al desarchivar crédito:', error);
+        window.showAlert('No se pudo desarchivar: ' + error.message, 'Error', 'error');
     }
 }
 
@@ -828,9 +919,16 @@ function updateAmortizacionProgress(data) {
     const pagados = data.filter(i => i.estado === 'PAGADO').length;
     const pct = total > 0 ? Math.round((pagados / total) * 100) : 0;
 
-    document.getElementById('det-banco-progreso-text').textContent = `${pagados} de ${total} cuotas`;
-    document.getElementById('det-banco-progreso-pct').textContent = `${pct}%`;
-    document.getElementById('det-banco-barra').style.width = `${pct}%`;
+    // Si estamos en la vista de historial y el banco actual está ARCHIVADO, forzar visualización al 100%
+    const currentBanco = bancosData.find(b => b.id_transaccion === currentBancoId);
+    const isArchived = showingArchived && (currentBanco?.estado || '').toUpperCase() === 'ARCHIVADO';
+
+    const displayPagados = isArchived ? total : pagados;
+    const displayPct = isArchived ? 100 : pct;
+
+    document.getElementById('det-banco-progreso-text').textContent = `${displayPagados} de ${total} cuotas`;
+    document.getElementById('det-banco-progreso-pct').textContent = `${displayPct}%`;
+    document.getElementById('det-banco-barra').style.width = `${displayPct}%`;
 
     const totalPagado = data
         .filter(i => i.estado === 'PAGADO')
@@ -840,8 +938,11 @@ function updateAmortizacionProgress(data) {
         .filter(i => i.estado !== 'PAGADO')
         .reduce((sum, i) => sum + parseFloat(i.valor || 0), 0);
 
-    document.getElementById('det-banco-pagado').textContent = '$' + totalPagado.toLocaleString('es-EC', { minimumFractionDigits: 2 });
-    document.getElementById('det-banco-pendiente').textContent = '$' + totalPendiente.toLocaleString('es-EC', { minimumFractionDigits: 2 });
+    const displayTotalPagado = isArchived ? (totalPagado + totalPendiente) : totalPagado;
+    const displayTotalPendiente = isArchived ? 0 : totalPendiente;
+
+    document.getElementById('det-banco-pagado').textContent = '$' + displayTotalPagado.toLocaleString('es-EC', { minimumFractionDigits: 2 });
+    document.getElementById('det-banco-pendiente').textContent = '$' + displayTotalPendiente.toLocaleString('es-EC', { minimumFractionDigits: 2 });
 
     // Ocultar botón de precancelar si ya está pagado al 100%
     const btnPrecancelar = document.getElementById('btn-precancelar-banco');
@@ -883,17 +984,17 @@ async function handleBancoPaymentSubmit(e) {
         const supabase = window.getSupabaseClient();
 
         // 1. Subir imagen a Storage
-        const fileName = `bancos/pago_${idDetalle}_${Date.now()}.jpg`;
+        const fileName = `bancos_pagos/pago_${idDetalle}_${Date.now()}.jpg`;
         const blob = await fetch(previewImg.src).then(r => r.blob());
 
         const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('comprobantes')
+            .from('inkacorp')
             .upload(fileName, blob);
 
         if (uploadError) throw uploadError;
 
         const { data: publicUrlData } = supabase.storage
-            .from('comprobantes')
+            .from('inkacorp')
             .getPublicUrl(fileName);
 
         // 2. Actualizar registro en DB
@@ -908,16 +1009,16 @@ async function handleBancoPaymentSubmit(e) {
 
         if (updateError) throw updateError;
 
-        window.showToast('Pago registrado correctamente', 'success');
         closePremiumModals();
+        await window.showAlert('El pago se ha registrado correctamente en el sistema.', '¡Pago Exitoso!', 'success');
 
         // Recargar tabla de amortización para el banco actual
         if (currentBancoId) {
             await loadAmortizacionBanco(currentBancoId);
         }
 
-        // Recargar grid principal en segundo plano
-        loadBancosData();
+        // Recargar grid principal en segundo plano (SILENT)
+        loadBancosData(true);
 
     } catch (error) {
         console.error('Error al guardar pago:', error);
@@ -1056,12 +1157,12 @@ async function handlePrecancelarSubmit(e) {
         if (pendingInstallments.length === 0) throw new Error('No hay cuotas pendientes para precancelar');
 
         // 1. Subir imagen
-        const fileName = `bancos/prepay_${currentBancoId}_${Date.now()}.jpg`;
+        const fileName = `bancos_pagos/prepay_${currentBancoId}_${Date.now()}.jpg`;
         const blob = await fetch(previewImg.src).then(r => r.blob());
-        const { error: uploadError } = await supabase.storage.from('comprobantes').upload(fileName, blob);
+        const { error: uploadError } = await supabase.storage.from('inkacorp').upload(fileName, blob);
         if (uploadError) throw uploadError;
 
-        const { data: publicUrlData } = supabase.storage.from('comprobantes').getPublicUrl(fileName);
+        const { data: publicUrlData } = supabase.storage.from('inkacorp').getPublicUrl(fileName);
         const imgUrl = publicUrlData.publicUrl;
 
         // 2. Distribuir el pago en las cuotas pendientes
@@ -1085,8 +1186,8 @@ async function handlePrecancelarSubmit(e) {
 
         // 3. Si se pagó todo, podrías archivar el crédito o dejar que el usuario lo haga
         // Por ahora refrescamos y cerramos
-        window.showToast('Precancelación registrada con éxito', 'success');
         closePremiumModals();
+        await window.showAlert('La precancelación se ha procesado y registrado correctamente.', '¡Proceso Exitoso!', 'success');
 
         if (currentBancoId) {
             await loadAmortizacionBanco(currentBancoId);
@@ -1274,7 +1375,6 @@ function updateBancoPreview() {
             <span class="bank-name-label">${name || 'Banco'}</span>
             <div class="bank-progress-circle">0/${p}</div>
         </div>
-        ${logoUrl ? `<img src="${logoUrl}" style="position:absolute; right:10px; top:40px; height:30px; opacity:0.8;">` : ''}
         <div class="bank-card-progress">
             <div class="progress-label-group">
                 <span>Progreso</span>
@@ -1298,6 +1398,7 @@ function updateBancoPreview() {
             <span class="debtor-label">DEUDOR</span>
             <span class="debtor-name">${deudor}</span>
         </div>
+        ${logoUrl ? `<img src="${logoUrl}" class="bank-card-logo ${getLogoZoomClass(bancoName)}" alt="Logo">` : ''}
     `;
 
     document.getElementById('new-banco-preview-card').innerHTML = cardFunc(bancoName, plazo, cuota, '');

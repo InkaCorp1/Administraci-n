@@ -144,9 +144,38 @@ button {
     border-color: var(--gold);
 }
 
-/* Ocultar botón cuando sidebar está abierto */
+/* Botón Acceso Directo Home */
+.home-shortcut-btn {
+    position: fixed;
+    top: calc(1rem + 54px); /* Debajo del botón hamburguesa (44px + 10px margen) */
+    left: 1rem;
+    z-index: 950;
+    width: 44px;
+    height: 44px;
+    border-radius: 0.75rem;
+    background: var(--gray-800);
+    border: 1px solid var(--border-color);
+    color: var(--white);
+    font-size: 1.25rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-normal);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.home-shortcut-btn:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+/* Ocultar botones cuando sidebar está abierto */
 .sidebar:not(.collapsed)~.sidebar-toggle,
-.sidebar-toggle.hidden {
+.sidebar:not(.collapsed)~.home-shortcut-btn,
+.sidebar-toggle.hidden,
+.home-shortcut-btn.hidden {
     opacity: 0;
     pointer-events: none;
 }
@@ -168,6 +197,28 @@ button {
 .sidebar-overlay.active {
     opacity: 1;
     pointer-events: auto;
+}
+
+/* Contenedor de Carga de Vistas (Feedback inmediato) */
+.view-loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60vh;
+    width: 100%;
+}
+
+.view-loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    color: var(--gold);
+    font-size: 1.1rem;
+}
+
+.view-loading-content i {
+    font-size: 2.5rem;
 }
 
 .sidebar {
@@ -375,6 +426,130 @@ button {
 .module-subtitle {
     color: var(--gray-400);
     margin-top: 0.25rem;
+}
+
+/* ==========================================
+   HERO UNIFICADO (Standard Header)
+   Usa estas clases en cualquier módulo para mantener consistencia
+   ========================================== */
+.standard-hero {
+    position: relative;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border-radius: 1.5rem;
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--border-color);
+}
+
+.standard-hero .hero-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.standard-hero .hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.standard-hero .hero-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.standard-hero .hero-icon i {
+    font-size: 1.75rem;
+    color: var(--gold);
+}
+
+.standard-hero .hero-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.5px;
+}
+
+.standard-hero .hero-subtitle {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+}
+
+.standard-hero .hero-stats {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.25rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.standard-hero .hero-stat {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    padding: 1rem 0.75rem;
+    border-radius: 1rem;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all var(--transition-normal);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 90px;
+}
+
+.standard-hero .hero-stat:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.standard-hero .hero-stat.warning {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.2);
+}
+
+.standard-hero .hero-stat.highlight {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.standard-hero .hero-value {
+    display: block;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin-bottom: 0.2rem;
+}
+
+.standard-hero .hero-stat.warning .hero-value {
+    color: var(--gold);
+}
+
+.standard-hero .hero-label {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 /* ==========================================
@@ -957,7 +1132,8 @@ tbody tr:last-child td {
 }
 
 /* Modal de pago debe estar por encima del modal de crédito */
-#registrar-pago-modal {
+#registrar-pago-modal,
+#ver-pago-detalle-modal {
     z-index: 2100 !important;
 }
 
@@ -1068,7 +1244,11 @@ tbody tr:last-child td {
 }
 
 .text-center {
-    text-align: center;
+    text-align: center !important;
+}
+
+.text-right {
+    text-align: right !important;
 }
 
 .text-gold {

@@ -175,13 +175,11 @@ async function loadPolizas(forceRefresh = false) {
     try {
         // PASO 1: Mostrar datos de caché INMEDIATAMENTE si existen
         if (!forceRefresh && window.hasCacheData && window.hasCacheData('polizas')) {
-            console.log('⚡ Mostrando pólizas desde caché (instantáneo)');
             allPolizas = window.getCacheData('polizas');
             renderPolizas();
 
             // Si el caché es reciente, no recargar
             if (window.isCacheValid && window.isCacheValid('polizas')) {
-                console.log('✓ Caché fresco, no se requiere actualización');
                 return;
             }
         } else if (!forceRefresh) {
@@ -190,7 +188,6 @@ async function loadPolizas(forceRefresh = false) {
         }
 
         // PASO 2: Actualizar en segundo plano
-        console.log('⟳ Actualizando pólizas en segundo plano...');
         const supabase = getSupabaseClient();
         if (!supabase) return;
 
@@ -221,7 +218,6 @@ async function loadPolizas(forceRefresh = false) {
         }
 
         renderPolizas();
-        console.log('✓ Pólizas actualizadas');
 
     } catch (error) {
         console.error('Error cargando pólizas:', error);
@@ -501,7 +497,6 @@ function filterPolizasByEstado(estado) {
 }
 
 function setupPolizasEventListeners() {
-    console.log('⚙️ Configurando listeners de pólizas...');
 
     // Búsqueda
     const searchInput = document.getElementById('search-polizas');
@@ -1451,17 +1446,6 @@ function formatDateFull(fechaStr) {
     });
 }
 
-function getDatosAcreedor() {
-    // Si no hay sesión, valores por defecto del usuario logueado (Asesor)
-    const user = (typeof window.getCurrentUser === 'function') ? window.getCurrentUser() : null;
-    return {
-        nombre: user?.nombre || 'HENRY FABRICIO VALENZUELA CALERO',
-        institucion: 'INKA CORP',
-        cedula: user?.cedula || '1715421542',
-        ciudad: user?.lugar_asesor || 'LATACUNGA', // Se saca de ic_users.lugar_asesor
-        domicilio: 'CALLE GUAYAQUIL Y QUITO, EDIFICIO INKA'
-    };
-}
 
 /**
  * Convierte un número a letras
@@ -1695,6 +1679,18 @@ async function generatePolizaPDF(data) {
     const pageWidth = doc.internal.pageSize.getWidth();
     const contentWidth = pageWidth - (margin * 2);
     const acreedor = getDatosAcreedor();
+
+    // Validar datos mandatorios del asesor para el contrato de inversión
+    if (!acreedor.nombre || !acreedor.cedula) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Perfil de Asesor Incompleto',
+            text: 'Su usuario no tiene configurado el Nombre o la Cédula. No se puede generar contratos de inversión sin estos datos legales.',
+            confirmButtonColor: '#0B4E32'
+        });
+        return;
+    }
+
     let y = 15;
 
     // --- ENCABEZADO ESTILO SOLICITUD ---

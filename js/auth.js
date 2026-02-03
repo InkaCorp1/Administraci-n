@@ -46,7 +46,8 @@ async function checkSession() {
             if (error.message.includes('signature') || error.status === 400) {
                 localStorage.clear();
                 sessionStorage.clear();
-                window.location.href = 'login.html';
+                const redirectPath = window.location.pathname.includes('/mobile/') ? '../login.html' : 'login.html';
+                window.location.href = redirectPath;
             }
             return { isAuthenticated: false, user: null };
         }
@@ -58,23 +59,24 @@ async function checkSession() {
 
         // Hay una sesión, ahora verificamos el perfil en nuestra tabla de usuarios
         const { data: userProfile, error: profileError } = await sb
-            .from('ic_users') // Cambiado de ic_usuarios a ic_users
+            .from('ic_users') 
             .select('*')
             .eq('id', session.user.id)
             .single();
 
         if (profileError || !userProfile) {
-            console.warn('Usuario autenticado pero sin perfil en la base de datos.');
-            // Opcional: cerrar sesión si se requiere perfil sí o sí
-            // await sb.auth.signOut();
-            // return { isAuthenticated: false, user: null };
-            return { isAuthenticated: true, user: session.user }; // O permitir acceso parcial
+            console.warn('⚠️ [AUTH] Usuario autenticado pero sin perfil en ic_users:', profileError);
+            return { isAuthenticated: true, user: session.user };
         }
 
-        // Combinar datos de auth y perfil
+        // Combinar datos de auth y perfil con prioridad para el perfil de ic_users
         const fullUser = {
             ...session.user,
-            ...userProfile
+            ...userProfile,
+            // Asegurar que el id siga siendo el de auth por si acaso
+            id: session.user.id, 
+            // Asegurar que whatsapp esté presente si existe en el perfil
+            whatsapp: userProfile.whatsapp || userProfile.telefono || session.user.phone || null
         };
 
         return { isAuthenticated: true, user: fullUser };
@@ -99,7 +101,8 @@ async function logout() {
         window.clearCache();
     }
     // Redirigir siempre al login después de intentar cerrar sesión
-    window.location.href = 'login.html';
+    const redirectPath = window.location.pathname.includes('/mobile/') ? '../login.html' : 'login.html';
+    window.location.href = redirectPath;
 }
 
 /**

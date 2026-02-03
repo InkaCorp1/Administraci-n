@@ -108,19 +108,16 @@ async function loadAhorros(forceRefresh = false) {
     try {
         // PASO 1: Mostrar datos de caché INMEDIATAMENTE si existen
         if (!forceRefresh && window.hasCacheData && window.hasCacheData('creditos')) {
-            console.log('⚡ Mostrando ahorros desde caché de créditos (instantáneo)');
             const creditos = window.getCacheData('creditos');
             processAhorrosFromCreditos(creditos);
 
             // Si el caché es reciente, no recargar
             if (window.isCacheValid && window.isCacheValid('creditos')) {
-                console.log('✓ Caché fresco, no se requiere actualización');
                 return;
             }
         }
 
         // PASO 2: Actualizar en segundo plano
-        console.log('⟳ Actualizando ahorros en segundo plano...');
         const supabase = window.getSupabaseClient();
 
         const { data: creditos, error } = await supabase
@@ -144,7 +141,6 @@ async function loadAhorros(forceRefresh = false) {
         if (error) throw error;
 
         processAhorrosFromCreditos(creditos);
-        console.log('✓ Ahorros actualizados');
 
     } catch (error) {
         console.error('Error loading ahorros:', error);

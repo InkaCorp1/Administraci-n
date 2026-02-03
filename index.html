@@ -17,6 +17,8 @@
 
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/creditos.css">
+    <link rel="stylesheet" href="css/creditos_preferenciales.css">
+    <link rel="stylesheet" href="css/creditos_preferenciales_hero.css">
     <link rel="stylesheet" href="css/polizas.css">
     <link rel="stylesheet" href="css/socios.css">
     <link rel="stylesheet" href="css/solicitud_credito.css">
@@ -30,36 +32,48 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- jsPDF para generación de fichas PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <!-- QRious para códigos QR en PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
     <script>
         // Detección de dispositivo móvil y redirección
-        (function () {
+        function checkDevice() {
             // Verificar si el usuario forzó la versión de escritorio
             if (sessionStorage.getItem('forceDesktop') === 'true') {
-                sessionStorage.removeItem('forceDesktop');
-                return; // No redirigir
+                return false;
             }
 
-            // Detectar si es móvil
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-                || (window.innerWidth <= 768 && 'ontouchstart' in window);
+            // Detectar si es móvil por User Agent o por tamaño de pantalla
+            const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isSmallScreen = window.innerWidth <= 850; // Aumentado a 850 para mejor cobertura
 
-            if (isMobile) {
-                window.location.href = 'movil.html';
+            if (isMobileUA || isSmallScreen) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const viewParam = urlParams.get('view');
+                const path = window.location.pathname;
+                const lastPart = path.split('/').pop().replace('.html', '');
+                
+                // Mapear de PC a Móvil
+                const validViews = ['socios', 'creditos', 'ahorros', 'polizas', 'simulador', 'aportes', 'bancos', 'administrativos'];
+                const viewFromPath = viewParam || (lastPart && validViews.includes(lastPart) && lastPart !== 'index' ? lastPart : '');
+                
+                // Redirigir a la CARPETA mobile (raíz de esa carpeta) para evitar 404
+                const mobileUrl = viewFromPath ? `mobile/?view=${viewFromPath}` : 'mobile/';
+                window.location.href = mobileUrl;
+                return true;
             }
-        })();
+            return false;
+        }
 
-        // Verificación de sesión inmediata antes de renderizar el cuerpo
-        (async function () {
-            initSupabase();
-            const { isAuthenticated } = await checkSession();
-            if (!isAuthenticated) {
-                window.location.href = 'login.html';
-            }
-        })();
+        // Ejecución inmediata
+        checkDevice();
+
+        // Escuchar cambios de tamaño (por si se redimensiona o rota el dispositivo)
+        window.addEventListener('resize', () => {
+            checkDevice();
+        });
     </script>
 </head>
 
@@ -76,9 +90,13 @@
 
     <!-- Layout Principal -->
     <div class="app-layout" style="display: none;" id="app-layout">
-        <!-- Botón Hamburguesa (visible cuando sidebar está cerrado) -->
+        <!-- Botones de Acceso Rápido (visibles cuando sidebar está cerrado) -->
         <button id="sidebar-toggle" class="sidebar-toggle" title="Menú">
             <i class="fas fa-bars"></i>
+        </button>
+
+        <button id="home-shortcut" class="home-shortcut-btn hidden" title="Ir al Dashboard" onclick="loadView('dashboard')">
+            <i class="fas fa-home"></i>
         </button>
 
         <!-- Overlay para cerrar sidebar -->
@@ -99,59 +117,65 @@
             <nav class="nav-menu">
                 <div class="nav-section-title">Navegación</div>
 
-                <a href="#dashboard" class="nav-item active" data-view="dashboard">
+                <a href="index.html" class="nav-item active" data-view="dashboard">
                     <i class="fas fa-th-large"></i>
                     <span>Dashboard</span>
                 </a>
 
-                <a href="#socios" class="nav-item" data-view="socios" data-module="socios">
+                <a href="socios.html" class="nav-item" data-view="socios" data-module="socios">
                     <i class="fas fa-users"></i>
                     <span>Socios</span>
                 </a>
 
-                <a href="#solicitud_credito" class="nav-item" data-view="solicitud_credito"
+                <a href="solicitud_credito.html" class="nav-item" data-view="solicitud_credito"
                     data-module="solicitud_credito">
                     <i class="fas fa-file-invoice-dollar"></i>
                     <span>Solicitud de Crédito</span>
                 </a>
 
-                <a href="#creditos" class="nav-item" data-view="creditos" data-module="creditos">
+                <a href="creditos.html" class="nav-item" data-view="creditos" data-module="creditos">
                     <i class="fas fa-hand-holding-usd"></i>
                     <span>Créditos</span>
                 </a>
 
-                <a href="#precancelaciones" class="nav-item" data-view="precancelaciones"
+                <a href="creditos_preferenciales.html" class="nav-item" data-view="creditos_preferenciales"
+                    data-module="creditos_preferenciales">
+                    <i class="fas fa-star"></i>
+                    <span>Créditos Preferenciales</span>
+                </a>
+
+                <a href="precancelaciones.html" class="nav-item" data-view="precancelaciones"
                     data-module="precancelaciones">
                     <i class="fas fa-hand-holding-usd"></i>
                     <span>Precancelaciones</span>
                 </a>
 
-                <a href="#ahorros" class="nav-item" data-view="ahorros" data-module="ahorros">
+                <a href="ahorros.html" class="nav-item" data-view="ahorros" data-module="ahorros">
                     <i class="fas fa-piggy-bank"></i>
                     <span>Ahorros</span>
                 </a>
 
-                <a href="#polizas" class="nav-item" data-view="polizas" data-module="polizas">
+                <a href="polizas.html" class="nav-item" data-view="polizas" data-module="polizas">
                     <i class="fas fa-certificate"></i>
                     <span>Pólizas</span>
                 </a>
 
-                <a href="#simulador" class="nav-item" data-view="simulador" data-module="simulador">
+                <a href="simulador.html" class="nav-item" data-view="simulador" data-module="simulador">
                     <i class="fas fa-calculator"></i>
                     <span>Simulador</span>
                 </a>
 
-                <a href="#aportes" class="nav-item" data-view="aportes" data-module="aportes">
+                <a href="aportes.html" class="nav-item" data-view="aportes" data-module="aportes">
                     <i class="fas fa-hand-holding-usd"></i>
                     <span>Aportes Semanales</span>
                 </a>
 
-                <a href="#bancos" class="nav-item" data-view="bancos" data-module="bancos">
+                <a href="bancos.html" class="nav-item" data-view="bancos" data-module="bancos">
                     <i class="fas fa-university"></i>
                     <span>Situación Bancaria</span>
                 </a>
 
-                <a href="#administrativos" class="nav-item" data-view="administrativos" data-module="administrativos">
+                <a href="administrativos.html" class="nav-item" data-view="administrativos" data-module="administrativos">
                     <i class="fas fa-file-invoice-dollar"></i>
                     <span>Gastos Administrativos</span>
                 </a>
@@ -196,9 +220,11 @@
     <script src="js/auth.js"></script>
     <script src="js/app.js"></script>
     <script src="js/modules/socios.js"></script>
+    <script src="js/modules/socios_edit.js"></script>
     <script src="js/modules/solicitud_credito.js"></script>
     <script src="js/image-utils.js"></script>
     <script src="js/modules/creditos.js"></script>
+    <script src="js/modules/creditos_preferenciales.js"></script>
     <script src="js/modules/polizas.js"></script>
     <script src="js/modules/precancelaciones.js"></script>
     <script src="js/modules/ahorros.js"></script>
@@ -212,13 +238,36 @@
         // Registrar Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('sw.js')
                     .then((registration) => {
                         console.log('[PWA] Service Worker registrado:', registration.scope);
+                        
+                        // Detectar actualizaciones del Service Worker
+                        registration.onupdatefound = () => {
+                            const installingWorker = registration.installing;
+                            installingWorker.onstatechange = () => {
+                                if (installingWorker.state === 'installed') {
+                                    if (navigator.serviceWorker.controller) {
+                                        // Nueva versión disponible, recarga automática para aplicar
+                                        console.log('[PWA] Nueva versión detectada, recargando...');
+                                        window.location.reload();
+                                    }
+                                }
+                            };
+                        };
                     })
                     .catch((error) => {
                         console.error('[PWA] Error al registrar SW:', error);
                     });
+            });
+
+            // Asegurarse de que el Service Worker tome el control rápidamente
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    window.location.reload();
+                    refreshing = true;
+                }
             });
         }
     </script>

@@ -10,7 +10,7 @@ let allCreditos = [];
 let filteredCreditos = [];
 let currentEstadoFilterCreditos = '';
 let currentPaisFilter = ''; // Filtro por país
-let estadoSortEnabled = true; // Si está activo, ordena por estado (Activos > Morosos > Otros)
+let estadoSortEnabled = true; // Si está activo, ordena por estado (Morosos > Activos > Otros)
 let currentSort = { field: 'cuotas', direction: 'desc' }; // Ordenamiento secundario
 let currentViewingCredito = null;
 let currentViewingCuota = null;
@@ -29,8 +29,19 @@ const PAIS_CONFIG = {
 // ==========================================
 // INICIALIZACIÓN
 // ==========================================
-function initCreditosModule() {
-    loadCreditos();
+async function initCreditosModule() {
+    // Si venimos del dashboard con un creditoId, intentamos abrirlo inmediatamente si está en caché
+    const showCreditoId = sessionStorage.getItem('showCreditoDetails');
+    if (showCreditoId && window.hasCacheData && window.hasCacheData('creditos')) {
+        allCreditos = window.getCacheData('creditos');
+        const creditoExistente = allCreditos.find(c => c.id_credito === showCreditoId);
+        if (creditoExistente) {
+            // No removemos el item todavía para que el loadCreditos normal no lo pise
+            viewCredito(showCreditoId);
+        }
+    }
+
+    await loadCreditos();
     setupCreditosEventListeners();
 
     // Exponer funciones al scope global para onclick handlers
@@ -42,6 +53,16 @@ function initCreditosModule() {
     window.toggleEstadoFilter = toggleEstadoFilter;
     window.filterCreditosByEstado = filterCreditosByEstado;
     window.cleanupStickyHeaders = cleanupStickyHeaders;
+
+    // Si ya lo abrimos desde caché arriba, esto no hará nada o refrescará si se cerró
+    if (showCreditoId) {
+        sessionStorage.removeItem('showCreditoDetails');
+        // Solo abrimos si el modal no está ya visible (para evitar parpadeos)
+        const modal = document.getElementById('ver-credito-modal');
+        if (modal && modal.classList.contains('hidden')) {
+            viewCredito(showCreditoId);
+        }
+    }
 }
 
 // ==========================================
@@ -75,9 +96,11 @@ function closeCreditosModal(modalId) {
     // Restaurar scroll solo si no queda ningún modal abierto
     const verCreditoModal = document.getElementById('ver-credito-modal');
     const registrarPagoModal = document.getElementById('registrar-pago-modal');
+    const verPagoDetalleModal = document.getElementById('ver-pago-detalle-modal');
     const anyOpen =
         (verCreditoModal && !verCreditoModal.classList.contains('hidden')) ||
-        (registrarPagoModal && !registrarPagoModal.classList.contains('hidden'));
+        (registrarPagoModal && !registrarPagoModal.classList.contains('hidden')) ||
+        (verPagoDetalleModal && !verPagoDetalleModal.classList.contains('hidden'));
 
     if (!anyOpen) {
         document.body.style.overflow = '';
@@ -116,6 +139,7 @@ function setupCreditosEventListeners() {
     // Modal close handlers
     setupCreditosModalCloseHandlers('ver-credito-modal');
     setupCreditosModalCloseHandlers('registrar-pago-modal');
+    setupCreditosModalCloseHandlers('ver-pago-detalle-modal');
 
     // Setup sticky headers con scroll listener
     setupStickyHeaders();
@@ -269,7 +293,6 @@ async function loadCreditos(forceRefresh = false) {
     try {
         // PASO 1: Mostrar datos de caché INMEDIATAMENTE si existen
         if (!forceRefresh && window.hasCacheData && window.hasCacheData('creditos')) {
-            console.log('⚡ Mostrando créditos desde caché (instantáneo)');
             allCreditos = window.getCacheData('creditos');
             filteredCreditos = [...allCreditos];
             updateEstadoCountsCreditos();
@@ -279,13 +302,11 @@ async function loadCreditos(forceRefresh = false) {
 
             // Si el caché es reciente, no recargar
             if (window.isCacheValid && window.isCacheValid('creditos')) {
-                console.log('✓ Caché fresco, no se requiere actualización');
                 return;
             }
         }
 
         // PASO 2: Actualizar en segundo plano
-        console.log('⟳ Actualizando créditos en segundo plano...');
         const supabase = window.getSupabaseClient();
 
         const { data: creditos, error } = await supabase
@@ -307,6 +328,9 @@ async function loadCreditos(forceRefresh = false) {
         allCreditos = creditos || [];
         filteredCreditos = [...allCreditos];
 
+        // Sincronizar estados morosos automáticamente
+        await sincronizarEstadosMorosos(allCreditos);
+
         // Guardar en caché
         if (window.setCacheData) {
             window.setCacheData('creditos', allCreditos);
@@ -316,7 +340,6 @@ async function loadCreditos(forceRefresh = false) {
         updateStats();
         applySorting();
         renderCreditosTable(filteredCreditos);
-        console.log('✓ Créditos actualizados');
 
     } catch (error) {
         console.error('Error loading creditos:', error);
@@ -371,6 +394,56 @@ function updateEstadoCountsCreditos() {
     document.getElementById('count-precancelado').textContent = counts.precancelado;
 }
 
+/**
+ * Sincroniza automáticamente el estado de los créditos si tienen cuotas vencidas.
+ * Se ejecuta al cargar los créditos o después de registrar un pago.
+ */
+async function sincronizarEstadosMorosos(creditos) {
+    // Usamos la fecha actual de Ecuador para la comparación
+    const hoyStr = getEcuadorDateString();
+    const hoy = parseDate(hoyStr);
+    const idsParaActualizar = [];
+
+    creditos.forEach(c => {
+        // Solo verificamos créditos que NO sean CANCELADO, PRECANCELADO o ya estén MOROSO
+        // También ignoramos créditos PAUSADOS
+        const estadosFinales = ['CANCELADO', 'PRECANCELADO', 'PAUSADO', 'MOROSO'];
+        if (estadosFinales.includes(c.estado_credito)) return;
+
+        // Calcular próxima fecha de pago (Capital + Interés + Ahorro)
+        const fechaBase = parseDate(c.fecha_primer_pago);
+        if (!fechaBase) return;
+
+        // Sumar meses según cuotas pagadas para obtener el vencimiento de la "próxima" cuota
+        fechaBase.setMonth(fechaBase.getMonth() + (c.cuotas_pagadas || 0));
+        
+        // Si la fecha de vencimiento es estrictamente menor a hoy, está vencido
+        if (fechaBase < hoy) {
+            idsParaActualizar.push(c.id_credito);
+            c.estado_credito = 'MOROSO'; // Actualización local inmediata para la UI
+        }
+    });
+
+    if (idsParaActualizar.length > 0) {
+        console.log(`[Sync] Actualizando ${idsParaActualizar.length} créditos a estado MOROSO...`);
+        try {
+            const supabase = window.getSupabaseClient();
+            const { error } = await supabase
+                .from('ic_creditos')
+                .update({ 
+                    estado_credito: 'MOROSO',
+                    updated_at: new Date().toISOString()
+                })
+                .in('id_credito', idsParaActualizar);
+
+            if (error) throw error;
+            console.log(`[Sync] Sincronización de estados completada exitosamente.`);
+        } catch (err) {
+            console.error('[Sync] Error al sincronizar estados morosos:', err);
+        }
+    }
+}
+
 // ==========================================
 // FILTRAR CRÉDITOS
 // ==========================================
@@ -415,8 +488,8 @@ function filterCreditos() {
 function applySorting() {
     // Prioridad de estados para ordenamiento (menor número = mayor prioridad)
     const estadoPriority = {
-        'ACTIVO': 1,
-        'MOROSO': 2,
+        'MOROSO': 1,
+        'ACTIVO': 2,
         'PAUSADO': 3,
         'PRECANCELADO': 4,
         'CANCELADO': 5,
@@ -535,7 +608,6 @@ async function refreshCreditosCache() {
         // Recargar créditos forzando actualización
         await loadCreditos(true);
 
-        console.log('✓ Créditos sincronizados');
         showToast('Créditos actualizados', 'success');
     } catch (error) {
         console.error('Error sincronizando:', error);
@@ -563,7 +635,7 @@ const ESTADO_CONFIG = {
 };
 
 // Orden de prioridad para mostrar secciones
-const ESTADO_ORDER = ['ACTIVO', 'MOROSO', 'PAUSADO', 'PRECANCELADO', 'CANCELADO', 'PENDIENTE'];
+const ESTADO_ORDER = ['MOROSO', 'ACTIVO', 'PAUSADO', 'PRECANCELADO', 'CANCELADO', 'PENDIENTE'];
 
 function renderCreditosTable(creditos) {
     const container = document.getElementById('creditos-sections-container');
@@ -688,7 +760,7 @@ function renderCreditoRow(credito) {
             </td>
             <td class="col-prox-pago text-center">${proximoPago}</td>
             <td class="text-center">
-                <button class="btn-icon btn-ver-credito" onclick="event.stopPropagation(); viewCredito('${credito.id_credito}')" title="Ver detalle">
+                <button class="btn-icon btn-ver-credito" onclick="event.stopPropagation(); viewCredito('${credito.id_credito}', this)" title="Ver detalle">
                     <i class="fas fa-eye"></i>
                 </button>
             </td>
@@ -763,7 +835,14 @@ function getEstadoBadgeCredito(estado) {
 // ==========================================
 // VER DETALLE DE CRÉDITO
 // ==========================================
-async function viewCredito(creditoId) {
+async function viewCredito(creditoId, btn = null) {
+    let originalContent = '';
+    if (btn) {
+        originalContent = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    }
+
     const credito = allCreditos.find(c => c.id_credito === creditoId);
     if (!credito) {
         showToast('Crédito no encontrado', 'error');
@@ -772,8 +851,80 @@ async function viewCredito(creditoId) {
 
     currentViewingCredito = credito;
 
+    // Obtener configuración de color por estado
+    const config = ESTADO_CONFIG[credito.estado_credito] || { color: 'var(--primary)', bgColor: 'rgba(11, 78, 50, 0.15)' };
+
     // Llenar información del modal
-    document.getElementById('modal-codigo-credito').textContent = credito.codigo_credito;
+    const valorFormateado = typeof formatMoney === 'function' ? formatMoney(credito.capital) : `$${credito.capital}`;
+    const modalTitleEl = document.getElementById('modal-codigo-credito');
+    modalTitleEl.innerHTML = `${credito.socio?.nombre || 'Crédito'} - ${valorFormateado}`;
+    
+    // Si el crédito está en MORA, calcular cuotas adeudadas y añadir cápsula
+    if (credito.estado_credito === 'MOROSO') {
+        try {
+            const supabase = window.getSupabaseClient();
+            // Obtenemos las cuotas vencidas para calcular meses y días de atraso
+            const { data: cuotasVencidas, error } = await supabase
+                .from('ic_creditos_amortizacion')
+                .select('fecha_vencimiento')
+                .eq('id_credito', credito.id_credito)
+                .eq('estado_cuota', 'VENCIDO')
+                .order('fecha_vencimiento', { ascending: true });
+            
+            if (!error && cuotasVencidas && cuotasVencidas.length > 0) {
+                const count = cuotasVencidas.length;
+                
+                // Calcular días desde la cuota más antigua vencida
+                const oldestDate = new Date(cuotasVencidas[0].fecha_vencimiento);
+                const today = new Date();
+                const diffTime = Math.max(0, today - oldestDate);
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+                const badgeHtml = `<span class="mora-badge-inline" style="
+                    background: #fff;
+                    color: #EF4444;
+                    padding: 2px 10px;
+                    border-radius: 20px;
+                    font-size: 0.75rem;
+                    font-weight: 800;
+                    margin-left: 10px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                    display: inline-flex;
+                    align-items: center;
+                    vertical-align: middle;
+                    border: 1px solid rgba(239, 68, 68, 0.3);
+                    text-transform: uppercase;
+                "><i class="fas fa-calendar-times" style="margin-right: 5px;"></i>ADEUDA ${count} ${count === 1 ? 'MES' : 'MESES'} POR ${diffDays} DÍAS</span>`;
+                
+                modalTitleEl.insertAdjacentHTML('beforeend', badgeHtml);
+            }
+        } catch (err) {
+            console.error('Error al calcular meses de mora:', err);
+        }
+    }
+    
+    // Aplicar colores dinámicos al header del modal
+    const modalHeader = document.querySelector('#ver-credito-modal .modal-header');
+    const modalTitle = document.querySelector('#ver-credito-modal .modal-title');
+    const modalClose = document.querySelector('#ver-credito-modal .modal-close');
+    
+    if (modalHeader) {
+        modalHeader.style.background = `linear-gradient(135deg, ${config.color} 0%, #a48d5d 100%)`;
+    }
+    if (modalTitle) {
+        modalTitle.style.color = '#FFFFFF';
+    }
+    if (modalClose) {
+        modalClose.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        modalClose.style.color = '#FFFFFF';
+        modalClose.style.borderRadius = '50%';
+        modalClose.style.width = '30px';
+        modalClose.style.height = '30px';
+        modalClose.style.display = 'flex';
+        modalClose.style.alignItems = 'center';
+        modalClose.style.justifyContent = 'center';
+    }
+
     document.getElementById('det-nombre-socio').textContent = credito.socio?.nombre || '-';
     document.getElementById('det-cedula-socio').textContent = credito.socio?.cedula || '-';
     document.getElementById('det-whatsapp-socio').textContent = credito.socio?.whatsapp || '-';
@@ -806,19 +957,40 @@ async function viewCredito(creditoId) {
     document.getElementById('det-ahorro-acumulado').textContent = formatMoney(ahorroAcumulado);
     document.getElementById('det-ahorro-pendiente').textContent = formatMoney(ahorroPendiente);
 
-    // Cargar tabla de amortización
-    await loadAmortizacionTable(creditoId);
-
     // Configurar botón de registrar pago
     const btnRegistrarPago = document.getElementById('btn-registrar-pago');
     if (btnRegistrarPago) {
         const canPay = credito.estado_credito === 'ACTIVO' || credito.estado_credito === 'MOROSO';
         btnRegistrarPago.style.display = canPay ? 'inline-flex' : 'none';
-        btnRegistrarPago.onclick = () => openNextPaymentModal(creditoId);
+        
+        // Aplicar color dinámico al botón según el estado INMEDIATAMENTE
+        if (canPay) {
+            btnRegistrarPago.style.setProperty('background', config.color, 'important');
+            btnRegistrarPago.style.setProperty('background-color', config.color, 'important');
+            btnRegistrarPago.style.setProperty('border-color', config.color, 'important');
+            btnRegistrarPago.style.setProperty('color', '#FFFFFF', 'important');
+        } else {
+            // Resetear estilos si no puede pagar
+            btnRegistrarPago.style.removeProperty('background');
+            btnRegistrarPago.style.removeProperty('background-color');
+            btnRegistrarPago.style.removeProperty('border-color');
+            btnRegistrarPago.style.removeProperty('color');
+        }
+
+        btnRegistrarPago.onclick = () => openNextPaymentModal(creditoId, btnRegistrarPago);
     }
 
-    // Abrir modal
+    // Cargar tabla de amortización
+    loadAmortizacionTable(creditoId);
+
+    // Abrir modal INMEDIATAMENTE
     openCreditosModal('ver-credito-modal');
+
+    // Restaurar botón si existía
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+    }
 }
 
 // ==========================================
@@ -874,9 +1046,14 @@ async function loadAmortizacionTable(creditoId) {
                     <td class="text-right">${formatMoney(cuota.saldo_capital)}</td>
                     <td>${estadoBadge}</td>
                     <td>
-                        ${canPay ? `<button class="btn-pagar-cuota" onclick="openPaymentModal('${cuota.id_detalle}')">
+                        ${canPay ? `<button class="btn-pagar-cuota" onclick="openPaymentModal('${cuota.id_detalle}', this)">
                             <i class="fas fa-dollar-sign"></i> <span>Pagar</span>
-                        </button>` : '<span class="text-muted">-</span>'}
+                        </button>` : 
+                        (cuota.estado_cuota === 'PAGADO' ? 
+                            `<button class="btn-view-payment" onclick="window.showReceiptDetail('${cuota.id_detalle}')" title="Ver Recibo" style="background: var(--success); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
+                                <i class="fas fa-eye"></i>
+                            </button>` : '<span class="text-muted">-</span>')
+                        }
                     </td>
                 </tr>
             `;
@@ -887,6 +1064,160 @@ async function loadAmortizacionTable(creditoId) {
         tbody.innerHTML = '<tr><td colspan="10" class="text-center text-danger">Error al cargar datos</td></tr>';
     }
 }
+
+/**
+ * Muestra el detalle de un pago realizado (Recibo)
+ */
+async function showReceiptDetail(detalleId) {
+    const modal = document.getElementById('ver-pago-detalle-modal');
+    const content = document.getElementById('pago-detalle-content');
+    
+    if (!modal || !content) return;
+    
+    // Usar función estandarizada para abrir modales
+    openCreditosModal('ver-pago-detalle-modal');
+
+    content.innerHTML = `
+        <div style="text-align: center; padding: 2rem;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary);"></i>
+            <p style="margin-top: 1rem;">Cargando detalle del pago...</p>
+        </div>
+    `;
+
+    try {
+        const supabase = window.getSupabaseClient();
+        
+        // Consultar el pago siguiendo la cadena de llaves foráneas: 
+        // ic_creditos_pagos -> ic_creditos_amortizacion -> ic_creditos -> ic_socios
+        // Se añade cobrador:ic_users!cobrado_por para especificar la relación exacta
+        const { data: pago, error } = await supabase
+            .from('ic_creditos_pagos')
+            .select(`
+                *,
+                cobrador:ic_users!cobrado_por ( id, nombre ),
+                amortizacion:ic_creditos_amortizacion (
+                    id_detalle,
+                    numero_cuota,
+                    credito:ic_creditos (
+                        codigo_credito,
+                        socio:ic_socios (
+                            nombre
+                        )
+                    )
+                )
+            `)
+            .eq('id_detalle', detalleId)
+            .maybeSingle();
+
+        if (error) throw error;
+        
+        if (!pago) {
+            content.innerHTML = '<div class="alert alert-warning">No se encontró información del pago.</div>';
+            return;
+        }
+
+        const infoSocio = pago.amortizacion?.credito?.socio?.nombre || '---';
+        const infoCredito = pago.amortizacion?.credito?.codigo_credito || '---';
+        const infoCobrador = pago.cobrador?.nombre || 'Administrador (Sync)';
+        const numCuota = pago.amortizacion?.numero_cuota || '-';
+
+        content.innerHTML = `
+            <div class="receipt-luxury" style="font-family: 'Inter', sans-serif; color: #1e293b; background: #fff; padding: 10px;">
+                <div style="text-align: center; margin-bottom: 20px; position: relative;">
+                    <div style="width: 50px; height: 2px; background: #d4af37; margin: 0 auto 10px;"></div>
+                    <div style="font-size: 0.75rem; color: #8a6d3b; letter-spacing: 2px; font-weight: 700; text-transform: uppercase;">Certificado de Pago</div>
+                    <div style="font-size: 1.4rem; font-weight: 800; color: #0f172a; margin: 5px 0;">${infoCredito}</div>
+                    <div style="display: inline-block; background: #fefce8; color: #854d0e; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; border: 1px solid #fde047;">
+                        Cuota #${numCuota}
+                    </div>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: #64748b; font-size: 0.9rem;"><i class="fas fa-user-circle" style="width: 20px;"></i> Socio</span>
+                            <span style="font-weight: 700; color: #0f172a;">${infoSocio}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: #64748b; font-size: 0.9rem;"><i class="fas fa-user-shield" style="width: 20px;"></i> Recibido por</span>
+                            <span style="font-weight: 600; color: #475569; font-size: 0.9rem;">${infoCobrador}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: #64748b; font-size: 0.9rem;"><i class="fas fa-calendar-check" style="width: 20px;"></i> Fecha de Pago</span>
+                            <span style="font-weight: 600; color: #334155;">${formatDateShort(pago.fecha_pago)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: #64748b; font-size: 0.9rem;"><i class="fas fa-wallet" style="width: 20px;"></i> Método</span>
+                            <span style="display: flex; align-items: center; gap: 5px; font-weight: 600; color: #334155;">
+                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span>
+                                ${pago.metodo_pago}
+                            </span>
+                        </div>
+                        
+                        <div style="margin: 10px 0; border-top: 1px dashed #cbd5e1;"></div>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 5px;">
+                            <span style="font-weight: 800; color: #0f172a; font-size: 1rem;">Monto Total</span>
+                            <span style="font-size: 1.6rem; font-weight: 900; color: #059669; letter-spacing: -0.5px;">$${pago.monto_pagado.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${pago.referencia_pago ? `
+                    <div style="background: #fff; border: 1px solid #f1f5f9; border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px;">
+                        <div style="background: #f1f5f9; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #64748b;">
+                            <i class="fas fa-hashtag"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Referencia</div>
+                            <div style="font-size: 0.9rem; font-weight: 600; color: #334155;">${pago.referencia_pago}</div>
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${pago.observaciones ? `
+                    <div style="background: #fdf2f8; border: 1px solid #fce7f3; border-radius: 12px; padding: 12px 16px; margin-bottom: 20px;">
+                        <div style="font-size: 0.7rem; color: #be185d; text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">Observaciones</div>
+                        <div style="font-size: 0.85rem; line-height: 1.5; color: #9d174d; font-style: italic;">"${pago.observaciones}"</div>
+                    </div>
+                ` : ''}
+
+                ${pago.comprobante_url ? `
+                    <div style="margin-top: 20px;">
+                        <div style="font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                            <span>Archivo Adjunto</span>
+                            <a href="${pago.comprobante_url}" target="_blank" style="color: #3b82f6; text-decoration: none; font-size: 0.7rem;">Ver original <i class="fas fa-external-link-alt"></i></a>
+                        </div>
+                        <div style="border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+                            <img src="${pago.comprobante_url}" style="width: 100%; height: auto; display: block;" 
+                                 onerror="this.src='https://placehold.co/600x400?text=Error+al+cargar+imagen'; this.style.opacity='0.5';" alt="Recibo">
+                        </div>
+                    </div>
+                ` : `
+                    <div style="text-align: center; padding: 20px; border: 2px dashed #e2e8f0; border-radius: 16px; color: #94a3b8;">
+                        <i class="fas fa-image" style="font-size: 1.5rem; margin-bottom: 8px; opacity: 0.5;"></i>
+                        <p style="font-size: 0.8rem; margin: 0;">No se adjuntó comprobante digital</p>
+                    </div>
+                `}
+                
+                <div style="text-align: center; margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+                    <p style="font-size: 0.7rem; color: #cbd5e1;">ID Pago: ${pago.id_pago}</p>
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <img src="img/icon-192.png" style="height: 14px; opacity: 0.3;" onerror="this.style.display='none'">
+                        INKA CORP SISTEMAS
+                    </div>
+                </div>
+            </div>
+        `;
+
+    } catch (err) {
+        console.error('Error al cargar recibo:', err);
+        content.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+    }
+}
+
+// Exponer globalmente para el onclick de la tabla
+window.showReceiptDetail = showReceiptDetail;
 
 function getEstadoCuotaBadge(estado) {
     const badges = {
@@ -940,7 +1271,14 @@ async function getConsecutiveUnpaidInstallments(creditoId, startDetalleId) {
     }
 }
 
-async function openPaymentModal(detalleId) {
+async function openPaymentModal(detalleId, btn = null) {
+    let originalContent = '';
+    if (btn) {
+        originalContent = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    }
+    
     try {
         const supabase = window.getSupabaseClient();
 
@@ -1004,8 +1342,40 @@ async function openPaymentModal(detalleId) {
             const montoCuotaElem = document.getElementById('pago-monto-cuota');
             if (montoCuotaElem) montoCuotaElem.textContent = formatMoney(montoBase);
 
-            // Actualizar monto en el input (incluye mora)
-            document.getElementById('pago-monto').value = totalFinal.toFixed(2);
+            // Manejo de Convenio dinámico
+            const isConvenio = document.getElementById('pago-convenio-toggle').checked;
+            const hintContainer = document.getElementById('pago-monto-min-hint');
+            const hintValue = document.getElementById('pago-monto-min-valor');
+            const obsInput = document.getElementById('pago-observaciones');
+            const montoInput = document.getElementById('pago-monto');
+
+            if (isConvenio) {
+                if (hintContainer) hintContainer.style.display = 'block';
+                if (hintValue) hintValue.textContent = formatMoney(montoBase);
+                
+                let montoPagar = parseFloat(montoInput.value) || 0;
+
+                // Solo forzar el valor base automáticamente si el usuario NO está escribiendo en este campo.
+                // Si el usuario cambia las cuotas, el foco estará en el select y se ajustará.
+                if (document.activeElement !== montoInput) {
+                    if (montoPagar < (montoBase - 0.01)) {
+                        montoPagar = montoBase;
+                        montoInput.value = montoBase.toFixed(2);
+                    }
+                }
+                
+                const descuentMora = totalFinal - montoPagar;
+                
+                if (obsInput) {
+                    obsInput.value = `[CONVENIO DE PAGO] Orig. Total: ${formatMoney(totalFinal)} | Pagado: ${formatMoney(montoPagar)} | Descto: ${formatMoney(descuentMora)}.`.trim();
+                }
+            } else {
+                if (hintContainer) hintContainer.style.display = 'none';
+                if (obsInput && !obsInput.readOnly) {
+                    // Solo limpiar si no es convenio (si es convenio ya lo manejamos arriba)
+                }
+                montoInput.value = totalFinal.toFixed(2);
+            }
 
             // Actualizar fecha de vencimiento (última cuota seleccionada)
             const lastCuota = cuotasSeleccionadas[cuotasSeleccionadas.length - 1];
@@ -1036,6 +1406,70 @@ async function openPaymentModal(detalleId) {
         const fechaInput = document.getElementById('pago-fecha');
         fechaInput.onchange = actualizarMoraYTotal;
 
+        // Configurar listener para cambio de monto manual (solo para convenio)
+        const montoInput = document.getElementById('pago-monto');
+        montoInput.oninput = actualizarMoraYTotal;
+        montoInput.onblur = () => {
+            const isConvenio = document.getElementById('pago-convenio-toggle').checked;
+            if (isConvenio) {
+                const count = parseInt(document.getElementById('pago-cuotas-select').value) || 1;
+                const cuotasSeleccionadas = currentUnpaidInstallments.slice(0, count);
+                const montoBase = cuotasSeleccionadas.reduce((sum, c) => sum + parseFloat(c.cuota_total), 0);
+                const valorActual = parseFloat(montoInput.value) || 0;
+                
+                if (valorActual < (montoBase - 0.01)) { // Tolerancia centavos
+                    Swal.fire({
+                        title: 'Monto fuera de rango',
+                        text: `No puedes cobrar un monto menor a la cuota base ($${formatMoney(montoBase)}).`,
+                        icon: 'warning',
+                        confirmButtonText: 'Aceptar',
+                        confirmButtonColor: '#0B4E32'
+                    }).then(() => {
+                        montoInput.value = montoBase.toFixed(2);
+                        actualizarMoraYTotal();
+                    });
+                }
+            }
+        };
+
+        // Configurar listener para Convenio de Pago
+        const convenioToggle = document.getElementById('pago-convenio-toggle');
+        const obsInput = document.getElementById('pago-observaciones');
+        convenioToggle.checked = false;
+        if (obsInput) obsInput.readOnly = false; // Reset al abrir
+
+        convenioToggle.onchange = async () => {
+            if (convenioToggle.checked) {
+                const result = await Swal.fire({
+                    title: '¿Activar Convenio de Pago?',
+                    text: 'Esto permitirá registrar un monto inferior al total calculado. El sistema redactará la observación automáticamente.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, activar',
+                    cancelButtonText: 'No, cancelar',
+                    confirmButtonColor: '#0B4E32'
+                });
+
+                if (result.isConfirmed) {
+                    if (obsInput) {
+                        obsInput.readOnly = true;
+                        obsInput.style.backgroundColor = "#f8f9fa";
+                    }
+                    actualizarMoraYTotal();
+                    document.getElementById('pago-monto').focus();
+                    document.getElementById('pago-monto').select();
+                } else {
+                    convenioToggle.checked = false;
+                }
+            } else {
+                if (obsInput) {
+                    obsInput.readOnly = false;
+                    obsInput.value = "";
+                    obsInput.style.backgroundColor = "";
+                }
+            }
+        };
+
         // Establecer fecha de pago inicial (fecha de Ecuador)
         const ecuadorDate = getEcuadorDateString();
         fechaInput.value = ecuadorDate;
@@ -1061,10 +1495,20 @@ async function openPaymentModal(detalleId) {
     } catch (error) {
         console.error('Error opening payment modal:', error);
         showToast('Error al cargar datos de la cuota', 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
     }
 }
 
-async function openNextPaymentModal(creditoId) {
+async function openNextPaymentModal(creditoId, btn = null) {
+    if (btn) {
+        btn.disabled = true;
+        btn.dataset.originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
+    }
     try {
         const supabase = window.getSupabaseClient();
         const { data: cuotas, error } = await supabase
@@ -1082,11 +1526,16 @@ async function openNextPaymentModal(creditoId) {
             return;
         }
 
-        openPaymentModal(cuotas[0].id_detalle);
+        await openPaymentModal(cuotas[0].id_detalle);
 
     } catch (error) {
         console.error('Error finding next payment:', error);
         showToast('Error al buscar cuota pendiente', 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = btn.dataset.originalHtml;
+        }
     }
 }
 
@@ -1105,24 +1554,60 @@ async function confirmarPago() {
 
     try {
         const supabase = window.getSupabaseClient();
-        const currentUser = getCurrentUser();
+        const user = window.currentUser || (typeof getCurrentUser === 'function' ? getCurrentUser() : null);
 
         const fechaPago = document.getElementById('pago-fecha').value;
         const montoPagado = parseFloat(document.getElementById('pago-monto').value);
         const metodoPago = document.getElementById('pago-metodo').value;
         const referencia = document.getElementById('pago-referencia').value;
         const observaciones = document.getElementById('pago-observaciones').value;
+        
+        const isConvenio = document.getElementById('pago-convenio-toggle').checked;
 
-        if (!fechaPago || isNaN(montoPagado) || montoPagado <= 0) {
-            showToast('Por favor complete los datos del pago', 'warning');
-            btnConfirmar.disabled = false;
-            btnConfirmar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Pago';
-            return;
+        // Limpiar estilos previos
+        const fieldsToValidate = [
+            { id: 'pago-fecha', value: fechaPago },
+            { id: 'pago-monto', value: isNaN(montoPagado) ? '' : montoPagado },
+            { id: 'pago-metodo', value: metodoPago },
+            { id: 'pago-referencia', value: referencia }
+        ];
+
+        let hasError = false;
+        fieldsToValidate.forEach(f => {
+            const el = document.getElementById(f.id);
+            if (!f.value || f.value <= 0 || (typeof f.value === 'string' && f.value.trim() === '')) {
+                el.style.border = '2px solid #ef4444';
+                el.classList.add('error-pulse');
+                hasError = true;
+            } else {
+                el.style.border = '';
+                el.classList.remove('error-pulse');
+            }
+        });
+
+        // Validar comprobante obligatorio (Resaltar siempre si falta)
+        const uploadContainer = document.getElementById('pago-comprobante-dropzone');
+        if (!selectedComprobanteFile) {
+            if (uploadContainer) {
+                uploadContainer.style.border = '2px solid #ef4444';
+                uploadContainer.style.backgroundColor = 'rgba(239, 68, 68, 0.08)';
+                uploadContainer.style.boxShadow = '0 0 10px rgba(239, 68, 68, 0.2)';
+            }
+            hasError = true;
+        } else {
+            if (uploadContainer) {
+                uploadContainer.style.border = '';
+                uploadContainer.style.backgroundColor = '';
+                uploadContainer.style.boxShadow = '';
+            }
         }
 
-        // Validar comprobante obligatorio
-        if (!selectedComprobanteFile) {
-            showToast('Debe subir el comprobante de pago', 'warning');
+        if (hasError) {
+            Swal.fire({
+                title: 'Información Requerida',
+                text: 'Por favor complete todos los campos resaltados en rojo y suba la evidencia del comprobante.',
+                icon: 'warning'
+            });
             btnConfirmar.disabled = false;
             btnConfirmar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Pago';
             return;
@@ -1139,7 +1624,30 @@ async function confirmarPago() {
         const montoBase = cuotasAPagar.reduce((sum, c) => sum + parseFloat(c.cuota_total), 0);
         const totalEsperado = montoBase + totalMora;
 
-        if (Math.abs(montoPagado - totalEsperado) > 0.01) {
+        if (isConvenio && montoPagado < montoBase) {
+            if (window.Swal) {
+                await Swal.fire({
+                    title: 'Monto Insuficiente',
+                    text: `No puedes cobrar un monto menor a la cuota base ($${formatMoney(montoBase)}).`,
+                    icon: 'warning',
+                    confirmButtonText: 'Aceptar',
+                    confirmButtonColor: '#0B4E32'
+                });
+                const inputMonto = document.getElementById('pago-monto');
+                if (inputMonto) {
+                    inputMonto.value = montoBase.toFixed(2);
+                    // Disparar actualización de nota
+                    actualizarMoraYTotal();
+                }
+            } else {
+                showToast(`No puedes cobrar un monto menor a la cuota base ($${formatMoney(montoBase)})`, 'warning');
+            }
+            btnConfirmar.disabled = false;
+            btnConfirmar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Pago';
+            return;
+        }
+
+        if (!isConvenio && Math.abs(montoPagado - totalEsperado) > 0.01) {
             showToast('El monto no coincide. Esperado: ' + formatMoney(totalEsperado) + ' (Base: ' + formatMoney(montoBase) + ' + Mora: ' + formatMoney(totalMora) + ')', 'warning');
             btnConfirmar.disabled = false;
             btnConfirmar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Pago';
@@ -1148,7 +1656,10 @@ async function confirmarPago() {
 
         // Preparar observaciones con detalle de mora si existe
         let obsFinal = observaciones;
-        if (totalMora > 0) {
+        if (isConvenio) {
+            const descuento = totalEsperado - montoPagado;
+            obsFinal = `[CONVENIO DE PAGO] Orig. Total: $${totalEsperado.toFixed(2)} | Pagado: $${montoPagado.toFixed(2)} | Descto: $${descuento.toFixed(2)}. ${obsFinal}`.trim();
+        } else if (totalMora > 0) {
             const detalleMora = cuotasConMora
                 .filter(c => c.estaEnMora)
                 .map(c => `Cuota #${c.numero_cuota}: ${c.diasMora}d x $2 = $${c.montoMora.toFixed(2)}`)
@@ -1175,11 +1686,30 @@ async function confirmarPago() {
         console.log('Comprobante subido:', comprobanteUrl);
 
         // Procesar cada cuota
-        for (const infoCuota of cuotasConMora) {
+        const montoBaseCalculado = cuotasAPagar.reduce((sum, c) => sum + parseFloat(c.cuota_total), 0);
+        const excedenteConvenio = isConvenio ? (montoPagado - montoBaseCalculado) : 0;
+        
+        for (let i = 0; i < cuotasConMora.length; i++) {
+            const infoCuota = cuotasConMora[i];
+            
             // El usuario ingresa un monto total ("Monto a Registrar"). 
-            // Si es una sola cuota, usamos directamente ese monto para el registro.
-            // Si son varias, usamos el monto calculado por cuota (base + mora).
-            const montoParaRegistro = (cantidadCuotas === 1) ? montoPagado : (infoCuota.cuota_total + infoCuota.montoMora);
+            // Si hay convenio, la regla es: cobramos la base para todas las cuotas, 
+            // y el excedente sobre esa base se registra todo en la primera cuota.
+            let montoParaRegistro;
+            const cuotaBaseVal = parseFloat(infoCuota.cuota_total || 0);
+            const cuotaMoraVal = parseFloat(infoCuota.montoMora || 0);
+
+            if (isConvenio) {
+                montoParaRegistro = (i === 0) ? (cuotaBaseVal + excedenteConvenio) : cuotaBaseVal;
+            } else {
+                montoParaRegistro = (cantidadCuotas === 1) ? montoPagado : (cuotaBaseVal + cuotaMoraVal);
+            }
+
+            // Validar que el monto a registrar sea mayor a 0 para evitar errores de restricción en DB
+            if (montoParaRegistro <= 0) {
+                console.warn(`Saltando cuota #${infoCuota.numero_cuota} con monto 0`);
+                continue; 
+            }
 
             // 1. Registrar el pago
             const { error: errorPago } = await supabase
@@ -1193,7 +1723,7 @@ async function confirmarPago() {
                     referencia_pago: referencia,
                     observaciones: obsFinal,
                     comprobante_url: comprobanteUrl,
-                    cobrado_por: currentUser?.id || null
+                    cobrado_por: (user?.id) || null
                 });
 
             if (errorPago) throw errorPago;
@@ -1250,8 +1780,6 @@ async function confirmarPago() {
         // NOTIFICACIONES (SISTEMA DE PRODUCCIÓN)
         // ==========================================
         try {
-            console.log('Iniciando sistema de notificaciones...');
-
             // Reusar la lógica de construcción de datos para el recibo
             const fechaRegistro = formatEcuadorDateTime();
             const cuotasPagadasActualizado = nuevasCuotasPagadas - cantidadCuotas; // Estado previo al commit de hoy
@@ -1324,7 +1852,6 @@ async function confirmarPago() {
                     image_base64: noticeimage_base64,
                     message: ownerMessage
                 });
-                console.log('Notificaciones de producción enviadas correctamente');
             }
         } catch (errorNotif) {
             console.error('Error en el sistema de notificaciones:', errorNotif);
@@ -1500,6 +2027,13 @@ function calcularMoraMultiple(cuotas, fechaPago = null, costoPorDia = 2) {
 function handleComprobanteSelect(input) {
     const file = input.files[0];
     if (!file) return;
+
+    // Quitar error visual si existía
+    const dropzone = document.getElementById('pago-comprobante-dropzone');
+    if (dropzone) {
+        dropzone.style.border = '';
+        dropzone.style.backgroundColor = '';
+    }
 
     // Validar que sea imagen
     if (!file.type.startsWith('image/')) {

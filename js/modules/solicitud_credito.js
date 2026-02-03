@@ -184,7 +184,6 @@ async function loadSolicitudes(forceRefresh = false) {
     try {
         // PASO 1: Mostrar datos de caché INMEDIATAMENTE si existen
         if (!forceRefresh && window.hasCacheData && window.hasCacheData('solicitudes')) {
-            console.log('⚡ Mostrando solicitudes desde caché (instantáneo)');
             allSolicitudes = window.getCacheData('solicitudes');
             filteredSolicitudes = [...allSolicitudes];
             updateSolicitudesStats();
@@ -196,12 +195,10 @@ async function loadSolicitudes(forceRefresh = false) {
 
             // Si el caché es reciente, no recargar
             if (window.isCacheValid && window.isCacheValid('solicitudes')) {
-                console.log('✓ Caché fresco, no se requiere actualización');
                 return;
             }
 
             // Actualizar en segundo plano
-            console.log('⟳ Actualizando solicitudes en segundo plano...');
             syncSolicitudesBackground();
             return;
         }
@@ -275,7 +272,6 @@ async function syncSolicitudesBackground() {
         updateSolicitudesStats();
         updateSolicitudesCounts();
         renderSolicitudesGrid(filteredSolicitudes);
-        console.log('✓ Solicitudes sincronizadas en segundo plano');
     } catch (error) {
         console.error('Error en sincronización de solicitudes:', error);
     }
@@ -290,7 +286,6 @@ async function refreshSolicitudes() {
 
     try {
         await loadSolicitudesFromDB();
-        console.log('✓ Solicitudes actualizadas');
         showToast('Solicitudes actualizadas', 'success');
     } catch (error) {
         console.error('Error al actualizar solicitudes:', error);
@@ -450,18 +445,19 @@ async function loadPendientesDesembolso() {
                         ` : ''}
                     </div>
                     <div class="card-desembolso-actions">
-                        <button class="btn-generar-docs" onclick="abrirModalDocumentosCredito('${credito.id_credito}')">
+                        <button class="btn-generar-docs" onclick="event.stopPropagation(); abrirModalDocumentosCredito('${credito.id_credito}')">
                             <i class="fas fa-file-pdf"></i> Generar Documentos
                         </button>
-                        <button class="btn-completar-desembolso" onclick="desembolsarCredito('${credito.id_credito}')" ${!todosDocsOk ? 'disabled title="Genere todos los documentos primero"' : ''}>
+                        <button class="btn-completar-desembolso" onclick="event.stopPropagation(); desembolsarCredito('${credito.id_credito}')" ${!todosDocsOk ? 'disabled title="Genere todos los documentos primero"' : ''}>
                             <i class="fas fa-money-bill-wave"></i> Desembolsar
+                        </button>
+                        <button class="btn-anular-credito" onclick="event.stopPropagation(); anularCreditoColocado('${credito.id_credito}', '${credito.codigo_credito}')" title="Anular Préstamo">
+                            <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
                 </div>
             `;
         }).join('');
-
-        console.log('✅ Pendientes de desembolso:', creditosPendientes.length);
 
     } catch (error) {
         console.error('Error loading pendientes desembolso:', error);
@@ -2121,9 +2117,9 @@ async function confirmarColocacionCredito() {
             <p><strong>Plazo:</strong> ${plazo} meses</p>
             <p><strong>Cuota Total:</strong> $${fmtNum(cuotaTotal)}</p>
             <p><strong>Tasa:</strong> ${(tasaMensual * 100).toFixed(2)}% mensual</p>
-            <p style="margin-top:12px;"><em>Esta acción creará el crédito en la base de datos.</em></p>
+            <p style="margin-top:12px;"><em>Esta acción creará el préstamo en la base de datos.</em></p>
         </div>`,
-        '¿Colocar este Crédito?',
+        '¿Colocar este Préstamo?',
         { confirmText: 'Sí, Colocar', cancelText: 'Cancelar', type: 'warning' }
     );
 
@@ -2131,7 +2127,7 @@ async function confirmarColocacionCredito() {
 
     try {
         // Mostrar screen blocker
-        mostrarScreenBlocker('Iniciando colocación de crédito...');
+        mostrarScreenBlocker('Iniciando colocación de préstamo...');
 
         // Obtener cliente Supabase
         const supabase = window.getSupabaseClient();
@@ -2141,10 +2137,10 @@ async function confirmarColocacionCredito() {
         const userId = currentUser?.id || null;
         const userName = currentUser?.nombre || 'Sistema';
 
-        // Generar código de crédito único
+        // Generar código de préstamo único
         const timestamp = Date.now().toString(36).toUpperCase();
         const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-        const codigoCredito = `CRE-${timestamp}-${random}`;
+        const codigoCredito = `PRE-${timestamp}-${random}`;
 
         const now = new Date();
         const nowISO = now.toISOString();
@@ -2156,7 +2152,7 @@ async function confirmarColocacionCredito() {
         const idSocio = socioData.idsocio || currentSolicitud.cedulasocio;
 
         // ========== 1. INSERTAR EN ic_creditos ==========
-        actualizarScreenBlocker('Paso 1/7: Creando registro de crédito...', 10);
+        actualizarScreenBlocker('Paso 1/7: Creando registro de préstamo...', 10);
 
         const creditoData = {
             id_socio: idSocio,
@@ -2184,7 +2180,7 @@ async function confirmarColocacionCredito() {
             documentos_generados: false,
             garante: requiereGarante,
             creado_por: userId,
-            observaciones: `Colocado desde solicitud ${idSolicitud} por ${userName}`
+            observaciones: `Préstamo colocado desde solicitud ${idSolicitud} por ${userName}`
         };
 
         const { data: creditoInsertado, error: errorCredito } = await supabase
@@ -2194,11 +2190,10 @@ async function confirmarColocacionCredito() {
             .single();
 
         if (errorCredito) {
-            throw new Error(`Error al crear crédito: ${errorCredito.message}`);
+            throw new Error(`Error al crear préstamo: ${errorCredito.message}`);
         }
 
         const idCredito = creditoInsertado.id_credito;
-        console.log('✅ Crédito creado:', idCredito, codigoCredito);
 
         // ========== 2. INSERTAR EN ic_creditos_amortizacion ==========
         actualizarScreenBlocker('Paso 2/7: Generando tabla de amortización...', 25);
@@ -2277,7 +2272,6 @@ async function confirmarColocacionCredito() {
             throw new Error(`Error al crear amortización: ${errorAmortizacion.message}`);
         }
 
-        console.log('✅ Amortización creada:', amortizacionInsertada.length, 'cuotas');
 
         // ========== 3. INSERTAR EN ic_creditos_ahorro ==========
         actualizarScreenBlocker('Paso 3/7: Configurando ahorros programados...', 40);
@@ -2301,7 +2295,6 @@ async function confirmarColocacionCredito() {
             throw new Error(`Error al crear ahorros: ${errorAhorros.message}`);
         }
 
-        console.log('✅ Ahorros programados creados:', ahorros.length);
 
         // ========== 4. INSERTAR EN ic_creditos_documentos ==========
         actualizarScreenBlocker('Paso 4/7: Preparando registro de documentos...', 55);
@@ -2331,7 +2324,6 @@ async function confirmarColocacionCredito() {
             throw new Error(`Error al crear documentos: ${errorDocumentos.message}`);
         }
 
-        console.log('✅ Registro de documentos creado');
 
         // ========== 5. INSERTAR EN ic_creditos_garantes (si aplica) ==========
         if (requiereGarante && datosGaranteForm) {
@@ -2357,8 +2349,6 @@ async function confirmarColocacionCredito() {
             if (errorGarante) {
                 throw new Error(`Error al crear garante: ${errorGarante.message}`);
             }
-
-            console.log('✅ Garante registrado');
         }
 
         // ========== 6. INSERTAR EN ic_creditos_historial ==========
@@ -2381,7 +2371,6 @@ async function confirmarColocacionCredito() {
             throw new Error(`Error al crear historial: ${errorHistorial.message}`);
         }
 
-        console.log('✅ Historial registrado');
 
         // ========== 7. ACTUALIZAR ic_solicitud_de_credito ==========
         actualizarScreenBlocker('Paso 7/7: Actualizando estado de solicitud...', 90);
@@ -2393,12 +2382,10 @@ async function confirmarColocacionCredito() {
 
         if (errorSolicitud) {
             console.warn('⚠️ No se pudo actualizar la solicitud:', errorSolicitud.message);
-        } else {
-            console.log('✅ Solicitud actualizada a COLOCADA');
         }
 
         // Finalizar screen blocker
-        actualizarScreenBlocker('¡Crédito colocado exitosamente!', 100);
+        actualizarScreenBlocker('¡Préstamo colocado exitosamente!', 100);
 
         // Esperar un momento para mostrar el éxito
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -2422,12 +2409,12 @@ async function confirmarColocacionCredito() {
         // Cargar sección de pendientes de desembolso
         await loadPendientesDesembolso();
 
-        showToast(`✅ Crédito ${codigoCredito} colocado exitosamente. Proceda con la generación de documentos y desembolso.`, 'success');
+        showToast(`✅ Préstamo ${codigoCredito} colocado exitosamente. Proceda con la generación de documentos y desembolso.`, 'success');
 
     } catch (error) {
-        console.error('❌ Error al colocar crédito:', error);
+        console.error('❌ Error al colocar préstamo:', error);
         ocultarScreenBlocker();
-        showToast('Error al colocar crédito: ' + (error.message || error), 'error');
+        showToast('Error al colocar préstamo: ' + (error.message || error), 'error');
     }
 }
 
@@ -2477,15 +2464,18 @@ function debounce(func, wait) {
 /**
  * Genera un PDF profesional de la solicitud de crédito
  */
-async function generarPDFSolicitud() {
-    if (!currentSolicitud) {
+async function generarPDFSolicitud(solicitudData = null, buttonId = 'btn-generar-pdf', fechaFirmaManual = null) {
+    const solicitud = solicitudData || currentSolicitud;
+
+    if (!solicitud) {
         showToast('No hay datos de solicitud para generar el PDF', 'error');
         return;
     }
 
-    const btnPdf = document.getElementById('btn-generar-pdf');
+    const btnPdf = document.getElementById(buttonId);
     if (btnPdf) {
         btnPdf.disabled = true;
+        btnPdf.dataset.originalHtml = btnPdf.innerHTML;
         btnPdf.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
     }
 
@@ -2504,7 +2494,6 @@ async function generarPDFSolicitud() {
             lightGray: [240, 240, 240]  // #f0f0f0
         };
 
-        const solicitud = currentSolicitud;
         const nombreSocio = solicitud.nombresocio || '[NOMBRE NO ESPECIFICADO]';
 
         // Configuración de página
@@ -2573,7 +2562,7 @@ async function generarPDFSolicitud() {
         doc.setTextColor(...colors.primary);
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
-        doc.text('SOLICITUD DE CRÉDITO', 55, 22);
+        doc.text('SOLICITUD DE PRÉSTAMO', 55, 22);
 
         // Número de solicitud (Gris elegante)
         doc.setTextColor(100, 100, 100);
@@ -2775,7 +2764,7 @@ async function generarPDFSolicitud() {
 
         yPosition = addSection('INFORMACIÓN FAMILIAR Y REFERENCIAS', familiarData, yPosition);
 
-        // Datos del crédito
+        // Datos del préstamo
         const { fecha } = parseSolicitudId(solicitud.solicitudid);
         const creditoData = {
             'Fecha de Solicitud': fecha,
@@ -2787,7 +2776,7 @@ async function generarPDFSolicitud() {
             'Estado de la Solicitud': solicitud.estado || 'PENDIENTE'
         };
 
-        yPosition = addSection('INFORMACIÓN DEL CRÉDITO', creditoData, yPosition);
+        yPosition = addSection('INFORMACIÓN DEL PRÉSTAMO', creditoData, yPosition);
 
         // --- SECCIÓN: SIMULACIÓN DE PAGOS (NUEVO) ---
         const simularPagos = () => {
@@ -2822,7 +2811,7 @@ async function generarPDFSolicitud() {
             'Cuota Mensual Base': `$${sim.cuotaBase.toLocaleString('es-EC', { minimumFractionDigits: 2 })}`,
             'Ahorro Programado (10%)': `$${sim.ahorroPorCuota.toLocaleString('es-EC', { minimumFractionDigits: 2 })}`,
             'CUOTA TOTAL ESTIMADA': `$${sim.cuotaTotal.toLocaleString('es-EC', { minimumFractionDigits: 2 })}`,
-            'Total a Pagar (Crédito)': `$${sim.totalPagar.toLocaleString('es-EC', { minimumFractionDigits: 2 })}`,
+            'Total a Pagar (Préstamo)': `$${sim.totalPagar.toLocaleString('es-EC', { minimumFractionDigits: 2 })}`,
             'Total Ahorro a Devolver': `$${sim.ahorroTotal.toLocaleString('es-EC', { minimumFractionDigits: 2 })}`
         };
 
@@ -3073,7 +3062,7 @@ async function generarPDFSolicitud() {
 
         // --- SECCIÓN: CONSTANCIA DE VERACIDAD Y FIRMAS ---
         const user = window.getCurrentUser();
-        const asesorNombre = user ? (user.nombre || user.full_name || 'ASESOR DE CRÉDITO') : 'ASESOR DE CRÉDITO';
+        const asesorNombre = user ? (user.nombre || user.full_name || 'ASESOR DE PRÉSTAMO') : 'ASESOR DE PRÉSTAMO';
         const asesorCedula = user ? (user.cedula || '') : '';
         const asesorLugar = user ? (user.lugar_asesor || 'Ecuador') : 'Ecuador';
 
@@ -3104,7 +3093,7 @@ async function generarPDFSolicitud() {
         doc.setFont('helvetica', 'normal');
 
         const parrafo1 = "Para constancia de la veracidad de la información contenida en esta solicitud, el SOCIO suscribe el presente documento de manera libre y voluntaria, declarando que todos los datos proporcionados son verídicos, completos y de procedencia lícita.";
-        const parrafo2 = "El ASESOR DE CRÉDITO designado certifica haber verificado la identidad del solicitante y da fe de que la información ha sido proporcionada directamente por el socio, quien manifiesta pleno conocimiento y aceptación de los términos y condiciones del crédito solicitado.";
+        const parrafo2 = "El ASESOR DE PRÉSTAMO designado certifica haber verificado la identidad del solicitante y da fe de que la información ha sido proporcionada directamente por el socio, quien manifiesta pleno conocimiento y aceptación de los términos y condiciones del préstamo solicitado.";
 
         const lines1 = doc.splitTextToSize(parrafo1, contentWidth - 4);
         doc.text(lines1, margin + 2, yPosition);
@@ -3115,11 +3104,18 @@ async function generarPDFSolicitud() {
         yPosition += (lines2.length * 4) + 8;
 
         // Lugar y Fecha de suscripción
-        const now = new Date();
-        const dia = now.getDate();
+        // Si viene fechaFirmaManual (formato YYYY-MM-DD), usar esa. Si no, usar la fecha actual.
+        let dateObj = new Date();
+        if (fechaFirmaManual) {
+            // Asegurar que se interprete como fecha local, no UTC
+            const [year, month, day] = fechaFirmaManual.split('-').map(Number);
+            dateObj = new Date(year, month - 1, day);
+        }
+
+        const dia = dateObj.getDate();
         const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-        const mes = meses[now.getMonth()];
-        const anio = now.getFullYear();
+        const mes = meses[dateObj.getMonth()];
+        const anio = dateObj.getFullYear();
 
         doc.setFont('helvetica', 'bold');
         const textoLugarFecha = `Firman en ${asesorLugar}, a los ${dia} días del mes de ${mes} del año ${anio}.`;
@@ -3217,7 +3213,7 @@ async function generarPDFSolicitud() {
     } finally {
         if (btnPdf) {
             btnPdf.disabled = false;
-            btnPdf.innerHTML = '<i class="fas fa-file-pdf"></i> Generar PDF';
+            btnPdf.innerHTML = btnPdf.dataset.originalHtml || '<i class="fas fa-file-pdf"></i> Generar PDF';
         }
     }
 }
@@ -3299,7 +3295,7 @@ function mostrarModalDocumentos(credito, fechaSeleccionada = null) {
             <div class="modal-backdrop" onclick="cerrarModalDocumentos()"></div>
             <div class="modal-card modal-documentos">
                 <div class="modal-header modal-header-docs">
-                    <h3><i class="fas fa-file-contract"></i> Documentos del Crédito</h3>
+                    <h3><i class="fas fa-file-contract"></i> Documentos del Préstamo</h3>
                     <button class="modal-close" onclick="cerrarModalDocumentos()">
                         <i class="fas fa-times"></i>
                     </button>
@@ -3332,19 +3328,23 @@ function mostrarModalDocumentos(credito, fechaSeleccionada = null) {
                     
                     <!-- Lista de documentos -->
                     <div class="docs-list">
+                        <div class="doc-item generado">
+                            <div class="doc-icon">
+                                <i class="fas fa-file-invoice"></i>
+                            </div>
+                            <div class="doc-info">
+                                <h5>Solicitud de Préstamo</h5>
+                                <p>Formulario original con datos y firmas</p>
+                            </div>
+                        </div>
+
                         <div class="doc-item ${docs.contrato_generado ? 'generado' : ''}">
                             <div class="doc-icon">
                                 <i class="fas fa-file-signature"></i>
                             </div>
                             <div class="doc-info">
-                                <h5>Acuerdo de Crédito</h5>
+                                <h5>Acuerdo de Préstamo</h5>
                                 <p>Contrato principal con términos y condiciones</p>
-                            </div>
-                            <div class="doc-actions">
-                                <button class="btn-doc-generar" onclick="generarDocumentoContrato('${credito.id_credito}')">
-                                    <i class="fas fa-${docs.contrato_generado ? 'redo' : 'file-pdf'}"></i>
-                                    ${docs.contrato_generado ? 'Regenerar' : 'Generar'}
-                                </button>
                             </div>
                         </div>
                         
@@ -3356,12 +3356,6 @@ function mostrarModalDocumentos(credito, fechaSeleccionada = null) {
                                 <h5>Pagaré</h5>
                                 <p>Documento de compromiso de pago</p>
                             </div>
-                            <div class="doc-actions">
-                                <button class="btn-doc-generar" onclick="generarDocumentoPagare('${credito.id_credito}')">
-                                    <i class="fas fa-${docs.pagare_generado ? 'redo' : 'file-pdf'}"></i>
-                                    ${docs.pagare_generado ? 'Regenerar' : 'Generar'}
-                                </button>
-                            </div>
                         </div>
                         
                         <div class="doc-item ${docs.tabla_amortizacion_generada ? 'generado' : ''}">
@@ -3371,12 +3365,6 @@ function mostrarModalDocumentos(credito, fechaSeleccionada = null) {
                             <div class="doc-info">
                                 <h5>Tabla de Amortización</h5>
                                 <p>Detalle de pagos mensuales</p>
-                            </div>
-                            <div class="doc-actions">
-                                <button class="btn-doc-generar" onclick="generarDocumentoTablaAmortizacion('${credito.id_credito}')">
-                                    <i class="fas fa-${docs.tabla_amortizacion_generada ? 'redo' : 'file-pdf'}"></i>
-                                    ${docs.tabla_amortizacion_generada ? 'Regenerar' : 'Generar'}
-                                </button>
                             </div>
                         </div>
                         
@@ -3389,12 +3377,6 @@ function mostrarModalDocumentos(credito, fechaSeleccionada = null) {
                                     <h5>Contrato de Garantía</h5>
                                     <p>Documento del garante solidario</p>
                                 </div>
-                                <div class="doc-actions">
-                                    <button class="btn-doc-generar" onclick="generarDocumentoGarantia('${credito.id_credito}')">
-                                        <i class="fas fa-${docs.documento_garante_firmado ? 'redo' : 'file-pdf'}"></i>
-                                        ${docs.documento_garante_firmado ? 'Regenerar' : 'Generar'}
-                                    </button>
-                                </div>
                             </div>
                         ` : ''}
                     </div>
@@ -3402,7 +3384,7 @@ function mostrarModalDocumentos(credito, fechaSeleccionada = null) {
                     <!-- Generar todos -->
                     <div class="docs-actions-all">
                         <button class="btn-generar-todos" onclick="generarTodosDocumentos('${credito.id_credito}')">
-                            <i class="fas fa-file-archive"></i> Generar Todos los Documentos
+                            <i class="fas fa-file-archive"></i> Descargar Todos los Documentos
                         </button>
                     </div>
                 </div>
@@ -3426,29 +3408,16 @@ window.cerrarModalDocumentos = cerrarModalDocumentos;
 // ==========================================
 // GENERACIÓN DE DOCUMENTOS PDF
 // ==========================================
-
-// Obtener datos del usuario logueado para documentos
-function getDatosAcreedor() {
-    const user = window.getCurrentUser();
-    return {
-        nombre: user?.nombre || 'ACREEDOR',
-        cedula: user?.cedula || '',
-        telefono: user?.whatsapp || '',
-        domicilio: user?.direccion || 'Ecuador',
-        ciudad: user?.lugar_asesor || user?.ciudad || 'Latacunga'
-    };
-}
-
 // ========== 1. GENERAR PAGARÉ ==========
 // ========== 1. GENERAR PAGARÉ ==========
-async function generarDocumentoPagare(idCredito) {
+async function generarDocumentoPagare(idCredito, fechaFirmaManual = null) {
     try {
         const credito = currentCreditoDocumentos || await cargarCreditoCompleto(idCredito);
-        if (!credito) throw new Error('No se encontró el crédito');
+        if (!credito) throw new Error('No se encontró el préstamo');
 
         // Obtener fecha de firma del modal o usar hoy
         const fechaFirmaInput = document.getElementById('fecha-firma-docs');
-        let fechaFirma = fechaFirmaInput ? fechaFirmaInput.value : null;
+        let fechaFirma = fechaFirmaManual || (fechaFirmaInput ? fechaFirmaInput.value : null);
 
         if (!fechaFirma) {
             const hoy = new Date();
@@ -3463,7 +3432,19 @@ async function generarDocumentoPagare(idCredito) {
         const contentWidth = pageWidth - (margin * 2);
 
         const socio = credito.socio || {};
-        const acreedor = getDatosAcreedor();
+        const infoAcreedor = getDatosAcreedor();
+
+        // Validar datos mandatorios del asesor para documentos legales
+        if (!infoAcreedor.nombre || !infoAcreedor.telefono || !infoAcreedor.cedula) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Perfil Incompleto',
+                text: 'Su usuario no tiene configurado el Nombre, Cédula o WhatsApp. No se puede generar documentos legales sin estos datos.',
+                confirmButtonColor: '#0E5936'
+            });
+            return;
+        }
+
         const garanteInfo = credito.garante_info?.[0];
 
         const estadoCivil = (socio.estadocivil || '').toUpperCase();
@@ -3500,7 +3481,7 @@ async function generarDocumentoPagare(idCredito) {
 
         // Información de cabecera
         doc.setFontSize(10);
-        y = drawField(doc, 'A: ', acreedor.nombre.toUpperCase(), margin, y, contentWidth);
+        y = drawField(doc, 'A: ', infoAcreedor.nombre.toUpperCase(), margin, y, contentWidth);
         y = drawField(doc, 'VENCIMIENTO: ', formatearFecha(fechaVencimiento, 'largo').toUpperCase(), margin, y, contentWidth);
         y = drawField(doc, 'LA CANTIDAD DE: ', `$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})`, margin, y, contentWidth);
 
@@ -3515,9 +3496,9 @@ async function generarDocumentoPagare(idCredito) {
         let textoPagere = '';
         if (esPlural) {
             const nombresFirmantes = firmantes.map(f => `**${f.nombre}** (C.I. **${f.cedula}**)`).join(', ');
-            textoPagere = `Por este pagaré, nosotros, ${nombresFirmantes}, con domicilio en **${domicilioDeudor}**, nos comprometemos y obligamos a pagar de manera solidaria e incondicional al vencimiento indicado, a la orden de **${acreedor.nombre.toUpperCase()}**, con cédula de identidad número **${acreedor.cedula}**, en la ciudad de **${acreedor.ciudad.toUpperCase()}**, la cantidad de **$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})**.`;
+            textoPagere = `Por este pagaré, nosotros, ${nombresFirmantes}, con domicilio en **${domicilioDeudor}**, nos comprometemos y obligamos a pagar de manera solidaria e incondicional al vencimiento indicado, a la orden de **${infoAcreedor.nombre.toUpperCase()}**, con cédula de identidad número **${infoAcreedor.cedula}**, en la ciudad de **${infoAcreedor.ciudad.toUpperCase()}**, la cantidad de **$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})**.`;
         } else {
-            textoPagere = `Por este pagaré, yo, **${nombreDeudor}**, con cédula de identidad ecuatoriana número **${cedulaDeudor}**, con domicilio en **${domicilioDeudor}**, me comprometo y obligo a pagar de manera incondicional al vencimiento indicado, a la orden de **${acreedor.nombre.toUpperCase()}**, con cédula de identidad número **${acreedor.cedula}**, en la ciudad de **${acreedor.ciudad.toUpperCase()}**, la cantidad de **$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})**.`;
+            textoPagere = `Por este pagaré, yo, **${nombreDeudor}**, con cédula de identidad ecuatoriana número **${cedulaDeudor}**, con domicilio en **${domicilioDeudor}**, me comprometo y obligo a pagar de manera incondicional al vencimiento indicado, a la orden de **${infoAcreedor.nombre.toUpperCase()}**, con cédula de identidad número **${infoAcreedor.cedula}**, en la ciudad de **${infoAcreedor.ciudad.toUpperCase()}**, la cantidad de **$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})**.`;
         }
 
         y = renderJustifiedText(doc, textoPagere, margin, y, contentWidth);
@@ -3580,7 +3561,7 @@ async function generarDocumentoPagare(idCredito) {
         y += 10;
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
-        doc.text(`${acreedor.ciudad.toUpperCase()}, ${formatearFecha(fechaFirma, 'completo').toUpperCase()}`, pageWidth / 2, y, { align: 'center' });
+        doc.text(`${infoAcreedor.ciudad.toUpperCase()}, ${formatearFecha(fechaFirma, 'completo').toUpperCase()}`, pageWidth / 2, y, { align: 'center' });
 
         // Guardar
         const fileName = `Pagare_${credito.codigo_credito}_${nombreDeudor.replace(/\s+/g, '_')}.pdf`;
@@ -3597,15 +3578,15 @@ async function generarDocumentoPagare(idCredito) {
     }
 }
 
-// ========== 2. GENERAR CONTRATO/ACUERDO DE CRÉDITO ==========
-async function generarDocumentoContrato(idCredito) {
+// ========== 2. GENERAR CONTRATO/ACUERDO DE PRÉSTAMO ==========
+async function generarDocumentoContrato(idCredito, fechaFirmaManual = null) {
     try {
         const credito = currentCreditoDocumentos || await cargarCreditoCompleto(idCredito);
-        if (!credito) throw new Error('No se encontró el crédito');
+        if (!credito) throw new Error('No se encontró el préstamo');
 
         // Obtener fecha de firma del modal o usar hoy
         const fechaFirmaInput = document.getElementById('fecha-firma-docs');
-        let fechaFirma = fechaFirmaInput ? fechaFirmaInput.value : null;
+        let fechaFirma = fechaFirmaManual || (fechaFirmaInput ? fechaFirmaInput.value : null);
 
         if (!fechaFirma) {
             const hoy = new Date();
@@ -3620,7 +3601,19 @@ async function generarDocumentoContrato(idCredito) {
         const contentWidth = pageWidth - (margin * 2);
 
         const socio = credito.socio || {};
-        const acreedor = getDatosAcreedor();
+        const infoAcreedor = getDatosAcreedor();
+
+        // Validar datos mandatorios del asesor para documentos legales
+        if (!infoAcreedor.nombre || !infoAcreedor.telefono || !infoAcreedor.cedula) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Perfil Incompleto',
+                text: 'Su usuario no tiene configurado el Nombre, Cédula o WhatsApp. No se puede generar documentos legales sin estos datos.',
+                confirmButtonColor: '#0E5936'
+            });
+            return;
+        }
+
         const garanteInfo = credito.garante_info?.[0] || null;
 
         const estadoCivil = (socio.estadocivil || '').toUpperCase();
@@ -3635,12 +3628,12 @@ async function generarDocumentoContrato(idCredito) {
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
-        doc.text('ACUERDO DE CRÉDITO', pageWidth / 2, 30, { align: 'center' });
+        doc.text('ACUERDO DE PRÉSTAMO', pageWidth / 2, 30, { align: 'center' });
 
         // Fecha arriba a la derecha
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        doc.text(`${acreedor.ciudad.toUpperCase()}, ${formatearFecha(fechaFirma, 'completo').toUpperCase()}`, pageWidth - margin, 40, { align: 'right' });
+        doc.text(`${infoAcreedor.ciudad.toUpperCase()}, ${formatearFecha(fechaFirma, 'completo').toUpperCase()}`, pageWidth - margin, 40, { align: 'right' });
 
         let y = 50;
 
@@ -3661,13 +3654,13 @@ async function generarDocumentoContrato(idCredito) {
         // Cuerpo del contrato
         doc.setFontSize(10);
         const parrafos = [
-            `Yo, **${nombreDeudor}** con Cédula de Identidad Ecuatoriana número **${socio.cedula}** haciendo pleno uso de mis facultades racionales y mentales solicito un crédito a **${acreedor.nombre.toUpperCase()}**.`,
+            `Yo, **${nombreDeudor}** con Cédula de Identidad Ecuatoriana número **${socio.cedula}** haciendo pleno uso de mis facultades racionales y mentales solicito un préstamo a **${infoAcreedor.nombre.toUpperCase()}**.`,
 
-            `Yo, **${nombreDeudor}** solicito un crédito por **$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})** y una vez que haya firmado este documento acepto que el dinero me fue entregado y así mismo acepto todas las cláusulas y condiciones del mismo.`,
+            `Yo, **${nombreDeudor}** solicito un préstamo por **$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})** y una vez que haya firmado este documento acepto que el dinero me fue entregado y así mismo acepto todas las cláusulas y condiciones del mismo.`,
 
-            `Yo, **${nombreDeudor}** estoy completamente de acuerdo en pagar a **${acreedor.nombre.toUpperCase()}** el valor de **$${cuota.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(cuota)})** mensualmente durante el plazo establecido.`,
+            `Yo, **${nombreDeudor}** estoy completamente de acuerdo en pagar a **${infoAcreedor.nombre.toUpperCase()}** el valor de **$${cuota.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(cuota)})** mensualmente durante el plazo establecido.`,
 
-            `Yo, **${nombreDeudor}**, doy a conocer voluntariamente mis datos personales como respaldo de que cancelaré mi crédito y bajo juramento declaro que TODOS los datos proporcionados son legítimos:`,
+            `Yo, **${nombreDeudor}**, doy a conocer voluntariamente mis datos personales como respaldo de que cancelaré mi préstamo y bajo juramento declaro que TODOS los datos proporcionados son legítimos:`,
         ];
 
         parrafos.forEach(p => {
@@ -3678,11 +3671,11 @@ async function generarDocumentoContrato(idCredito) {
         // Declaraciones numeradas
         y += 3;
         const declaraciones = [
-            `1.- Vivo en **${(socio.domicilio || socio.direccion || 'DIRECCIÓN REGISTRADA').toUpperCase()}** y me comprometo a notificar a **${acreedor.nombre.toUpperCase()}** si llegase a cambiar la dirección de mi domicilio.`,
+            `1.- Vivo en **${(socio.domicilio || socio.direccion || 'DIRECCIÓN REGISTRADA').toUpperCase()}** y me comprometo a notificar a **${infoAcreedor.nombre.toUpperCase()}** si llegase a cambiar la dirección de mi domicilio.`,
 
             `2.- Como referencia pongo a **${(socio.nombrereferencia || 'PERSONA DE CONFIANZA').toUpperCase()}**, declaro que me conoce y puede preguntar por mí llamando al **${socio.whatsappreferencia || 'NÚMERO REGISTRADO'}**.`,
 
-            `3.- Mi número de contacto es el **${socio.whatsapp || 'NÚMERO REGISTRADO'}** mismo que tiene habilitado Whatsapp ya que tengo conocimiento de que cualquier recordatorio o cambio de datos de pago me serán notificados por este medio, así mismo si hubiese un cambio en este número de contacto me comprometo a notificar a **${acreedor.nombre.toUpperCase()}** oportunamente.`
+            `3.- Mi número de contacto es el **${socio.whatsapp || 'NÚMERO REGISTRADO'}** mismo que tiene habilitado Whatsapp ya que tengo conocimiento de que cualquier recordatorio o cambio de datos de pago me serán notificados por este medio, así mismo si hubiese un cambio en este número de contacto me comprometo a notificar a **${infoAcreedor.nombre.toUpperCase()}** oportunamente.`
         ];
 
         declaraciones.forEach(d => {
@@ -3694,9 +3687,9 @@ async function generarDocumentoContrato(idCredito) {
 
         // Declaraciones finales
         const finales = [
-            `Yo, **${nombreDeudor}**, declaro bajo juramento que destinaré los fondos que me entregaron mediante este crédito a fines lícitos y fuera de todo tipo de actividades que sean ilegales.`,
+            `Yo, **${nombreDeudor}**, declaro bajo juramento que destinaré los fondos que me entregaron mediante este préstamo a fines lícitos y fuera de todo tipo de actividades que sean ilegales.`,
 
-            `Yo, **${nombreDeudor}**, eximo a **${acreedor.nombre.toUpperCase()}**, incluyendo a terceros sobre cualquier problema que se presente en caso de que la información proporcionada por mi persona sea errónea.`
+            `Yo, **${nombreDeudor}**, eximo a **${infoAcreedor.nombre.toUpperCase()}**, incluyendo a terceros sobre cualquier problema que se presente en case de que la información proporcionada por mi persona sea errónea.`
         ];
 
         finales.forEach(p => {
@@ -3731,7 +3724,7 @@ async function generarDocumentoContrato(idCredito) {
             firmas.push({ nombre: (garanteInfo.nombre_garante || 'GARANTE').toUpperCase(), cedula: garanteInfo.cedula_garante || '', label: '(GARANTE)' });
         }
 
-        firmas.push({ nombre: acreedor.nombre.toUpperCase(), cedula: acreedor.cedula || '', label: '(ACREEDOR)' });
+        firmas.push({ nombre: infoAcreedor.nombre.toUpperCase(), cedula: infoAcreedor.cedula || '', label: '(ASESOR INKA CORP)' });
 
         // Dibujar firmas de 2 en 2
         const firmaWidth = (contentWidth / 2) - 20;
@@ -3790,14 +3783,14 @@ async function generarDocumentoContrato(idCredito) {
 
 // ========== 3. GENERAR TABLA DE AMORTIZACIÓN ==========
 // ========== 3. GENERAR TABLA DE AMORTIZACIÓN ==========
-async function generarDocumentoTablaAmortizacion(idCredito) {
+async function generarDocumentoTablaAmortizacion(idCredito, fechaFirmaManual = null) {
     try {
         const credito = currentCreditoDocumentos || await cargarCreditoCompleto(idCredito);
-        if (!credito) throw new Error('No se encontró el crédito');
+        if (!credito) throw new Error('No se encontró el préstamo');
 
         // Obtener fecha de firma del modal o usar hoy
         const fechaFirmaInput = document.getElementById('fecha-firma-docs');
-        let fechaFirma = fechaFirmaInput ? fechaFirmaInput.value : null;
+        let fechaFirma = fechaFirmaManual || (fechaFirmaInput ? fechaFirmaInput.value : null);
 
         if (!fechaFirma) {
             const hoy = new Date();
@@ -3822,7 +3815,19 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
         };
 
         const socio = credito.socio || {};
-        const acreedor = getDatosAcreedor();
+        const infoAcreedor = getDatosAcreedor();
+
+        // Validar datos mandatorios del asesor para documentos legales
+        if (!infoAcreedor.nombre || !infoAcreedor.telefono || !infoAcreedor.cedula) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Perfil Incompleto',
+                text: 'Su usuario no tiene configurado el Nombre, Cédula o WhatsApp. No se puede generar documentos legales sin estos datos.',
+                confirmButtonColor: '#0E5936'
+            });
+            return;
+        }
+
         const garanteInfo = credito.garante_info?.[0] || null;
 
         const estadoCivil = (socio.estadocivil || '').toUpperCase();
@@ -3872,7 +3877,7 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
         doc.setTextColor(100, 100, 100);
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        doc.text(`${acreedor.ciudad.toUpperCase()}, ${formatearFecha(fechaFirma, 'completo').toUpperCase()}`, 55, 31);
+        doc.text(`${infoAcreedor.ciudad.toUpperCase()}, ${formatearFecha(fechaFirma, 'completo').toUpperCase()}`, 55, 31);
 
         // Línea divisoria
         doc.setDrawColor(...colors.lightGray);
@@ -3886,7 +3891,7 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
 
         let y = 55;
 
-        // --- DATOS DEL CRÉDITO ---
+        // --- DATOS DEL PRÉSTAMO ---
         doc.setFillColor(250, 250, 250);
         doc.roundedRect(margin, y, contentWidth, 32, 2, 2, 'F');
         doc.setDrawColor(...colors.lightGray);
@@ -3920,19 +3925,29 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
 
         doc.setFont('helvetica', 'normal');
 
+        const diaPago = parseInt(credito.dia_pago) || 15;
+        const recordatorio1 = diaPago - 3;
+        const recordatorio2 = diaPago;
+        
+        const pSocio = (socio.paisresidencia || socio.pais || '').trim().toUpperCase();
+        const esEcuador = pSocio === 'ECUADOR' || pSocio === 'EC';
+        const bancoInfo = esEcuador 
+            ? 'una cuenta en BANCO PICHINCHA' 
+            : 'una cuenta en CHASE O ZELLE';
+
         const introText = [
             `Esta tabla muestra el plan de pagos para su préstamo realizado por la suma de **$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })}** otorgado por **INKA CORP** en la fecha **${formatearFecha(credito.fecha_desembolso || fechaFirma, 'largo')}**.`,
-            `El valor total a pagar por el socio comprende el **CAPITAL** más los **INTERESES** y **GASTOS ADMINISTRATIVOS** generados en el proceso de tramitación de crédito.`,
+            `El valor total a pagar por el socio comprende el **CAPITAL** más los **INTERESES** y **GASTOS ADMINISTRATIVOS** generados en el proceso de tramitación del préstamo.`,
             `Desglose de **GASTOS ADMINISTRATIVOS** en porcentaje según el capital solicitado:\n- Menor a $5000: 0.16%\n- Menor a $20000 e igual o mayor a $5000: 0.12%\n- Igual o superior a $20000: 0.08%`,
             `El préstamo tiene un plazo de **${credito.plazo} meses** con una tasa de interés porcentual del **${credito.tasa_interes_mensual} %**. La amortización es en cuotas niveladas mensuales.`,
-            `El pago mensual es de **$${parseFloat(credito.cuota_con_ahorro).toLocaleString('es-EC', { minimumFractionDigits: 2 })}**. Este pago mensual se aplica primero a los intereses acumulados y el resto se aplica al capital del préstamo.`,
+            `El pago mensual es de **$${parseFloat(credito.cuota_con_ahorro).toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(parseFloat(credito.cuota_con_ahorro))})**. Este pago mensual se aplica primero a los intereses acumulados y el resto se aplica al capital del préstamo.`,
             `Los intereses se calculan sobre el saldo insoluto del préstamo al inicio de cada período. A medida que se van pagando las cuotas, una porción del pago se destina a cubrir los intereses y la otra parte reduce el capital, por lo que el saldo insoluto del préstamo va disminuyendo en cada período.`,
-            `Por políticas de contabilidad de la empresa, el pago de los créditos se reciben únicamente el día **${credito.dia_pago} de cada mes** sin importar la fecha en la que se realiza el crédito, para ser justo con el socio **INKA CORP** adaptará la primera cuota a una fecha adecuada para no perjudicarlo, así mismo las siguientes cuotas se pagarán máximo el día **${credito.dia_pago} de cada mes**, por consecuencia el crédito finalizará un día **${credito.dia_pago}**.`,
-            `Por políticas de seguridad de la empresa **INKA CORP** realizará los cobros únicamente mediante **transferencia o depósito a una cuenta en CHASE O ZELLE**, los datos de pago serán enviados oportunamente antes de el pago de cada cuota. Es solo responsabilidad del socio revisar bien los datos de pago proporcionados en dicho mensaje.`,
-            `A fin de evitar retrasos en los pagos **INKA CORP** enviará mensajes de **recordatorio de pago el día 12 y el día 15 de cada mes**, estos serán entregados al remitente vía Whatsapp, por lo que instamos al socio/a a comunicar si llegase a sufrir algún percance con el contacto proporcionado en este documento, el cual es: **+5930982142531**`,
+            `Por políticas de contabilidad de la empresa, el pago de los préstamos se reciben únicamente el día **${credito.dia_pago} de cada mes** sin importar la fecha en la que se realiza el desembolso. Para ser justo con el socio, **INKA CORP** adaptará la primera cuota a una fecha adecuada para no perjudicarlo; así mismo, las siguientes cuotas se pagarán máximo el día **${credito.dia_pago} de cada mes**; por consecuencia, el préstamo finalizará un día **${credito.dia_pago}**.`,
+            `Por políticas de seguridad de la empresa, **INKA CORP** realizará los cobros únicamente mediante **transferencia o depósito a ${bancoInfo}**, los datos de pago serán enviados oportunamente antes del pago de cada cuota. Es responsabilidad exclusiva del socio revisar bien los datos de pago proporcionados en dicho mensaje.`,
+            `A fin de evitar retrasos en los pagos, **INKA CORP** enviará mensajes de **recordatorio de pago los días ${recordatorio1} y ${recordatorio2} de cada mes**, estos serán entregados al remitente vía WhatsApp por su asesor asignado. Instamos al socio/a a comunicar si llegase a sufrir algún percance con el contacto proporcionado en este documento, el cual es: **${infoAcreedor.telefono}**`,
             `El prestatario debe realizar un total de **${credito.plazo} pagos mensuales** por la cantidad indicada. La fecha de pago de la primera cuota será el **${formatearFecha(amortizacion[0]?.fecha_pago || amortizacion[0]?.fecha_vencimiento)}** y el último pago vencerá el **${formatearFecha(amortizacion[amortizacion.length - 1]?.fecha_pago || amortizacion[amortizacion.length - 1]?.fecha_vencimiento)}**.`,
             `Si el prestatario incurre en **mora**, se aplicarán cargos por pagos atrasados a razón de **$2.00 diarios** sobre la cuota vencida. Así mismo, en caso de incumplimiento, **INKA CORP** podrá declarar todo el préstamo pagadero de inmediato junto con los intereses devengados hasta la fecha.`,
-            `**CONSEJOS PARA TUS PAGOS RESPONSABLES:**\n- Organiza tu presupuesto mensual priorizando el pago de tu cuota.\n- Realiza tus pagos antes de la fecha de vencimiento para evitar recargos.\n- Mantener un buen historial crediticio te abre las puertas a futuros créditos con mejores condiciones.\n- Si tienes dificultades para pagar, comunícate con nosotros antes de la fecha de vencimiento.`
+            `**CONSEJOS PARA TUS PAGOS RESPONSABLES:**\n- Organiza tu presupuesto mensual priorizando el pago de tu cuota.\n- Realiza tus pagos antes de la fecha de vencimiento para evitar recargos.\n- Mantener un buen historial crediticio te abre las puertas a futuros préstamos con mejores condiciones.\n- Si tienes dificultades para pagar, comunícate con nosotros antes de la fecha de vencimiento.`
         ];
 
         introText.forEach(text => {
@@ -4090,7 +4105,7 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
             firmas.push({ nombre: (garanteInfo.nombre_garante || 'GARANTE').toUpperCase(), cedula: garanteInfo.cedula_garante || '', label: '(GARANTE)' });
         }
 
-        firmas.push({ nombre: acreedor.nombre.toUpperCase(), cedula: acreedor.cedula || '', label: '(ASESOR DE CRÉDITO)' });
+        firmas.push({ nombre: infoAcreedor.nombre.toUpperCase(), cedula: infoAcreedor.cedula || '', label: '(ASESOR DE PRÉSTAMOS)' });
 
         // Dibujar firmas de 2 en 2
         const firmaWidth = (contentWidth / 2) - 20;
@@ -4176,14 +4191,14 @@ async function generarDocumentoTablaAmortizacion(idCredito) {
 }
 
 // ========== 4. GENERAR CONTRATO DE GARANTÍA ==========
-async function generarDocumentoGarantia(idCredito) {
+async function generarDocumentoGarantia(idCredito, fechaFirmaManual = null) {
     try {
         const credito = currentCreditoDocumentos || await cargarCreditoCompleto(idCredito);
-        if (!credito) throw new Error('No se encontró el crédito');
+        if (!credito) throw new Error('No se encontró el préstamo');
 
         // Obtener fecha de firma del modal o usar hoy
         const fechaFirmaInput = document.getElementById('fecha-firma-docs');
-        let fechaFirma = fechaFirmaInput ? fechaFirmaInput.value : null;
+        let fechaFirma = fechaFirmaManual || (fechaFirmaInput ? fechaFirmaInput.value : null);
 
         if (!fechaFirma) {
             const hoy = new Date();
@@ -4204,7 +4219,18 @@ async function generarDocumentoGarantia(idCredito) {
         const contentWidth = pageWidth - (margin * 2);
 
         const socio = credito.socio || {};
-        const acreedor = getDatosAcreedor();
+        const infoAcreedor = getDatosAcreedor();
+
+        // Validar datos mandatorios del asesor para documentos legales
+        if (!infoAcreedor.nombre || !infoAcreedor.telefono || !infoAcreedor.cedula) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Perfil Incompleto',
+                text: 'Su usuario no tiene configurado el Nombre, Cédula o WhatsApp. No se puede generar documentos legales sin estos datos.',
+                confirmButtonColor: '#0E5936'
+            });
+            return;
+        }
 
         const estadoCivil = (socio.estadocivil || '').toUpperCase();
         const esCasado = estadoCivil.includes('CASADO') || estadoCivil.includes('UNION') || estadoCivil.includes('UNIÓN');
@@ -4224,7 +4250,7 @@ async function generarDocumentoGarantia(idCredito) {
         // Fecha arriba a la derecha
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        doc.text(`${acreedor.ciudad.toUpperCase()}, ${formatearFecha(fechaFirma, 'completo').toUpperCase()}`, pageWidth - margin, 40, { align: 'right' });
+        doc.text(`${infoAcreedor.ciudad.toUpperCase()}, ${formatearFecha(fechaFirma, 'completo').toUpperCase()}`, pageWidth - margin, 40, { align: 'right' });
 
         let y = 50;
 
@@ -4237,8 +4263,8 @@ async function generarDocumentoGarantia(idCredito) {
         y += 4;
 
         y = drawField(doc, `DEUDOR: `, nombreDeudor, margin, y, contentWidth);
-        y = drawField(doc, `MONTO DEL CRÉDITO: `, `$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})`, margin, y, contentWidth);
-        y = drawField(doc, `PLAZO DEL CRÉDITO: `, `${credito.plazo} MESES`, margin, y, contentWidth);
+        y = drawField(doc, `MONTO DEL PRÉSTAMO: `, `$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})`, margin, y, contentWidth);
+        y = drawField(doc, `PLAZO DEL PRÉSTAMO: `, `${credito.plazo} MESES`, margin, y, contentWidth);
         y = drawField(doc, `INTERÉS MENSUAL EN PORCENTAJE: `, `${credito.tasa_interes_mensual} %`, margin, y, contentWidth);
         y = drawField(doc, `VALOR MENSUAL A PAGAR: `, `$${cuota.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(cuota)})`, margin, y, contentWidth);
 
@@ -4247,7 +4273,7 @@ async function generarDocumentoGarantia(idCredito) {
         // Declaración del garante
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        const declaracion = `Yo, **${nombreGarante}**, con Cédula de Identidad Ecuatoriana número **${garanteInfo.cedula_garante || '-'}**, en mi calidad de GARANTE, me obligo solidariamente con el Deudor **${nombreDeudor}**, en relación al crédito otorgado por **${acreedor.nombre.toUpperCase()}**.`;
+        const declaracion = `Yo, **${nombreGarante}**, con Cédula de Identidad Ecuatoriana número **${garanteInfo.cedula_garante || '-'}**, en mi calidad de GARANTE, me obligo solidariamente con el Deudor **${nombreDeudor}**, en relación al préstamo otorgado por **${infoAcreedor.nombre.toUpperCase()}**.`;
         y = renderJustifiedText(doc, declaracion, margin, y, contentWidth);
         y += 10;
 
@@ -4258,17 +4284,17 @@ async function generarDocumentoGarantia(idCredito) {
 
         doc.setFont('helvetica', 'normal');
         const obligaciones = [
-            `1. Garantía de Pago: Me comprometo a garantizar el pago total del crédito por un monto de **$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})**, más los intereses correspondientes y cualquier otro cargo aplicable, en caso de incumplimiento por parte del Deudor.`,
+            `1. Garantía de Pago: Me comprometo a garantizar el pago total del préstamo por un monto de **$${capital.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(capital)})**, más los intereses correspondientes y cualquier otro cargo aplicable, en caso de incumplimiento por parte del Deudor.`,
 
-            `2. Solidaridad: Acepto que mi responsabilidad es solidaria, lo que significa que **${acreedor.nombre.toUpperCase()}** puede requerir el pago total o parcial del crédito directamente de mi persona sin necesidad de agotar las vías de cobro contra el Deudor.`,
+            `2. Solidaridad: Acepto que mi responsabilidad es solidaria, lo que significa que **${infoAcreedor.nombre.toUpperCase()}** puede requerir el pago total o parcial del préstamo directamente de mi persona sin necesidad de agotar las vías de cobro contra el Deudor.`,
 
-            `3. Datos Personales: Declaro bajo juramento que todos mis datos personales proporcionados en este contrato son verdaderos y me comprometo a notificar cualquier cambio de domicilio o número de contacto a **${acreedor.nombre.toUpperCase()}**.`,
+            `3. Datos Personales: Declaro bajo juramento que todos mis datos personales proporcionados en este contrato son verdaderos y me comprometo a notificar cualquier cambio de domicilio o número de contacto a **${infoAcreedor.nombre.toUpperCase()}**.`,
 
-            `4. Información del Deudor: Confirmo que conozco personalmente al Deudor **${nombreDeudor}** y estoy al tanto de su situación económica. Pongo a disposición de **${acreedor.nombre.toUpperCase()}** mi número de contacto **${garanteInfo.telefono_garante || garanteInfo.whatsapp_garante || '-'}** para cualquier comunicación necesaria.`,
+            `4. Información del Deudor: Confirmo que conozco personalmente al Deudor **${nombreDeudor}** y estoy al tanto de su situación económica. Pongo a disposición de **${infoAcreedor.nombre.toUpperCase()}** mi número de contacto **${garanteInfo.telefono_garante || garanteInfo.whatsapp_garante || '-'}** para cualquier comunicación necesaria.`,
 
-            `5. Compromiso de Pago: En caso de incumplimiento por parte del Deudor, me comprometo a realizar los pagos mensuales de **$${cuota.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(cuota)})** durante el plazo establecido de **${credito.plazo} meses**, o el pago total del saldo pendiente si así lo solicita **${acreedor.nombre.toUpperCase()}**.`,
+            `5. Compromiso de Pago: En caso de incumplimiento por parte del Deudor, me comprometo a realizar los pagos mensuales de **$${cuota.toLocaleString('es-EC', { minimumFractionDigits: 2 })} (${numeroALetras(cuota)})** durante el plazo establecido de **${credito.plazo} meses**, o el pago total del saldo pendiente si así lo solicita **${infoAcreedor.nombre.toUpperCase()}**.`,
 
-            `6. Exoneración de Responsabilidad: Eximo a **${acreedor.nombre.toUpperCase()}** y a terceros de cualquier problema que se presente en caso de que la información proporcionada por mi persona sea errónea.`
+            `6. Exoneración de Responsabilidad: Eximo a **${infoAcreedor.nombre.toUpperCase()}** y a terceros de cualquier problema que se presente en caso de que la información proporcionada por mi persona sea errónea.`
         ];
 
         obligaciones.forEach(o => {
@@ -4300,7 +4326,7 @@ async function generarDocumentoGarantia(idCredito) {
         }
 
         firmas.push({ nombre: nombreGarante, cedula: garanteInfo.cedula_garante || '', label: 'GARANTE (DEUDOR)' });
-        firmas.push({ nombre: acreedor.nombre.toUpperCase(), cedula: acreedor.cedula || '', label: '(ACREEDOR)' });
+        firmas.push({ nombre: infoAcreedor.nombre.toUpperCase(), cedula: infoAcreedor.cedula || '', label: '(ASESOR INKA CORP)' });
 
         // Dibujar firmas de 2 en 2
         const firmaWidth = (contentWidth / 2) - 20;
@@ -4435,24 +4461,102 @@ async function actualizarEstadoDocumento(idCredito, campo, valor) {
         console.warn('Error actualizando estado de documento:', error);
     }
 
-    // Refrescar modal si está abierto
-    if (currentCreditoDocumentos && currentCreditoDocumentos.id_credito === idCredito) {
+    // Refrescar modal SOLO si está visible en el DOM
+    const modalExistente = document.getElementById('modal-documentos-credito');
+    if (modalExistente && currentCreditoDocumentos && currentCreditoDocumentos.id_credito === idCredito) {
         await abrirModalDocumentosCredito(idCredito);
     }
 }
 
-async function generarTodosDocumentos(idCredito) {
+// ========== 5. GENERAR SOLICITUD DE CRÉDITO ORIGINAL ==========
+async function generarDocumentoSolicitud(idCredito, fechaFirmaManual = null) {
     try {
-        showToast('Generando todos los documentos...', 'info');
-
-        await generarDocumentoContrato(idCredito);
-        await generarDocumentoPagare(idCredito);
-        await generarDocumentoTablaAmortizacion(idCredito);
-
+        const supabase = window.getSupabaseClient();
         const credito = currentCreditoDocumentos || await cargarCreditoCompleto(idCredito);
-        if (credito?.garante) {
-            await generarDocumentoGarantia(idCredito);
+        if (!credito) throw new Error('No se encontró el préstamo');
+
+        if (!credito.id_solicitud) {
+            showToast('Este crédito no tiene una solicitud asociada registrada.', 'warning');
+            return;
         }
+
+        // Cargar datos de la solicitud
+        const { data: solicitud, error } = await supabase
+            .from('ic_solicitud_de_credito')
+            .select('*')
+            .eq('solicitudid', credito.id_solicitud)
+            .single();
+
+        if (error) throw error;
+        if (!solicitud) throw new Error('No se encontró la solicitud de préstamo.');
+
+        // Obtener fecha de firma del modal
+        const fechaFirmaInput = document.getElementById('fecha-firma-docs');
+        const fechaFirma = fechaFirmaManual || (fechaFirmaInput ? fechaFirmaInput.value : null);
+
+        // Generar el PDF usando la función existente modificada
+        const btnId = `btn-solicitud-${idCredito}`;
+        await generarPDFSolicitud(solicitud, btnId, fechaFirma);
+
+        return true;
+    } catch (error) {
+        console.error('Error generando PDF de solicitud:', error);
+        showToast('Error al generar PDF de solicitud: ' + (error.message || 'Error desconocido'), 'error');
+        return false;
+    }
+}
+
+async function generarTodosDocumentos(idCredito) {
+    const btnAll = document.querySelector('.btn-generar-todos');
+    const originalBtnAllHtml = btnAll ? btnAll.innerHTML : '';
+    
+    // Elementos de la lista para animar
+    const docItems = document.querySelectorAll('.doc-item');
+
+    try {
+        if (btnAll) {
+            btnAll.disabled = true;
+            btnAll.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+        }
+
+        // Mostrar alerta de procesamiento
+        Swal.fire({
+            title: 'Generando Documentos',
+            html: 'Por favor espere mientras se preparan todos los archivos del préstamo...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Capturar datos ANTES de cerrar el modal
+        const credito = currentCreditoDocumentos || await cargarCreditoCompleto(idCredito);
+        const fechaFirmaInput = document.getElementById('fecha-firma-docs');
+        const fechaFirma = fechaFirmaInput ? fechaFirmaInput.value : null;
+
+        // Cerrar el modal de selección inmediatamente para limpiar la vista
+        cerrarModalDocumentos();
+
+        // Restaurar referencia para que las funciones individuales la usen
+        currentCreditoDocumentos = credito;
+
+        // Preparar promesas para ejecución en paralelo pasando la fecha capturada
+        const promesas = [
+            generarDocumentoSolicitud(idCredito, fechaFirma), 
+            generarDocumentoContrato(idCredito, fechaFirma),
+            generarDocumentoPagare(idCredito, fechaFirma),
+            generarDocumentoTablaAmortizacion(idCredito, fechaFirma)
+        ];
+
+        if (credito?.garante) {
+            promesas.push(generarDocumentoGarantia(idCredito, fechaFirma));
+        }
+
+        // Ejecutar todas de golpe
+        await Promise.all(promesas);
+
+        // Limpiar referencia
+        currentCreditoDocumentos = null;
 
         // Marcar documentos como generados en el crédito
         const supabase = window.getSupabaseClient();
@@ -4461,14 +4565,51 @@ async function generarTodosDocumentos(idCredito) {
             .update({ documentos_generados: true })
             .eq('id_credito', idCredito);
 
-        showToast('Todos los documentos generados exitosamente', 'success');
+        // Mostrar mensaje de éxito detallado con instrucciones
+        await Swal.fire({
+            title: '¡Documentos Generados!',
+            html: `
+                <div style="text-align: left; font-size: 0.95rem; line-height: 1.5;">
+                    <p>Se han generado todos los documentos exitosamente. <b>Alístate para desembolsar el préstamo</b>.</p>
+                    <p style="margin-top: 10px; color: #d32f2f; font-weight: bold;">
+                        <i class="fas fa-exclamation-triangle"></i> IMPORTANTE:
+                    </p>
+                    <p>Recuerda que también tendrás que subir (aparte de los 4 documentos aquí generados):</p>
+                    <ul style="margin-left: 20px;">
+                        <li>Evidencia del socio firmando los documentos.</li>
+                        <li>Evidencia del dinero entregándose (comprobante de transferencia o foto del socio recibiendo el efectivo).</li>
+                    </ul>
+                    <p style="margin-top: 10px; font-style: italic; color: #666;">
+                        Es muy importante para activar el préstamo; de otra forma no podrás hacerlo.
+                    </p>
+                </div>
+            `,
+            icon: 'success',
+            confirmButtonText: 'Aceptar',
+            confirmButtonColor: '#2e7d32',
+            allowOutsideClick: false
+        });
 
         // Refrescar lista de pendientes
         await loadPendientesDesembolso();
 
     } catch (error) {
-        console.error('Error generando documentos:', error);
-        showToast('Error al generar documentos: ' + error.message, 'error');
+        console.error('Error en generación masiva:', error);
+        Swal.fire({
+            title: 'Error',
+            text: 'Hubo un problema al generar algunos documentos. Por favor, intente de nuevo.',
+            icon: 'error',
+            confirmButtonText: 'Entendido'
+        });
+    } finally {
+        // Restaurar botón principal
+        if (btnAll) {
+            btnAll.disabled = false;
+            btnAll.innerHTML = originalBtnAllHtml;
+        }
+        
+        // Quitar clase pulso de los items
+        docItems.forEach(item => item.classList.remove('generating'));
     }
 }
 
@@ -4657,6 +4798,106 @@ function formatearFecha(fechaStr, formato = 'corto') {
         year: 'numeric',
         timeZone: tz
     });
+}
+
+// ==========================================
+// FUNCIÓN DE ANULACIÓN DE CRÉDITO COLOCADO
+// ==========================================
+let anulandoIds = new Set();
+async function anularCreditoColocado(idCredito, codigoCredito) {
+    if (anulandoIds.has(idCredito)) return;
+    
+    try {
+        anulandoIds.add(idCredito);
+        const supabase = window.getSupabaseClient();
+
+        // 1. Obtener datos necesarios para el mensaje y para después
+        const { data: credito, error: errorFetch } = await supabase
+            .from('ic_creditos')
+            .select(`
+                id_solicitud,
+                capital,
+                socio:ic_socios(nombre)
+            `)
+            .eq('id_credito', idCredito)
+            .single();
+
+        if (errorFetch) throw errorFetch;
+
+        const nombreSocio = credito.socio?.nombre || 'Socio Desconocido';
+        const montoFormatted = new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(credito.capital);
+
+        const confirmacion = await showConfirm(
+            `¿Estás seguro que deseas anular el crédito de <b>${nombreSocio}</b> por <b>${montoFormatted}</b>?<br><br>Solo puedes anular un crédito en este paso si de verdad estás seguro que el socio ya no lo quiere, ya que se perderá todo el progreso (documentos, amortización, etc.).`,
+            '⚠️ Advertencia de Anulación',
+            { confirmText: 'Sí, Anular Todo', cancelText: 'No, Mantener', type: 'danger' }
+        );
+
+        if (!confirmacion) {
+            // Cooldown para evitar reabrir por clics residuales
+            setTimeout(() => anulandoIds.delete(idCredito), 300);
+            return;
+        }
+
+        actualizarScreenBlocker('Anulando crédito y revirtiendo cambios...', 10);
+        mostrarScreenBlocker('Preparando anulación...');
+        
+        const idSolicitud = credito.id_solicitud;
+
+        actualizarScreenBlocker('Eliminando registros generados...', 40);
+
+        // 2. Eliminar el crédito. Gracias a ON DELETE CASCADE, esto borrará:
+        // ic_creditos_amortizacion, ic_creditos_ahorro, ic_creditos_documentos, ic_creditos_garantes, ic_creditos_historial
+        const { error: errorDelete } = await supabase
+            .from('ic_creditos')
+            .delete()
+            .eq('id_credito', idCredito);
+
+        if (errorDelete) throw errorDelete;
+
+        actualizarScreenBlocker('Actualizando estado de la solicitud...', 70);
+
+        // 3. Actualizar el estado de la solicitud a 'ANULADA'
+        if (idSolicitud) {
+            const { error: errorSolicitud } = await supabase
+                .from('ic_solicitud_de_credito')
+                .update({ estado: 'ANULADA' })
+                .eq('solicitudid', idSolicitud);
+
+            if (errorSolicitud) throw errorSolicitud;
+            
+            console.log(`✅ Solicitud ${idSolicitud} marcada como ANULADA`);
+        }
+
+        actualizarScreenBlocker('Proceso completado', 100);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        ocultarScreenBlocker();
+
+        showToast(`✅ El crédito de ${nombreSocio} ha sido anulado y sus datos eliminados.`, 'success');
+
+        // Recargar datos
+        if (window.dataCache) {
+            window.dataCache.creditos = null;
+        }
+        
+        // Recargar dashboard si estamos en él
+        if (typeof window.loadDesembolsosPendientes === 'function') {
+            await window.loadDesembolsosPendientes();
+        }
+
+        await loadSolicitudes();
+        await loadPendientesDesembolso();
+
+    } catch (error) {
+        console.error('Error al anular crédito:', error);
+        ocultarScreenBlocker();
+        showToast('Error al anular crédito: ' + error.message, 'error');
+    } finally {
+        // Solo eliminamos aquí si no se canceló previamente (donde ya hay un timeout)
+        if (anulandoIds.has(idCredito)) {
+            setTimeout(() => anulandoIds.delete(idCredito), 300);
+        }
+    }
 }
 
 // ==========================================
@@ -5021,8 +5262,10 @@ window.generarDocumentoPagare = generarDocumentoPagare;
 window.generarDocumentoContrato = generarDocumentoContrato;
 window.generarDocumentoTablaAmortizacion = generarDocumentoTablaAmortizacion;
 window.generarDocumentoGarantia = generarDocumentoGarantia;
+window.generarDocumentoSolicitud = generarDocumentoSolicitud;
 window.generarTodosDocumentos = generarTodosDocumentos;
 window.desembolsarCredito = desembolsarCredito;
+window.anularCreditoColocado = anularCreditoColocado;
 window.prepararSimulacionPDF = prepararSimulacionPDF;
 
 // Exponer función globalmente

@@ -10,6 +10,18 @@ let currentUser = null;
 let currentViewName = null;
 const viewCache = new Map();
 
+// Referencias a elementos del DOM globales
+let mainContent = null;
+let sidebar = null;
+let appLoader = null;
+let appLoaderText = null;
+let logoutBtn = null;
+let userNameDisplay = null;
+let userRoleDisplay = null;
+let userAvatarDisplay = null;
+let homeShortcut = null;
+let loaderCount = 0;
+
 /**
  * Obtiene el usuario actual de forma segura
  * @returns {object|null} Usuario actual o null si no hay sesión
@@ -20,6 +32,48 @@ function getCurrentUser() {
 
 // Exponer globalmente
 window.getCurrentUser = getCurrentUser;
+
+/**
+ * Obtiene los datos unificados del asesor/acreedor para todos los documentos del sistema
+ * Centralizado para evitar inconsistencias entre módulos
+ */
+function getDatosAcreedor() {
+    const user = getCurrentUser();
+    
+    if (!user) {
+        return {
+            nombre: '',
+            institucion: 'INKA CORP',
+            cedula: '',
+            telefono: '',
+            domicilio: '',
+            ciudad: ''
+        };
+    }
+
+    // Buscar WhatsApp en múltiples lugares con prioridad
+    let numWhatsapp = user.whatsapp || user.user_metadata?.whatsapp || user.phone || '';
+    
+    // Limpieza final y validación de strings "falsos"
+    let telefonoFinal = String(numWhatsapp || '').trim();
+    const invalidValues = ['undefined', 'null', '[object object]', '0', 'none'];
+    
+    if (invalidValues.includes(telefonoFinal.toLowerCase())) {
+        telefonoFinal = ''; 
+    }
+    
+    return {
+        nombre: (user.nombre || user.full_name || user.user_metadata?.full_name || '').toUpperCase(),
+        institucion: 'INKA CORP',
+        cedula: user.cedula || '',
+        telefono: telefonoFinal,
+        domicilio: user.direccion || user.domicilio || '',
+        ciudad: user.lugar_asesor || user.ciudad || ''
+    };
+}
+
+// Exponer globalmente
+window.getDatosAcreedor = getDatosAcreedor;
 
 // ==========================================
 // SISTEMA DE CACHÉ PERSISTENTE (localStorage)
@@ -34,12 +88,15 @@ const CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 horas máximo antes de forzar a
 const CACHE_TYPES = [
     'socios',
     'creditos',
+    'creditos_preferenciales',
     'solicitudes',
     'precancelaciones',
     'polizas',
     'ahorros',
     'pagos',
-    'amortizaciones'
+    'amortizaciones',
+    'administrativos',
+    'bancos'
 ];
 
 // Listeners para notificar a vistas cuando el caché se actualiza
@@ -74,11 +131,9 @@ function initCache() {
             const parsed = JSON.parse(stored);
             // Verificar si el caché no es demasiado viejo
             if (parsed.createdAt && (Date.now() - parsed.createdAt) > CACHE_MAX_AGE) {
-                console.log('⚠ Caché expirado (>24h), reiniciando...');
                 window.dataCache = ensureCacheShape(null);
             } else {
                 window.dataCache = ensureCacheShape(parsed);
-                console.log('✓ Caché cargado desde localStorage');
             }
         } else {
             window.dataCache = ensureCacheShape(null);
@@ -125,7 +180,6 @@ function clearCache() {
     localStorage.removeItem(CACHE_KEY);
     // Limpiar también sessionStorage por si acaso
     sessionStorage.removeItem('inkacorp_cache');
-    console.log('✓ Caché limpiado completamente');
 }
 
 // Exponer globalmente
@@ -196,7 +250,6 @@ function notifyCacheUpdate(type, data) {
 
 // Forzar actualización del caché (botón sincronizar)
 async function forceRefreshCache() {
-    console.log('⟳ Forzando actualización del caché...');
     if (!window.dataCache) initCache();
     window.dataCache = ensureCacheShape(window.dataCache);
     for (const type of CACHE_TYPES) {
@@ -317,7 +370,6 @@ async function refreshCacheInBackground() {
 
         // Guardar en localStorage (persistente)
         saveCache();
-        console.log('✓ Caché actualizado en segundo plano');
 
     } catch (error) {
         console.error('Error actualizando caché:', error);
@@ -332,7 +384,6 @@ function startCacheRefresh() {
     window.dataCache = ensureCacheShape(window.dataCache);
 
     // Siempre refrescar en segundo plano al iniciar (pero los datos de caché ya están disponibles)
-    console.log('⟳ Iniciando actualización de caché en segundo plano...');
     refreshCacheInBackground();
 
     // Refrescar cada 5 minutos
@@ -340,22 +391,31 @@ function startCacheRefresh() {
 }
 
 // ==========================================
-// ELEMENTOS DEL DOM
-// ==========================================
-let sidebar, mainContent, logoutBtn;
-let userNameDisplay, userRoleDisplay, userAvatarDisplay;
-let appLoader, appLoaderText;
-let loaderCount = 0;
-
-// ==========================================
 // INICIALIZACIÓN
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
+    // No inicializar si estamos en la carpeta mobile o es la vista móvil
+    if (window.location.pathname.includes('/mobile/') || window.location.pathname.includes('movil.html')) {
+        return;
+    }
+
     initSupabase();
+    
+    // Safety Timeout: Si pasan 15 segundos y no se ha ocultado el locker, forzarlo
+    setTimeout(() => {
+        const locker = document.getElementById('app-screen-locker');
+        if (locker) {
+            console.warn('Safety timeout: Forzando ocultación de screen locker');
+            hideScreenLocker();
+        }
+    }, 15000);
+
     await initApp();
 });
 
 async function initApp() {
+    console.log(`%c INKA CORP - APP VERSION: ${window.APP_VERSION || 'v1.0'} `, 'background: #1e40af; color: #fff; font-weight: bold;');
+    
     // Verificar sesión
     const { isAuthenticated, user } = await checkSession();
 
@@ -377,30 +437,67 @@ async function initApp() {
     userAvatarDisplay = document.getElementById('user-avatar');
     appLoader = document.getElementById('app-loader');
     appLoaderText = document.getElementById('app-loader-text');
+    homeShortcut = document.getElementById('home-shortcut');
 
     // Actualizar UI con datos del usuario
     updateUI();
 
-    // Configurar event listeners
-    setupEventListeners();
-
     // Iniciar caché en segundo plano
     startCacheRefresh();
 
-    // Cargar vista inicial - verificar si hay hash en la URL
-    const hash = window.location.hash.replace('#', '');
-    const validViews = ['dashboard', 'socios', 'solicitud_credito', 'creditos', 'precancelaciones', 'ahorros', 'polizas', 'simulador', 'aportes', 'bancos', 'administrativos'];
-    const initialView = (hash && validViews.includes(hash)) ? hash : 'dashboard';
+    try {
+        // Cargar vista inicial
+        const initialView = getViewFromURL();
+        const stateUrl = initialView === 'dashboard' ? './' : `${initialView}.html`;
+        
+        // Forzar sincronización de historial al cargar para evitar que el navegador defaultée a index.html
+        if (history.replaceState) {
+            history.replaceState({ view: initialView }, '', stateUrl);
+        }
 
-    await loadView(initialView);
+        await loadView(initialView, false);
 
-    // Actualizar navegación activa si hay hash
-    if (hash && validViews.includes(hash)) {
+        // Asegurar estado activo en la navegación
         const navItems = document.querySelectorAll('.nav-item[data-view]');
         navItems.forEach(item => {
-            item.classList.toggle('active', item.dataset.view === hash);
+            item.classList.toggle('active', item.dataset.view === initialView);
         });
+    } catch (error) {
+        console.error("Error durate el inicio de la app:", error);
+    } finally {
+        // Configurar event listeners AL FINAL
+        setupEventListeners();
+
+        // Asegurar que el loader se oculte SIEMPRE
+        setTimeout(() => {
+            if (typeof hideScreenLocker === 'function') hideScreenLocker();
+        }, 100);
     }
+}
+
+/**
+ * Detecta la vista actual basándose en la URL (Pathname o Hash)
+ */
+function getViewFromURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewParam = urlParams.get('view');
+    const hash = window.location.hash.replace('#', '');
+    const validViews = ['dashboard', 'socios', 'socios_edit', 'solicitud_credito', 'creditos', 'creditos_preferenciales', 'precancelaciones', 'ahorros', 'polizas', 'simulador', 'aportes', 'bancos', 'administrativos'];
+
+    // 1. Prioridad: Parámetro URL (?view=creditos) - SOPORTA HARD REFRESH
+    if (viewParam && validViews.includes(viewParam)) return viewParam;
+
+    // 2. Prioridad: Hash (compatibilidad legacy)
+    if (hash && validViews.includes(hash)) return hash;
+
+    // 3. Fallback: Detectar si viene de una URL antigua (.html)
+    const path = window.location.pathname;
+    const lastPart = path.split('/').pop().replace('.html', '');
+    if (lastPart && validViews.includes(lastPart) && lastPart !== 'index') {
+        return lastPart;
+    }
+
+    return 'dashboard';
 }
 
 function updateUI() {
@@ -441,6 +538,23 @@ function applyModuleVisibility() {
 // EVENT LISTENERS
 // ==========================================
 function setupEventListeners() {
+    // Manejo de navegación atrás/adelante del navegador
+    window.addEventListener('popstate', (e) => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewParam = urlParams.get('view');
+        
+        const view = (e.state && e.state.view) ? e.state.view : 
+                     (viewParam ? viewParam : 'dashboard');
+        
+        loadView(view, false);
+        
+        // Actualizar navegación activa
+        const navItems = document.querySelectorAll('.nav-item[data-view]');
+        navItems.forEach(item => {
+            item.classList.toggle('active', item.dataset.view === view);
+        });
+    });
+
     // Logout
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async (e) => {
@@ -457,14 +571,14 @@ function setupEventListeners() {
         item.addEventListener('click', async (e) => {
             e.preventDefault();
             const view = item.dataset.view;
-            await loadView(view);
 
-            // Actualizar estado activo
+            // 1. Feedback inmediato: Cerrar sidebar y marcar activo
+            closeSidebar();
             navItems.forEach(nav => nav.classList.remove('active'));
             item.classList.add('active');
 
-            // Cerrar sidebar al seleccionar vista
-            closeSidebar();
+            // 2. Cargar vista
+            await loadView(view);
         });
     });
 
@@ -479,6 +593,19 @@ function setupEventListeners() {
     if (sidebarOverlay) {
         sidebarOverlay.addEventListener('click', closeSidebar);
     }
+
+    // Home Shortcut
+    const homeBtn = document.getElementById('home-shortcut');
+    if (homeBtn) {
+        homeBtn.addEventListener('click', async () => {
+            // Actualizar navegación activa
+            const navItems = document.querySelectorAll('.nav-item[data-view]');
+            navItems.forEach(item => {
+                item.classList.toggle('active', item.dataset.view === 'dashboard');
+            });
+            await loadView('dashboard');
+        });
+    }
 }
 
 // ==========================================
@@ -488,12 +615,14 @@ function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     const toggle = document.getElementById('sidebar-toggle');
+    const homeBtn = document.getElementById('home-shortcut');
 
     if (sidebar.classList.contains('collapsed')) {
         // Abrir sidebar
         sidebar.classList.remove('collapsed');
         overlay?.classList.add('active');
         toggle?.classList.add('hidden');
+        homeBtn?.classList.add('hidden');
     } else {
         closeSidebar();
     }
@@ -503,10 +632,12 @@ function closeSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     const toggle = document.getElementById('sidebar-toggle');
+    const homeBtn = document.getElementById('home-shortcut');
 
     sidebar?.classList.add('collapsed');
     overlay?.classList.remove('active');
     toggle?.classList.remove('hidden');
+    homeBtn?.classList.remove('hidden');
 }
 
 // Exponer funciones globalmente
@@ -577,7 +708,6 @@ function hideScreenLocker() {
     }
 
     screenLockerRemoved = true;
-    console.log('✓ Screen locker ocultado, app visible');
 }
 
 // Exponer globalmente
@@ -772,11 +902,23 @@ function showConfirm(message, title = '¿Confirmar acción?', options = {}) {
             '</div>';
 
         const closeModal = (result) => {
-            modal.style.animation = 'fadeOut 0.2s ease';
+            // Deshabilitar botones para evitar clics extra durante la animación
+            modal.querySelectorAll('button').forEach(btn => btn.disabled = true);
+            
+            modal.style.animation = 'fadeOut 0.2s ease forwards';
+            
+            // También animar el contenido para que no se vea el "salto"
+            const content = modal.querySelector('div');
+            if (content) content.style.animation = 'scaleOut 0.2s ease forwards';
+
             setTimeout(() => {
                 modal.remove();
+                // Si el contenedor está vacío, lo quitamos
+                if (container && container.childNodes.length === 0) {
+                    container.remove();
+                }
                 resolve(result);
-            }, 200);
+            }, 180); // Un pelín antes que la animación para suavidad
         };
 
         modal.querySelector('.custom-confirm-btn').onclick = () => closeModal(true);
@@ -799,95 +941,135 @@ window.hideLoader = hideAppLoader; // Fix for external modules
 // ==========================================
 // CARGA DE VISTAS
 // ==========================================
-async function loadView(viewName) {
-    try {
-        // Si es la misma vista, no recargar
-        if (currentViewName === viewName) return;
+let isViewLoading = false;
+let pendingViewName = null;
 
-        // Limpiar encabezados fijos (Sticky Headers) si existen
+async function loadView(viewName, shouldPushState = true) {
+    if (!mainContent) mainContent = document.getElementById('main-content');
+    if (!homeShortcut) homeShortcut = document.getElementById('home-shortcut');
+
+    // 1. Actualizar URL y Título INMEDIATAMENTE para sensación de rapidez
+    // Usamos la ruta base absoluta de la carpeta actual para evitar anidamientos extraños
+    const basePath = window.location.pathname.includes('index.html') ? 'index.html' : './';
+    const url = viewName === 'dashboard' ? basePath : `${basePath}?view=${viewName}`;
+    const viewTitle = viewName.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    document.title = `INKA CORP - ${viewTitle === 'Dashboard' ? 'Panel' : viewTitle}`;
+
+    if (shouldPushState) {
+        const currentSearch = window.location.search;
+        const isCorrectUrl = currentSearch === `?view=${viewName}` || (viewName === 'dashboard' && !currentSearch);
+        
+        // Si la URL actual tiene algo como 'creditos.html', forzamos limpieza a la raíz
+        if (!isCorrectUrl || window.location.pathname.endsWith('.html') && !window.location.pathname.endsWith('index.html')) {
+            history.pushState({ view: viewName }, '', url);
+        }
+    } else {
+        // En sincronización (shouldPushState = false), aseguramos que el estado y la URL coincidan
+        history.replaceState({ view: viewName }, '', url);
+    }
+
+    // Togle mostrar shortcut de inicio (ocultar en dashboard)
+    if (homeShortcut) {
+        if (viewName === 'dashboard') {
+            homeShortcut.classList.add('hidden');
+        } else {
+            homeShortcut.classList.remove('hidden');
+        }
+    }
+
+    // Si ya estamos cargando ESTA misma vista, no hacer nada
+    if (isViewLoading && pendingViewName === viewName) return;
+    // Si ya es la vista actual, no hacer nada
+    if (currentViewName === viewName) return;
+
+    isViewLoading = true;
+    pendingViewName = viewName;
+    
+    try {
+        // Limpiar contenido inmediatamente para dar feedback de que algo está pasando
+        if (mainContent) mainContent.innerHTML = '';
+
+        // 1. Limpiar recursos de la vista anterior
         if (typeof cleanupStickyHeaders === 'function') cleanupStickyHeaders();
         if (typeof cleanupAhorrosStickyHeaders === 'function') cleanupAhorrosStickyHeaders();
         if (typeof cleanupPolizasModule === 'function') cleanupPolizasModule();
 
-        beginLoading('Cargando módulo...');
-
-        // Cargar HTML de la vista
+        // 2. Cargar HTML de la vista
         const response = await fetch(`views/${viewName}.html`);
-        if (!response.ok) throw new Error(`Vista "${viewName}" no encontrada`);
+        
+        if (!response.ok) {
+            console.warn(`Vista "${viewName}" no encontrada. Redirigiendo a dashboard.`);
+            // Si la vista no existe, evitar bucle infinito y forzar dashboard
+            if (viewName !== 'dashboard') {
+                isViewLoading = false;
+                loadView('dashboard', true);
+            }
+            return;
+        }
+        
         const html = await response.text();
 
-        // Insertar en el contenedor principal
         if (mainContent) {
             mainContent.innerHTML = html;
         }
 
-        // Inicializar módulo según la vista
+        // 4. Inicializar módulo
         switch (viewName) {
             case 'dashboard':
-                initDashboardView();
+                await initDashboardView();
                 break;
             case 'socios':
-                if (typeof initSociosModule === 'function') {
-                    await initSociosModule();
-                }
+                if (typeof initSociosModule === 'function') await initSociosModule();
+                break;
+            case 'socios_edit':
+                if (typeof initSociosEditModule === 'function') await initSociosEditModule();
                 break;
             case 'solicitud_credito':
-                if (typeof initSolicitudCreditoModule === 'function') {
-                    await initSolicitudCreditoModule();
-                }
+                if (typeof initSolicitudCreditoModule === 'function') await initSolicitudCreditoModule();
                 break;
             case 'creditos':
-                if (typeof initCreditosModule === 'function') {
-                    await initCreditosModule();
-                }
+                if (typeof initCreditosModule === 'function') await initCreditosModule();
+                break;
+            case 'creditos_preferenciales':
+                if (typeof initCreditosPreferencialesModule === 'function') await initCreditosPreferencialesModule();
                 break;
             case 'precancelaciones':
-                if (typeof initPrecancelacionesModule === 'function') {
-                    await initPrecancelacionesModule();
-                }
+                if (typeof initPrecancelacionesModule === 'function') await initPrecancelacionesModule();
                 break;
             case 'ahorros':
-                if (typeof initAhorrosModule === 'function') {
-                    await initAhorrosModule();
-                }
+                if (typeof initAhorrosModule === 'function') await initAhorrosModule();
                 break;
             case 'polizas':
-                if (typeof initPolizasModule === 'function') {
-                    await initPolizasModule();
-                }
+                if (typeof initPolizasModule === 'function') await initPolizasModule();
                 break;
             case 'simulador':
-                if (typeof initSimuladorModule === 'function') {
-                    await initSimuladorModule();
-                }
+                if (typeof initSimuladorModule === 'function') await initSimuladorModule();
                 break;
             case 'aportes':
-                if (typeof initAportesModule === 'function') {
-                    await initAportesModule();
-                }
+                if (typeof initAportesModule === 'function') await initAportesModule();
                 break;
             case 'bancos':
-                if (typeof initBancosModule === 'function') {
-                    await initBancosModule();
-                }
-                break;
-            case 'bancos':
-                if (typeof initBancosModule === 'function') {
-                    await initBancosModule();
-                }
+                if (typeof initBancosModule === 'function') await initBancosModule();
                 break;
             case 'administrativos':
-                if (typeof initAdministrativosModule === 'function') {
-                    await initAdministrativosModule();
-                }
+                if (typeof initAdministrativosModule === 'function') await initAdministrativosModule();
                 break;
         }
 
         currentViewName = viewName;
-        endLoading();
+        pendingViewName = null;
+        isViewLoading = false;
+        hideAppLoader();
+
+        // Ocultar el Screen Locker de carga inicial si aún está visible
+        if (typeof hideScreenLocker === 'function') {
+            hideScreenLocker();
+        }
 
     } catch (error) {
-        endLoading();
+        hideAppLoader();
+        isViewLoading = false;
+        pendingViewName = null;
         console.error('Error loading view:', error);
         if (mainContent) {
             mainContent.innerHTML = `
@@ -909,9 +1091,7 @@ async function loadView(viewName) {
 // ==========================================
 // DASHBOARD VIEW
 // ==========================================
-function initDashboardView() {
-    console.log('Inicializando Dashboard...');
-
+async function initDashboardView() {
     // Ocultar screen locker y mostrar app-layout (solo en la primera carga)
     hideScreenLocker();
     // Event listeners para las cards de módulos
@@ -919,21 +1099,29 @@ function initDashboardView() {
     moduleCards.forEach(card => {
         card.addEventListener('click', async () => {
             const view = card.dataset.view;
-            await loadView(view);
 
             // Actualizar navegación activa
             const navItems = document.querySelectorAll('.nav-item[data-view]');
             navItems.forEach(item => {
                 item.classList.toggle('active', item.dataset.view === view);
             });
+
+            await loadView(view);
         });
     });
 
     // Actualizar saludo
     updateDashboardGreeting();
 
-    // Cargar estadísticas
-    loadDashboardStats();
+    // Cargar estadísticas con un timeout para no bloquear indefinidamente
+    try {
+        await Promise.race([
+            loadDashboardStats(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout cargando stats')), 10000))
+        ]);
+    } catch (err) {
+        console.warn('Dashboard stats tardaron demasiado o fallaron:', err);
+    }
 }
 
 // Actualizar saludo del dashboard
@@ -956,8 +1144,6 @@ function updateDashboardGreeting() {
 
 // Cargar estadísticas del dashboard
 async function loadDashboardStats() {
-    console.log('Cargando estadísticas del dashboard...');
-
     try {
         const supabase = window.getSupabaseClient();
         if (!supabase) return;
@@ -978,8 +1164,10 @@ async function loadDashboardStats() {
         // Procesar Créditos
         if (!resCreditos.error && resCreditos.data) {
             const creditos = resCreditos.data;
-            const activos = creditos.filter(c => c.estado_credito === 'ACTIVO');
-            const morosos = creditos.filter(c => c.estado_credito === 'MOROSO');
+            // Excluir créditos PAUSADOS - no cuentan como morosos ni activos
+            const creditosSinPausados = creditos.filter(c => c.estado_credito !== 'PAUSADO');
+            const activos = creditosSinPausados.filter(c => c.estado_credito === 'ACTIVO');
+            const morosos = creditosSinPausados.filter(c => c.estado_credito === 'MOROSO');
             const totalActivos = activos.length + morosos.length;
 
             const elActivos = document.getElementById('dash-creditos-activos');
@@ -989,7 +1177,7 @@ async function loadDashboardStats() {
             const elMora = document.getElementById('dash-porcentaje-mora');
             if (elMora) elMora.textContent = `${porcentajeMora}%`;
 
-            const cartera = creditos
+            const cartera = creditosSinPausados
                 .filter(c => c.estado_credito === 'ACTIVO' || c.estado_credito === 'MOROSO')
                 .reduce((sum, c) => sum + parseFloat(c.capital || 0), 0);
 
@@ -1000,8 +1188,8 @@ async function loadDashboardStats() {
         // 2. Cargar socios morosos (Prioridad alta, usa caché)
         await loadSociosMorosos();
 
-        // 3. Cargar alertas dinámicas en segundo plano (No bloquea el dashboard)
-        loadDashboardPriorityAlerts();
+        // 3. Cargar alertas dinámicas
+        await loadDashboardPriorityAlerts();
 
     } catch (error) {
         console.error('Error loading dashboard stats:', error);
@@ -1043,7 +1231,6 @@ async function loadSociosMorosos() {
 
     // Si hay caché válido, renderizar inmediatamente
     if (cacheIsValid) {
-        console.log('📦 Cargando morosos desde caché');
         renderMorososDashboard(window.dataCache.morosos, container, countBadge);
 
         // Actualizar en segundo plano
@@ -1157,9 +1344,6 @@ async function fetchMorososFromDB(container, countBadge, isBackgroundUpdate) {
             if (!window.dataCache.lastUpdate) window.dataCache.lastUpdate = {};
             window.dataCache.lastUpdate.morosos = Date.now();
             if (window.saveCacheToDisk) window.saveCacheToDisk();
-            if (isBackgroundUpdate) {
-                console.log('✓ Caché de morosos actualizado en segundo plano');
-            }
         }
 
         // Renderizar
@@ -1432,11 +1616,14 @@ async function loadDesembolsosPendientes() {
                         </div>
                     </div>
                     <div class="desembolso-actions">
-                        <button class="desembolso-btn desembolso-btn-docs" onclick="abrirModalDocumentosCredito('${credito.id_credito}')">
+                        <button class="desembolso-btn desembolso-btn-docs" onclick="event.stopPropagation(); abrirModalDocumentosCredito('${credito.id_credito}')">
                             <i class="fas fa-file-pdf"></i> Documentos
                         </button>
-                        <button class="desembolso-btn desembolso-btn-desembolsar" onclick="desembolsarCredito('${credito.id_credito}')">
+                        <button class="desembolso-btn desembolso-btn-desembolsar" onclick="event.stopPropagation(); desembolsarCredito('${credito.id_credito}')">
                             <i class="fas fa-money-bill-wave"></i> Desembolsar
+                        </button>
+                        <button class="desembolso-btn-anular" onclick="event.stopPropagation(); anularCreditoColocado('${credito.id_credito}', '${credito.codigo_credito}')" title="Anular Crédito">
+                            <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
                 </div>
@@ -1444,8 +1631,6 @@ async function loadDesembolsosPendientes() {
         }).join('');
 
         updatePriorityAlertsLayout();
-
-        console.log('✅ Desembolsos pendientes:', creditosPendientes.length);
 
     } catch (error) {
         console.error('Error loading desembolsos pendientes:', error);
@@ -1547,7 +1732,7 @@ function renderMorososDashboard(morosos, container, countBadge) {
             const moraColor = getMoraColor(moroso.diasMora);
 
             return `
-                        <div class="moroso-item" data-socio-id="${moroso.socioId}" onclick="navigateToSocio('${moroso.socioId}')" style="border-left: 3px solid ${moraColor};">
+                        <div class="moroso-item" data-socio-id="${moroso.socioId}" onclick="navigateToCredito('${moroso.creditoId}')" style="border-left: 3px solid ${moraColor};">
                             <div class="moroso-avatar" style="background: linear-gradient(135deg, ${moraColor} 0%, rgba(220,38,38,0.8) 100%);">${getInitials(moroso.nombre)}</div>
                             <div class="moroso-info">
                                 <div class="moroso-nombre">${moroso.nombre}</div>
@@ -1574,6 +1759,14 @@ function navigateToSocio(socioId) {
     loadView('socios');
     sessionStorage.setItem('showSocioDetails', socioId);
 }
+window.navigateToSocio = navigateToSocio;
+
+// Navegar a un crédito específico desde el dashboard
+function navigateToCredito(creditoId) {
+    loadView('creditos');
+    sessionStorage.setItem('showCreditoDetails', creditoId);
+}
+window.navigateToCredito = navigateToCredito;
 
 // Cargar próximos vencimientos (legacy - mantenido por compatibilidad)
 async function loadProximosVencimientos() {
@@ -1799,3 +1992,6 @@ function debounce(func, wait) {
         timeout = setTimeout(later, wait);
     };
 }
+
+// Exponer funciones globalmente
+window.loadDesembolsosPendientes = loadDesembolsosPendientes;

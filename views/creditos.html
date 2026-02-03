@@ -1,43 +1,43 @@
 <!-- Vista Administración de Créditos - INKA CORP -->
 <div class="content-wrapper creditos-wrapper">
-    <!-- Hero Header del Módulo -->
-    <div class="creditos-hero">
-        <div class="hero-bg-creditos"></div>
-        <div class="hero-content-creditos">
-            <div class="hero-icon-creditos">
+    <!-- Hero Header del Módulo (Usa "standard-hero" para consistencia global) -->
+    <div class="standard-hero creditos-hero">
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+            <div class="hero-icon">
                 <i class="fas fa-hand-holding-usd"></i>
             </div>
-            <h1 class="hero-title-creditos">Créditos</h1>
-            <p class="hero-subtitle-creditos">Gestión y monitoreo</p>
+            <h1 class="hero-title">Créditos</h1>
+            <p class="hero-subtitle">Gestión y monitoreo</p>
         </div>
 
         <!-- Stats integrados en hero -->
-        <div class="creditos-hero-stats">
-            <div class="creditos-hero-stat">
-                <span class="creditos-hero-value" id="stat-activos">0</span>
-                <span class="creditos-hero-label">Activos</span>
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <span class="hero-value" id="stat-activos">0</span>
+                <span class="hero-label">Activos</span>
             </div>
-            <div class="creditos-hero-stat warning mora-stat">
+            <div class="hero-stat warning mora-stat">
                 <div class="mora-display">
                     <div class="mora-item">
                         <span class="mora-small-label">CANT.</span>
-                        <span class="creditos-hero-value" id="stat-mora">0</span>
+                        <span class="hero-value" id="stat-mora">0</span>
                     </div>
                     <span class="mora-separator">|</span>
                     <div class="mora-item">
-                        <span class="creditos-hero-value" id="stat-mora-pct">0%</span>
+                        <span class="hero-value" id="stat-mora-pct">0%</span>
                         <span class="mora-small-label">PORC.</span>
                     </div>
                 </div>
-                <span class="creditos-hero-label">Mora</span>
+                <span class="hero-label">Mora</span>
             </div>
-            <div class="creditos-hero-stat highlight">
-                <span class="creditos-hero-value" id="stat-cartera">$0</span>
-                <span class="creditos-hero-label">Cartera</span>
+            <div class="hero-stat highlight">
+                <span class="hero-value" id="stat-cartera">$0</span>
+                <span class="hero-label">Cartera</span>
             </div>
-            <div class="creditos-hero-stat">
-                <span class="creditos-hero-value" id="stat-ahorro">$0</span>
-                <span class="creditos-hero-label">Ahorro</span>
+            <div class="hero-stat">
+                <span class="hero-value" id="stat-ahorro">$0</span>
+                <span class="hero-label">Ahorro</span>
             </div>
         </div>
     </div>
@@ -367,7 +367,13 @@
                         </div>
 
                         <div class="summary-total-box">
-                            <span class="total-label">TOTAL A PAGAR</span>
+                            <div style="display: flex; flex-direction: column;">
+                                <span class="total-label">TOTAL A PAGAR</span>
+                                <label class="convenio-checkbox-container" style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: #a0aec0; cursor: pointer; margin-top: 4px;">
+                                    <input type="checkbox" id="pago-convenio-toggle" style="width: 14px; height: 14px; accent-color: var(--primary);">
+                                    CONVENIO DE PAGO
+                                </label>
+                            </div>
                             <span class="total-amount" id="pago-total-final">$0.00</span>
                         </div>
                     </div>
@@ -375,7 +381,7 @@
                     <!-- Comprobante Section -->
                     <div class="attachment-section">
                         <label class="section-label" for="pago-comprobante-camera"><i class="fas fa-camera"></i>
-                            COMPROBANTE</label>
+                            COMPROBANTE <span style="color: #ef4444;">*</span></label>
                         <div class="comprobante-drop-zone" id="pago-comprobante-dropzone">
                             <div id="pago-upload-controls" class="upload-controls">
                                 <button type="button" class="upload-btn camera"
@@ -418,6 +424,9 @@
                                 <span class="prefix">$</span>
                                 <input type="number" id="pago-monto" class="input-light highlight-text" step="0.01">
                             </div>
+                            <div id="pago-monto-min-hint" style="display: none; font-size: 0.75rem; color: var(--primary); margin-top: 4px; font-weight: 600;">
+                                <i class="fas fa-info-circle"></i> Mínimo permitido (Base): <span id="pago-monto-min-valor">$0.00</span>
+                            </div>
                         </div>
                     </div>
 
@@ -433,11 +442,11 @@
                         </select>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label-light" for="pago-referencia"><i class="fas fa-hashtag"></i>
-                            Referencia</label>
-                        <input type="text" id="pago-referencia" class="input-light" placeholder="# de transacción">
-                    </div>
+                        <div class="form-group">
+                            <label class="form-label-light" for="pago-referencia"><i class="fas fa-hashtag"></i>
+                                Referencia *</label>
+                            <input type="text" id="pago-referencia" class="input-light" placeholder="# de transacción">
+                        </div>
 
                     <div class="form-group">
                         <label class="form-label-light" for="pago-observaciones"><i class="fas fa-pen"></i>
@@ -457,6 +466,34 @@
             </button>
         </div>
     </div>
+</div>
+
+<!-- Modal Ver Detalle de Pago -->
+<div id="ver-pago-detalle-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card" style="max-width: 500px;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+            <h2 class="modal-title" style="color: white;">
+                <i class="fas fa-receipt"></i> Detalle de Pago
+            </h2>
+            <button class="modal-close" data-close-modal>
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div id="pago-detalle-content">
+                <!-- Se llena dinámicamente -->
+                <div class="loading-placeholder">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Cargando detalle...</span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" data-close-modal>Cerrar</button>
+        </div>
+    </div>
+</div>
 
 <style>
     /* Estilos para Mora con Cantidad y Porcentaje */

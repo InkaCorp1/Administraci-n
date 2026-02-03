@@ -31,8 +31,6 @@ const PAIS_CONFIG_PRECANC = {
 // INICIALIZACIÓN
 // ==========================================
 async function initPrecancelacionesModule() {
-    console.log('Inicializando módulo de Precancelaciones...');
-
     // Cargar datos (desde caché si está disponible)
     await loadCreditosPrecancelables();
     await loadHistorialPrecancelaciones();
@@ -145,7 +143,6 @@ function needsPrecancSync() {
 // Sincronización en segundo plano
 function syncPrecancelacionesBackground() {
     // Sincronizar silenciosamente en segundo plano siempre
-    console.log('🔄 Sincronizando precancelaciones en segundo plano...');
     setTimeout(async () => {
         await loadCreditosPrecancelablesFromDB(true); // silently = true
         await loadHistorialFromDB(true);
@@ -178,7 +175,6 @@ async function refreshPrecancelaciones() {
 async function loadCreditosPrecancelables() {
     // 1. PRIMERO: Carga instantánea desde caché global de créditos
     if (window.hasCacheData && window.hasCacheData('creditos') && allCreditosPrecancelables.length === 0) {
-        console.log('⚡ Carga instantánea de precancelaciones desde caché de créditos');
 
         // Filtrar créditos activos y morosos del caché global
         const creditosCache = window.dataCache.creditos.filter(c =>
@@ -195,7 +191,6 @@ async function loadCreditosPrecancelables() {
 
     // Si ya hay datos en memoria, usarlos
     if (allCreditosPrecancelables.length > 0) {
-        console.log('⚡ Usando datos en memoria para precancelaciones');
         filteredCreditosPrecancelables = [...allCreditosPrecancelables];
         updatePrecancelacionesStats();
         renderPrecancelacionesSections();
@@ -265,12 +260,6 @@ async function loadCreditosPrecancelablesFromDB(silently = false) {
         updatePrecancelacionesStats();
         renderPrecancelacionesSections();
 
-        if (!silently) {
-            console.log(`✓ Cargados ${creditos.length} créditos precancelables`);
-        } else {
-            console.log(`🔄 Sincronizados ${creditos.length} créditos en segundo plano`);
-        }
-
     } catch (error) {
         console.error('Error al cargar créditos:', error);
         if (!silently) {
@@ -320,10 +309,6 @@ async function loadHistorialFromDB(silently = false) {
         // Renderizar si estamos en el tab de historial
         if (currentTab === 'historial') {
             renderHistorialSections();
-        }
-
-        if (!silently) {
-            console.log(`✓ Cargadas ${historialPrecancelaciones.length} precancelaciones del historial`);
         }
 
     } catch (error) {

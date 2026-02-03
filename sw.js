@@ -3,96 +3,121 @@
  * PWA Offline Support
  */
 
-const CACHE_NAME = 'inkacorp-v1';
-const STATIC_CACHE = 'inkacorp-static-v1';
+const CACHE_NAME = 'inkacorp-v21';
+const STATIC_CACHE = 'inkacorp-static-v21';
 
-// Archivos esenciales para cachear
+// Archivos esenciales para cachear (Shell de la app)
 const ESSENTIAL_FILES = [
-    '/',
-    '/index.html',
-    '/login.html',
-    '/movil.html',
-    '/css/styles.css',
-    '/css/creditos.css',
-    '/css/polizas.css',
-    '/css/socios.css',
-    '/css/solicitud_credito.css',
-    '/css/simulador.css',
-    '/js/config.js',
-    '/js/auth.js',
-    '/js/app.js',
-    '/js/image-utils.js',
-    '/manifest.json',
-    '/img/icon-192.png',
-    '/img/icon-512.png'
+    './',
+    'index.html',
+    'mobile/index.html',
+    '404.html',
+    'css/styles.css',
+    'js/config.js',
+    'js/auth.js',
+    'js/app.js',
+    'js/image-utils.js',
+    'manifest.json',
+    'favicon.ico'
+];
+
+// Módulos JS que se cargan bajo demanda pero son importantes
+const MODULE_FILES = [
+    'js/modules/socios.js',
+    'js/modules/socios_edit.js',
+    'js/modules/solicitud_credito.js',
+    'js/modules/creditos.js',
+    'js/modules/creditos_preferenciales.js',
+    'js/modules/polizas.js',
+    'js/modules/precancelaciones.js',
+    'js/modules/ahorros.js',
+    'js/modules/simulador.js',
+    'js/modules/aportes.js',
+    'js/modules/bancos.js',
+    'js/modules/administrativos.js'
 ];
 
 // Instalación del Service Worker
 self.addEventListener('install', (event) => {
-    console.log('[SW] Installing Service Worker...');
+    console.log('[SW] Installing v21...');
+    const allFiles = [...ESSENTIAL_FILES, ...MODULE_FILES];
     event.waitUntil(
         caches.open(STATIC_CACHE)
             .then((cache) => {
-                console.log('[SW] Caching essential files...');
-                return cache.addAll(ESSENTIAL_FILES);
+                const fetchOptions = { cache: 'reload' };
+                return Promise.all(
+                    allFiles.map(url => {
+                        return fetch(url, fetchOptions).then(response => {
+                            if (!response.ok) throw new Error(`Falló carga de ${url}`);
+                            return cache.put(url, response);
+                        });
+                    })
+                );
             })
-            .catch((error) => {
-                console.error('[SW] Failed to cache:', error);
-            })
+            .then(() => self.skipWaiting())
     );
-    self.skipWaiting();
 });
 
 // Activación - limpiar caches antiguos
 self.addEventListener('activate', (event) => {
-    console.log('[SW] Activating Service Worker...');
+    console.log('[SW] Activating v21...');
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames
-                    .filter((name) => name !== STATIC_CACHE && name !== CACHE_NAME)
-                    .map((name) => {
-                        console.log('[SW] Deleting old cache:', name);
-                        return caches.delete(name);
-                    })
+                    .filter((name) => name.startsWith('inkacorp-') && name !== STATIC_CACHE && name !== CACHE_NAME)
+                    .map((name) => caches.delete(name))
             );
-        })
+        }).then(() => self.clients.claim())
     );
-    self.clients.claim();
 });
 
-// Estrategia: Network First, fallback to Cache
+// Estrategia: Network First con Fallback SPA Robustecido
 self.addEventListener('fetch', (event) => {
-    // Ignorar requests que no sean GET
     if (event.request.method !== 'GET') return;
 
-    // Ignorar requests a CDNs externos (Supabase, FontAwesome, etc.)
     const url = new URL(event.request.url);
-    if (url.origin !== location.origin) return;
+
+    // Ignorar peticiones a APIs externas (Supabase, Google Drive, etc)
+    if (url.hostname.includes('supabase') ||
+        url.hostname.includes('flagcdn') ||
+        url.hostname.includes('googleusercontent.com') ||
+        url.hostname.includes('drive.google.com')) return;
+
+    const isNavigation = event.request.mode === 'navigate' ||
+        (event.request.method === 'GET' && event.request.headers.get('accept')?.includes('text/html'));
 
     event.respondWith(
         fetch(event.request)
             .then((response) => {
-                // Si la respuesta es válida, guardar en cache
-                if (response.status === 200) {
-                    const responseClone = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, responseClone);
+                // Manejo de 404 para soporte SPA (Virtual URLs como /bancos.html)
+                if (response.status === 404 && isNavigation) {
+                    console.log('[SW] SPA Navigation Fallback for:', url.pathname);
+                    const isMobileRoute = url.pathname.includes('/mobile/') || url.pathname.includes('/m-');
+                    const fallbackFile = isMobileRoute ? 'mobile/index.html' : 'index.html';
+
+                    return caches.match(fallbackFile).then(cachedResponse => {
+                        return cachedResponse || caches.match('index.html') || response;
                     });
+                }
+
+                // Cachear recursos estáticos exitosos del mismo origen
+                if (response.status === 200 && response.type === 'basic') {
+                    const responseClone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
                 }
                 return response;
             })
-            .catch(() => {
-                // Si falla la red, intentar desde cache
-                return caches.match(event.request).then((cachedResponse) => {
-                    if (cachedResponse) {
-                        return cachedResponse;
+            .catch((err) => {
+                // Fallback Offline
+                return caches.match(event.request).then(cached => {
+                    if (cached) return cached;
+
+                    if (isNavigation) {
+                        const isMobileRoute = url.pathname.includes('/mobile/') || url.pathname.includes('/m-');
+                        const fallbackFile = isMobileRoute ? 'mobile/index.html' : 'index.html';
+                        return caches.match(fallbackFile);
                     }
-                    // Si no está en cache y es una página HTML, mostrar offline page
-                    if (event.request.headers.get('accept')?.includes('text/html')) {
-                        return caches.match('/index.html');
-                    }
-                    return new Response('Offline', { status: 503 });
                 });
             })
     );

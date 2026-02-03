@@ -14,7 +14,6 @@ let amortizacionData = [];
 // INICIALIZACIÓN
 // ==========================================
 function initSimuladorModule() {
-    console.log('📊 Inicializando módulo Simulador...');
     setupSimuladorListeners();
     setDefaultDates();
     updateFormForType('credito');
@@ -1138,8 +1137,6 @@ function showToast(message, type = 'info') {
     // Fallback con alert
     if (type === 'error') {
         alert('Error: ' + message);
-    } else {
-        console.log(message);
     }
 }
 

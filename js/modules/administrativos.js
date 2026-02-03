@@ -11,7 +11,12 @@ let admImageFile = null;
  * Inicializa el módulo de Gastos Administrativos
  */
 async function initAdministrativosModule() {
-    console.log('Inicializando Módulo Gastos Administrativos...');
+
+    const tableBody = document.getElementById('adm-table-body');
+    if (!tableBody) {
+        console.warn('Vista de Gastos Administrativos no encontrada en el DOM.');
+        return;
+    }
 
     // Configurar event listeners
     setupAdmEventListeners();
@@ -107,7 +112,20 @@ async function loadAdmData(forceRefresh = false) {
     const tableBody = document.getElementById('adm-table-body');
     const emptyMsg = document.getElementById('adm-empty');
 
-    if (tableBody) {
+    if (!tableBody) return; // Evitar errores si la vista cambió rápido
+
+    // PASO 1: Usar caché si está disponible y es válido
+    if (!forceRefresh && window.hasCacheData && window.hasCacheData('administrativos')) {
+        gastosAdmData = window.getCacheData('administrativos');
+        renderAdmDataImmediate();
+        
+        // Si el caché es reciente, no re-consultar
+        if (window.isCacheValid && window.isCacheValid('administrativos')) {
+            return;
+        }
+    }
+
+    if (!gastosAdmData.length) {
         tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 3rem;"><div class="spinner" style="margin: 0 auto 1rem;"></div><p>Cargando gastos...</p></td></tr>';
     }
 
@@ -124,32 +142,47 @@ async function loadAdmData(forceRefresh = false) {
 
         gastosAdmData = data || [];
 
-        // Determinar vista inicial (Mes actual por defecto si no hay filtros activos)
-        const filterDesde = document.getElementById('filter-adm-desde');
-        const filterHasta = document.getElementById('filter-adm-hasta');
-        const btnVerTodo = document.getElementById('btn-adm-ver-todo');
-
-        if (filterDesde && !filterDesde.value && filterHasta && !filterHasta.value) {
-            // Mostrar siempre los últimos 6 registros por defecto para evitar que se vea vacío
-            renderAdmTable(gastosAdmData.slice(0, 6));
-            if (btnVerTodo) btnVerTodo.classList.remove('hidden');
-        } else {
-            filterAdmByDateRange(); // Aplicar filtros si existen
+        // Guardar en caché global
+        if (window.setCacheData) {
+            window.setCacheData('administrativos', gastosAdmData);
         }
 
-        updateAdmStats(gastosAdmData);
-
-        if (gastosAdmData.length === 0) {
-            if (emptyMsg) emptyMsg.classList.remove('hidden');
-        } else {
-            if (emptyMsg) emptyMsg.classList.add('hidden');
-        }
+        renderAdmDataImmediate();
 
     } catch (error) {
         console.error('Error al cargar gastos administrativos:', error);
         if (tableBody) {
             tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Error: ${error.message}</td></tr>`;
         }
+    }
+}
+
+/**
+ * Función auxiliar para renderizar sin repetir código
+ */
+function renderAdmDataImmediate() {
+    const filterDesde = document.getElementById('filter-adm-desde');
+    const filterHasta = document.getElementById('filter-adm-hasta');
+    const btnVerTodo = document.getElementById('btn-adm-ver-todo');
+    const emptyMsg = document.getElementById('adm-empty');
+
+    if (filterDesde && filterHasta) {
+        if (!filterDesde.value && !filterHasta.value) {
+            renderAdmTable(gastosAdmData.slice(0, 6));
+            if (btnVerTodo) btnVerTodo.classList.remove('hidden');
+        } else {
+            filterAdmByDateRange();
+        }
+    } else {
+        renderAdmTable(gastosAdmData.slice(0, 6));
+    }
+
+    updateAdmStats(gastosAdmData);
+
+    if (gastosAdmData.length === 0) {
+        if (emptyMsg) emptyMsg.classList.remove('hidden');
+    } else {
+        if (emptyMsg) emptyMsg.classList.add('hidden');
     }
 }
 
@@ -248,9 +281,14 @@ function filterByCurrentMonth(data) {
  * Filtra los gastos por rango de fechas
  */
 function filterAdmByDateRange() {
-    const desde = document.getElementById('filter-adm-desde').value;
-    const hasta = document.getElementById('filter-adm-hasta').value;
+    const elDesde = document.getElementById('filter-adm-desde');
+    const elHasta = document.getElementById('filter-adm-hasta');
     const btnVerTodo = document.getElementById('btn-adm-ver-todo');
+
+    if (!elDesde || !elHasta) return;
+
+    const desde = elDesde.value;
+    const hasta = elHasta.value;
 
     if (!desde && !hasta) {
         // Por defecto mostrar los últimos 6
