@@ -54,11 +54,17 @@
                 const viewParam = urlParams.get('view');
                 const path = window.location.pathname;
                 const lastPart = path.split('/').pop().replace('.html', '');
-                
-                // Mapear de PC a Móvil
-                const validViews = ['socios', 'creditos', 'ahorros', 'polizas', 'simulador', 'aportes', 'bancos', 'administrativos'];
-                const viewFromPath = viewParam || (lastPart && validViews.includes(lastPart) && lastPart !== 'index' ? lastPart : '');
-                
+
+                // Mapear de PC a Móvil (SOLO módulos con versión móvil oficial)
+                const mobileSupportedViews = ['creditos', 'desembolsos', 'aportes', 'bancos', 'simulador'];
+                const viewFromPath = viewParam || (lastPart && mobileSupportedViews.includes(lastPart) && lastPart !== 'index' ? lastPart : '');
+
+                // Si el módulo no tiene versión móvil, NO redirigir (mantener vista PC)
+                if ((viewParam || lastPart) && !mobileSupportedViews.includes(viewFromPath || lastPart)) {
+                    console.log('[DeviceCheck] Módulo no disponible en móvil, manteniendo vista PC.');
+                    return false;
+                }
+
                 // Redirigir a la CARPETA mobile (raíz de esa carpeta) para evitar 404
                 const mobileUrl = viewFromPath ? `mobile/?view=${viewFromPath}` : 'mobile/';
                 window.location.href = mobileUrl;
@@ -95,7 +101,8 @@
             <i class="fas fa-bars"></i>
         </button>
 
-        <button id="home-shortcut" class="home-shortcut-btn hidden" title="Ir al Dashboard" onclick="loadView('dashboard')">
+        <button id="home-shortcut" class="home-shortcut-btn hidden" title="Ir al Dashboard"
+            onclick="loadView('dashboard')">
             <i class="fas fa-home"></i>
         </button>
 
@@ -175,7 +182,8 @@
                     <span>Situación Bancaria</span>
                 </a>
 
-                <a href="administrativos.html" class="nav-item" data-view="administrativos" data-module="administrativos">
+                <a href="administrativos.html" class="nav-item" data-view="administrativos"
+                    data-module="administrativos">
                     <i class="fas fa-file-invoice-dollar"></i>
                     <span>Gastos Administrativos</span>
                 </a>
@@ -241,7 +249,7 @@
                 navigator.serviceWorker.register('sw.js')
                     .then((registration) => {
                         console.log('[PWA] Service Worker registrado:', registration.scope);
-                        
+
                         // Detectar actualizaciones del Service Worker
                         registration.onupdatefound = () => {
                             const installingWorker = registration.installing;
