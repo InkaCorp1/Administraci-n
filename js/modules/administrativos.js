@@ -407,7 +407,9 @@ async function handleAdmFormSubmit(e) {
         const id_gastos = document.getElementById('adm-id-gasto').value || 'adm-' + Date.now().toString(16);
         const monto = parseFloat(document.getElementById('adm-monto').value);
         const motivo = document.getElementById('adm-motivo').value;
-        const fecha = document.getElementById('adm-fecha').value;
+        // Obtener la fecha del input y mantenerla en formato YYYY-MM-DD sin conversión de zona horaria
+        const fechaInput = document.getElementById('adm-fecha').value;
+        const fecha = fechaInput; // Se guarda directamente en formato DATE de PostgreSQL
         let fotografia = document.getElementById('adm-fotografia-url').value;
 
         // 1. Subir imagen si hay una seleccionada

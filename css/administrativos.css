@@ -154,6 +154,46 @@
     box-shadow: 0 0 0 4px rgba(11, 78, 50, 0.1);
 }
 
+/* Barra de búsqueda estilo toolbar (como pólizas) */
+.administrativos-wrapper .toolbar-search {
+    display: flex;
+    align-items: center;
+    background: var(--gray-700);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    padding: 0 0.75rem;
+    height: 38px;
+    flex: 1;
+    min-width: 200px;
+    max-width: 320px;
+    transition: all 0.2s ease;
+}
+
+.administrativos-wrapper .toolbar-search:focus-within {
+    border-color: #0b4e32;
+    box-shadow: 0 0 0 2px rgba(11, 78, 50, 0.1);
+}
+
+.administrativos-wrapper .toolbar-search i {
+    color: var(--gray-400);
+    margin-right: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.administrativos-wrapper .search-input-toolbar {
+    background: transparent;
+    border: none;
+    color: var(--white);
+    font-size: 0.9rem;
+    width: 100%;
+    outline: none;
+}
+
+.administrativos-wrapper .search-input-toolbar::placeholder {
+    color: var(--gray-500);
+}
+
+
 /* Estilos de tabla premium para gastos */
 .adm-table-container {
     background: white;
