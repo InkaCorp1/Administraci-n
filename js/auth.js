@@ -96,13 +96,41 @@ async function logout() {
     if (error) {
         console.error('Error al cerrar sesión:', error);
     }
-    // Limpiar caché al cerrar sesión
-    if (typeof window.clearCache === 'function') {
-        window.clearCache();
+    // Limpiar almacenamiento local
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    const isMobile = window.location.pathname.includes('/mobile/');
+    window.location.href = isMobile ? '../login.html' : 'login.html';
+}
+
+/**
+ * Fuerza la actualización de la aplicación limpiando caché y almacenamiento.
+ */
+async function forceAppUpdate() {
+    console.log('[UPDATE] Iniciando limpieza total...');
+    
+    // 1. Limpiar todos los Caches del Service Worker
+    if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
     }
-    // Redirigir siempre al login después de intentar cerrar sesión
-    const redirectPath = window.location.pathname.includes('/mobile/') ? '../login.html' : 'login.html';
-    window.location.href = redirectPath;
+
+    // 2. Limpiar Storage
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // 3. Cerrar sesión en Supabase si es posible
+    try {
+        const sb = getSupabaseClient();
+        if (sb) await sb.auth.signOut();
+    } catch (e) {}
+
+    // 4. Redirigir al login forzando recarga desde red
+    const isMobile = window.location.pathname.includes('/mobile/');
+    const loginUrl = isMobile ? '../login.html' : 'login.html';
+    
+    window.location.href = loginUrl + '?update=' + Date.now();
 }
 
 /**

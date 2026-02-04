@@ -238,6 +238,301 @@ body {
     margin: 0 auto 1rem;
 }
 
+/* ==========================================
+   REPORTE DE CRÉDITOS (MODAL CORPORATIVO)
+   ========================================== */
+
+/* Bloqueo de scroll mejorado para coincidir con el sistema lite */
+body.swal2-shown {
+    overflow: hidden !important;
+    height: 100vh !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+}
+
+/* Contenedor SWAL para simular el modal-overlay de la app */
+.swal-mobile-container {
+    padding: 0 !important;
+    background: #ffffff !important; 
+    display: block !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: -webkit-fill-available !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 99999 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+}
+
+.swal-mobile-container::before {
+    display: none !important; 
+}
+
+.report-full-modal {
+    width: 100vw !important;
+    height: 100vh !important;
+    height: -webkit-fill-available !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    max-width: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    overflow: hidden !important; /* Evitar desbordamiento de la X */
+}
+
+/* Borde corporativo superior REAL sin gaps de pixeles */
+.report-full-modal::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: var(--primary);
+    z-index: 2000; /* Asegurar que esté sobre todo */
+}
+
+.report-full-modal .swal2-title {
+    padding: 1.5rem 4rem 1.25rem 1.5rem !important; /* Espacio para X a la DERECHA */
+    background: white !important;
+    color: var(--text-primary) !important;
+    font-size: 1.1rem !important;
+    font-weight: 800 !important;
+    text-align: left !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    position: sticky !important; /* Pegado arriba */
+    top: 6px !important;
+    min-height: 70px;
+    z-index: 1000 !important;
+    margin-top: 6px !important; /* Espacio para el borde verde */
+}
+
+.report-full-modal .swal2-title i {
+    color: var(--primary);
+}
+
+.report-full-modal .swal2-html-container {
+    flex: 1 !important;
+    margin: 0 !important;
+    padding: 1.25rem !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    text-align: left !important;
+}
+
+.report-full-modal .swal2-actions {
+    padding: 1.25rem !important;
+    background: white !important;
+    border-top: 1px solid #f1f5f9 !important;
+    margin: 0 !important;
+    width: 100%;
+    display: flex !important;
+    flex-direction: column !important; /* Apilar botones */
+    gap: 12px;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.03);
+    z-index: 10;
+}
+
+.report-full-modal .swal2-actions button {
+    height: 54px !important;
+    width: 100% !important; /* Ancho completo */
+    margin: 0 !important;
+    font-size: 0.9rem !important;
+    font-weight: 700 !important;
+    border-radius: 14px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.report-full-modal .swal2-close {
+    background: #f1f5f9 !important;
+    border: none !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #64748b !important;
+    font-size: 1.1rem !important;
+    position: absolute !important; 
+    top: 41px !important; /* (70/2) + 6px */
+    right: 12px !important; /* FIJO A LA DERECHA */
+    left: auto !important;
+    transform: translateY(-50%) !important;
+    margin: 0 !important;
+    z-index: 3000 !important; /* POR ENCIMA DE TODO */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+    cursor: pointer !important;
+    pointer-events: auto !important; 
+    outline: none !important;
+}
+
+.report-full-modal .swal2-close:active {
+    background: #e2e8f0 !important;
+    transform: translateY(-50%) scale(0.9) !important;
+}
+
+.export-options-container {
+    padding: 0;
+}
+
+.report-mode-selector {
+    display: flex;
+    background: white;
+    border-radius: 14px;
+    padding: 5px;
+    margin-bottom: 20px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+}
+
+.report-mode-btn {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 0.8rem;
+    font-weight: 800;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: 0.5px;
+}
+
+.report-mode-btn.active {
+    color: #ffffff;
+    background: var(--primary);
+    box-shadow: 0 4px 12px rgba(11, 78, 50, 0.25);
+}
+
+.report-mode-btn i {
+    font-size: 1rem;
+}
+
+.lite-swal-close {
+    background: #f1f5f9 !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s !important;
+}
+
+.lite-swal-close:hover {
+    background: #e2e8f0 !important;
+    color: #ef4444 !important;
+}
+
+.filter-group-corporate {
+    margin-bottom: 20px;
+}
+
+.export-label-corporate {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.export-label-corporate i {
+    margin-right: 6px;
+    color: var(--gold);
+}
+
+.export-selector-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap; 
+    padding: 4px 2px;
+}
+
+.export-selector-btn {
+    flex: 1 1 calc(33.33% - 8px); /* 3 COLUMNAS para aprovechar mejor el espacio */
+    min-width: 90px;
+    padding: 10px 4px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.export-selector-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 2px 6px rgba(11, 78, 50, 0.15);
+}
+
+.hidden-filter {
+    display: none !important;
+}
+
+#report-btn-mobile {
+    background: var(--primary-light);
+    color: white;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+#report-btn-mobile:active {
+    transform: scale(0.9);
+}
+
+/* Ajustes de scrollbar para selectores */
+.export-selector-group::-webkit-scrollbar {
+    height: 3px;
+}
+.export-selector-group::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+/* Animaciones */
+@keyframes fadeInSlide {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#mob-section-general, #mob-section-cobros {
+    animation: fadeInSlide 0.3s ease-out;
+}
+
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
@@ -498,8 +793,48 @@ body.searching-mode .mobile-header {
     padding: 0.75rem 1rem;
     border: 1px solid #e2e8f0;
     background: #ffffff;
+    border-radius: 12px;
+}
+
+/* Choice buttons for image upload */
+.lite-upload-choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    width: 100%;
+}
+
+.lite-upload-btn-choice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 1.25rem 0.75rem;
+    border-radius: 16px;
+    border: 1.5px solid #e2e8f0;
+    background: white;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lite-upload-btn-choice:active {
+    transform: scale(0.94);
+    background: #f8fafc;
+    border-color: var(--primary);
+}
+
+.lite-upload-btn-choice i {
+    font-size: 1.8rem;
+    color: var(--primary);
+}
+
+.lite-input {
     font-size: 1rem;
-    color: var(--text-main);
+    color: var(--text-primary);
     transition: all 0.2s ease;
     outline: none;
     -webkit-appearance: none;

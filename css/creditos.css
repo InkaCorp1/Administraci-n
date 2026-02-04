@@ -304,6 +304,53 @@
 }
 
 /* Responsive adjustments for toolbar */
+/* Estilos para el selector de tipo de reporte (Slider/Segmented Control) */
+.report-mode-selector {
+    display: flex;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 25px;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.report-mode-btn {
+    flex: 1;
+    padding: 10px 15px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    z-index: 2;
+}
+
+.report-mode-btn.active {
+    color: #ffffff;
+    background: #0E5936;
+    box-shadow: 0 4px 12px rgba(14, 89, 54, 0.3);
+}
+
+.report-mode-btn i {
+    font-size: 1rem;
+}
+
+.export-options-container .filter-group-corporate {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.export-options-container .hidden-filter {
+    display: none !important;
+}
+
 @media (max-width: 1200px) {
     .table-actions {
         gap: 0.75rem;
@@ -1288,13 +1335,67 @@
     /* El thead NO es sticky, solo el header de sección */
 }
 
+/* Estilos para selectores de exportación (Botoneras) */
+.export-selector-group {
+    display: flex;
+    gap: 0.25rem;
+    background: var(--gray-800) !important;
+    padding: 0.35rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--border-color);
+    margin-bottom: 5px;
+}
+
+.export-selector-btn {
+    flex: 1;
+    padding: 0.65rem 0.5rem;
+    border: none;
+    background: transparent;
+    color: var(--gray-400) !important;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.export-selector-btn:hover {
+    color: var(--primary) !important;
+    background: rgba(11, 78, 50, 0.05);
+}
+
+.export-selector-btn.active {
+    background: var(--primary) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.export-label-corporate {
+    display: block; 
+    font-weight: 700; 
+    margin-bottom: 8px; 
+    color: var(--gray-300);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
 .creditos-section-table tbody tr {
     transition: background 0.15s ease;
     cursor: pointer;
 }
 
+/* Fondos sutiles por estado de fila */
+.credito-row.row-status-activo { background-color: rgba(16, 185, 129, 0.03); }
+.credito-row.row-status-moroso { background-color: rgba(239, 68, 68, 0.05); }
+.credito-row.row-status-pausado { background-color: rgba(245, 158, 11, 0.03); }
+.credito-row.row-status-pendiente { background-color: rgba(139, 92, 246, 0.03); }
+.credito-row.row-status-precancelado { background-color: rgba(59, 130, 246, 0.03); }
+.credito-row.row-status-cancelado { background-color: rgba(107, 114, 128, 0.02); }
+
 .creditos-section-table tbody tr:hover {
-    background: rgba(212, 175, 55, 0.05);
+    background: rgba(212, 175, 55, 0.08) !important;
 }
 
 .creditos-section-table tbody td {

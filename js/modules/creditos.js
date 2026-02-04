@@ -19,11 +19,11 @@ let selectedComprobanteFile = null; // Archivo de comprobante de pago selecciona
 
 // Mapeo de países a códigos ISO, nombres y URLs de banderas
 const PAIS_CONFIG = {
-    'ECUADOR': { code: 'EC', name: 'Ecuador', flag: 'https://flagcdn.com/w20/ec.png' },
-    'ESTADOS UNIDOS': { code: 'US', name: 'USA', flag: 'https://flagcdn.com/w20/us.png' },
-    'USA': { code: 'US', name: 'USA', flag: 'https://flagcdn.com/w20/us.png' },
-    'PERÚ': { code: 'PE', name: 'Perú', flag: 'https://flagcdn.com/w20/pe.png' },
-    'PERU': { code: 'PE', name: 'Perú', flag: 'https://flagcdn.com/w20/pe.png' }
+    'ECUADOR': { code: 'ECU', name: 'Ecuador', flag: 'https://flagcdn.com/w20/ec.png' },
+    'ESTADOS UNIDOS': { code: 'USA', name: 'USA', flag: 'https://flagcdn.com/w20/us.png' },
+    'USA': { code: 'USA', name: 'USA', flag: 'https://flagcdn.com/w20/us.png' },
+    'PERÚ': { code: 'PEN', name: 'Perú', flag: 'https://flagcdn.com/w20/pe.png' },
+    'PERU': { code: 'PEN', name: 'Perú', flag: 'https://flagcdn.com/w20/pe.png' }
 };
 
 // ==========================================
@@ -464,12 +464,10 @@ function filterCreditos() {
 
         // Filtro por búsqueda
         if (searchTerm) {
-            const codigo = (credito.codigo_credito || '').toLowerCase();
             const nombre = (credito.socio?.nombre || '').toLowerCase();
             const cedula = (credito.socio?.cedula || '').toLowerCase();
 
-            if (!codigo.includes(searchTerm) &&
-                !nombre.includes(searchTerm) &&
+            if (!nombre.includes(searchTerm) &&
                 !cedula.includes(searchTerm)) {
                 return false;
             }
@@ -626,12 +624,12 @@ async function refreshCreditosCache() {
 
 // Configuración de estados para secciones
 const ESTADO_CONFIG = {
-    'ACTIVO': { icon: 'fa-check-circle', color: '#10B981', label: 'Créditos Activos', bgColor: 'rgba(16, 185, 129, 0.15)' },
-    'MOROSO': { icon: 'fa-exclamation-triangle', color: '#EF4444', label: 'Créditos en Mora', bgColor: 'rgba(239, 68, 68, 0.15)' },
-    'PAUSADO': { icon: 'fa-pause-circle', color: '#F59E0B', label: 'Créditos Pausados', bgColor: 'rgba(245, 158, 11, 0.15)' },
-    'PRECANCELADO': { icon: 'fa-calendar-check', color: '#3B82F6', label: 'Créditos Precancelados', bgColor: 'rgba(59, 130, 246, 0.15)' },
-    'CANCELADO': { icon: 'fa-flag-checkered', color: '#6B7280', label: 'Créditos Cancelados', bgColor: 'rgba(107, 114, 128, 0.15)' },
-    'PENDIENTE': { icon: 'fa-clock', color: '#8B5CF6', label: 'Créditos Pendientes', bgColor: 'rgba(139, 92, 246, 0.15)' }
+    'ACTIVO': { icon: 'fa-check-circle', color: '#10B981', label: 'CARTERA ACTIVA', bgColor: 'rgba(16, 185, 129, 0.15)' },
+    'MOROSO': { icon: 'fa-exclamation-triangle', color: '#EF4444', label: 'CARTERA EN MORA', bgColor: 'rgba(239, 68, 68, 0.15)' },
+    'PAUSADO': { icon: 'fa-pause-circle', color: '#F59E0B', label: 'CRÉDITOS PAUSADOS', bgColor: 'rgba(245, 158, 11, 0.15)' },
+    'PRECANCELADO': { icon: 'fa-calendar-check', color: '#3B82F6', label: 'CRÉDITOS PRECANCELADOS', bgColor: 'rgba(59, 130, 246, 0.15)' },
+    'CANCELADO': { icon: 'fa-flag-checkered', color: '#6B7280', label: 'CRÉDITOS FINALIZADOS', bgColor: 'rgba(107, 114, 128, 0.15)' },
+    'PENDIENTE': { icon: 'fa-clock', color: '#8B5CF6', label: 'POR APROBAR', bgColor: 'rgba(139, 92, 246, 0.15)' }
 };
 
 // Orden de prioridad para mostrar secciones
@@ -702,24 +700,24 @@ function renderEstadoSection(estado, creditos, isSingleSection) {
 
     return `
         <div class="creditos-section" data-estado="${estado}">
-            <div class="section-sticky-header" style="--section-color: ${config.color}; --section-bg: ${config.bgColor};">
+            <div class="section-sticky-header" style="--section-color: ${config.color}; --section-bg: ${config.bgColor}; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-left: 4px solid ${config.color};">
                 <div class="section-header-content">
-                    <i class="fas ${config.icon}" style="color: ${config.color};"></i>
-                    <span class="section-title">${config.label}</span>
-                    <span class="section-count" style="background: ${config.bgColor}; color: ${config.color};">${creditos.length}</span>
+                    <i class="fas ${config.icon}" style="color: ${config.color}; text-shadow: 0 2px 4px rgba(0,0,0,0.1);"></i>
+                    <span class="section-title" style="text-shadow: 0 1px 2px rgba(0,0,0,0.1);">${config.label}</span>
+                    <span class="section-count" style="background: ${config.color}; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">${creditos.length}</span>
                 </div>
             </div>
             <div class="section-table-container">
                 <table class="creditos-section-table">
                     <thead>
                         <tr>
-                            <th>Código</th>
                             <th class="col-socio">Socio</th>
                             <th class="col-capital text-right">Capital</th>
                             <th class="text-right">Cuota</th>
                             <th class="text-center">País</th>
                             <th class="text-center">Pagadas</th>
                             <th class="text-center">Próx. Pago</th>
+                            <th class="text-center">Estado</th>
                             <th class="text-center">Acciones</th>
                         </tr>
                     </thead>
@@ -738,12 +736,13 @@ function renderCreditoRow(credito) {
     const pais = credito.socio?.paisresidencia || '';
     const paisFlag = getPaisFlag(pais);
     const paisCode = getPaisCode(pais);
+    const estadoBadge = getEstadoBadgeCredito(credito.estado_credito);
+    
+    // Clase de estado para fondo sutil
+    const statusClass = credito.estado_credito ? `row-status-${credito.estado_credito.toLowerCase()}` : '';
 
     return `
-        <tr class="credito-row" data-credito-id="${credito.id_credito}" onclick="viewCredito('${credito.id_credito}')">
-            <td>
-                <span class="codigo-credito">${credito.codigo_credito}</span>
-            </td>
+        <tr class="credito-row ${statusClass}" data-credito-id="${credito.id_credito}" onclick="viewCredito('${credito.id_credito}')">
             <td class="col-socio">
                 <div class="socio-info">
                     <span class="socio-nombre">${credito.socio?.nombre || 'N/A'}</span>
@@ -753,12 +752,16 @@ function renderCreditoRow(credito) {
             <td class="col-capital text-right">${formatMoney(credito.capital)}</td>
             <td class="text-right">${formatMoney(credito.cuota_con_ahorro)}</td>
             <td class="col-pais text-center">
-                ${paisFlag ? `<img src="${paisFlag}" alt="${paisCode}" class="pais-flag-img" title="${pais}">` : '-'}
+                <div class="pais-container-row">
+                    ${paisFlag ? `<img src="${paisFlag}" alt="${paisCode}" class="pais-flag-img-row">` : ''}
+                    <span class="pais-code-row">${paisCode}</span>
+                </div>
             </td>
             <td class="col-pagadas text-center">
                 <span class="progress-badge">${progreso}</span>
             </td>
             <td class="col-prox-pago text-center">${proximoPago}</td>
+            <td class="text-center">${estadoBadge}</td>
             <td class="text-center">
                 <button class="btn-icon btn-ver-credito" onclick="event.stopPropagation(); viewCredito('${credito.id_credito}', this)" title="Ver detalle">
                     <i class="fas fa-eye"></i>
@@ -796,6 +799,23 @@ function getPaisCode(pais) {
     return config ? config.code : pais.substring(0, 2).toUpperCase();
 }
 
+/**
+ * Formatea una fecha en formato "13 mar 2026"
+ */
+function formatDateMedium(date) {
+    if (!date) return '-';
+    // Asegurarnos de tener un objeto Date válido
+    const d = typeof date === 'string' ? parseDate(date) : new Date(date);
+    if (!d || isNaN(d.getTime())) return '-';
+    
+    const day = d.getDate();
+    const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear();
+    
+    return `${day} ${month} ${year}`;
+}
+
 function getProximoPago(credito) {
     // Estados sin próximo pago
     const estadosSinPago = ['CANCELADO', 'PRECANCELADO', 'PAUSADO'];
@@ -807,27 +827,40 @@ function getProximoPago(credito) {
     const fechaBase = parseDate(credito.fecha_primer_pago);
     if (!fechaBase) return '<span class="text-muted">-</span>';
 
-    fechaBase.setMonth(fechaBase.getMonth() + (credito.cuotas_pagadas || 0));
+    // Crear una copia para evitar mutar el original si fuera necesario
+    const fechaProx = new Date(fechaBase);
+    fechaProx.setMonth(fechaProx.getMonth() + (credito.cuotas_pagadas || 0));
 
     const hoy = new Date();
-    const diasRestantes = Math.ceil((fechaBase - hoy) / (1000 * 60 * 60 * 24));
+    // Normalizar hoy a medianoche para comparar solo días
+    hoy.setHours(0, 0, 0, 0);
+    const fechaComp = new Date(fechaProx);
+    fechaComp.setHours(0, 0, 0, 0);
+
+    const diffTime = fechaComp - hoy;
+    const diasRestantes = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    const dateStr = formatDateMedium(fechaProx);
 
     if (diasRestantes < 0) {
-        return `<span class="text-danger">Vencido (${Math.abs(diasRestantes)} días)</span>`;
+        return `<div class="pago-status"><span class="text-danger" style="font-weight: 800;">Vencido ${Math.abs(diasRestantes)}d</span><br><small class="text-muted">${dateStr}</small></div>`;
+    } else if (diasRestantes === 0) {
+        return `<div class="pago-status"><span class="text-warning" style="font-weight: 800;">Paga Hoy</span><br><small class="text-muted">${dateStr}</small></div>`;
     } else if (diasRestantes <= 5) {
-        return `<span class="text-warning">${formatDateShort(fechaBase)}</span>`;
+        return `<div class="pago-status"><span class="text-warning" style="font-weight: 800;">En ${diasRestantes}d</span><br><small class="text-muted">${dateStr}</small></div>`;
     }
 
-    return formatDateShort(fechaBase);
+    return `<span class="text-date">${dateStr}</span>`;
 }
 
 function getEstadoBadgeCredito(estado) {
     const badges = {
-        'ACTIVO': '<span class="badge badge-activo">Activo</span>',
-        'MOROSO': '<span class="badge badge-moroso">Moroso</span>',
-        'CANCELADO': '<span class="badge badge-cancelado">Cancelado</span>',
-        'PRECANCELADO': '<span class="badge badge-precancelado">Precancelado</span>',
-        'PENDIENTE': '<span class="badge badge-pendiente">Pendiente</span>'
+        'ACTIVO': '<span class="badge-activo">ACTIVO</span>',
+        'MOROSO': '<span class="badge-moroso">MOROSO</span>',
+        'CANCELADO': '<span class="badge-cancelado">CANCELADO</span>',
+        'PRECANCELADO': '<span class="badge-precancelado">PRECANCELADO</span>',
+        'PAUSADO': '<span class="badge-pausado">PAUSADO</span>',
+        'PENDIENTE': '<span class="badge-pendiente">PENDIENTE</span>'
     };
     return badges[estado] || `<span class="badge">${estado}</span>`;
 }
@@ -2880,4 +2913,655 @@ window.generateReceiptCanvas = generateReceiptCanvas;
 window.generateNoticeCanvas = generateNoticeCanvas;
 window.sendPaymentWebhook = sendPaymentWebhook;
 window.sendOwnerWebhook = sendOwnerWebhook;
+
+/* ==========================================
+   REPORTES Y EXPORTACIÓN (ESTILO CORPORATIVO)
+   ========================================== */
+
+/**
+ * Abre el configurador de reportes con filtros (PC)
+ */
+/**
+ * Abre el configurador de reportes con filtros (PC)
+ */
+window.openExportCreditosModal = async function() {
+    // 1. Obtener lista de usuarios activos para el filtro "Cobrados por"
+    let collectors = [];
+    try {
+        const supabase = window.getSupabaseClient();
+        const { data } = await supabase.from('ic_users').select('id, nombre').eq('activo', true).order('nombre');
+        collectors = data || [];
+    } catch (e) {
+        console.warn('No se pudieron cargar usuarios para el reporte:', e);
+    }
+
+    // 2. Generar HTML para el selector de meses (Últimos 12 meses)
+    const now = new Date();
+    const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    let monthsHtml = `<button class="export-selector-btn active" data-value="todos" style="flex: 0 0 calc(33.33% - 5px);">TODOS</button>`;
+    for (let i = 0; i < 11; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const label = `${monthNames[d.getMonth()].toUpperCase()} ${d.getFullYear().toString().substring(2)}`;
+        const value = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+        monthsHtml += `<button class="export-selector-btn" data-value="${value}" style="flex: 0 0 calc(33.33% - 5px);">${label}</button>`;
+    }
+
+    // 3. Generar HTML para el selector de cobradores
+    let usersHtml = `<button class="export-selector-btn active" data-value="todos" style="flex: 0 0 calc(50% - 5px);">TODOS</button>`;
+    collectors.forEach(u => {
+        const shortName = u.nombre.split(' ')[0].toUpperCase();
+        usersHtml += `<button class="export-selector-btn" data-value="${u.id}" style="flex: 0 0 calc(50% - 5px);">${shortName}</button>`;
+    });
+
+    Swal.fire({
+        title: 'Reportes de Créditos',
+        width: '600px',
+        html: `
+            <div class="export-options-container" style="text-align: left; padding: 5px;">
+                <!-- Selector de Modo de Reporte (Slider) -->
+                <div class="report-mode-selector">
+                    <button class="report-mode-btn active" data-mode="general">
+                        <i class="fas fa-file-invoice-dollar"></i>REPORTE GENERAL
+                    </button>
+                    <button class="report-mode-btn" data-mode="cobros">
+                        <i class="fas fa-hand-holding-usd"></i>REPORTE DE COBROS
+                    </button>
+                </div>
+
+                <p id="export-mode-desc" style="margin-bottom: 20px; color: #94a3b8; font-size: 0.9rem;">
+                    Visualice el inventario actual de la cartera con saldos y estados.
+                </p>
+                
+                <!-- Contenedor General (Filtros Cartera) -->
+                <div id="section-general">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <!-- Estado -->
+                        <div class="filter-group-corporate">
+                            <label class="export-label-corporate">
+                                <i class="fas fa-filter" style="margin-right: 8px; color: var(--gold);"></i>Estado de Cartera
+                            </label>
+                            <div class="export-selector-group" id="export-selector-estado" style="flex-wrap: wrap;">
+                                <button class="export-selector-btn active" data-value="todos">TODOS</button>
+                                <button class="export-selector-btn" data-value="ACTIVO">ACTIVOS</button>
+                                <button class="export-selector-btn" data-value="MOROSO">MORA</button>
+                                <button class="export-selector-btn" data-value="PAUSADO">PAUSA</button>
+                                <button class="export-selector-btn" data-value="PENDIENTE">PEND.</button>
+                                <button class="export-selector-btn" data-value="CANCELADO">CANC.</button>
+                            </div>
+                        </div>
+
+                        <!-- País -->
+                        <div class="filter-group-corporate">
+                            <label class="export-label-corporate">
+                                <i class="fas fa-globe" style="margin-right: 8px; color: var(--gold);"></i>País de Residencia
+                            </label>
+                            <div class="export-selector-group" id="export-selector-pais" style="flex-wrap: wrap;">
+                                <button class="export-selector-btn active" data-value="todos">TODOS</button>
+                                <button class="export-selector-btn" data-value="ECUADOR">ECU</button>
+                                <button class="export-selector-btn" data-value="USA">USA</button>
+                                <button class="export-selector-btn" data-value="PERU">PEN</button>
+                                <button class="export-selector-btn" data-value="ESPAÑA">ESP</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Criterio de Orden -->
+                    <div class="filter-group-corporate" style="margin-top: 20px;">
+                        <label class="export-label-corporate">
+                            <i class="fas fa-sort-amount-down" style="margin-right: 8px; color: var(--gold);"></i>Criterio de Orden
+                        </label>
+                        <div class="export-selector-group" id="export-selector-order">
+                            <button class="export-selector-btn active" data-value="socio">ORDENADO POR SOCIO</button>
+                            <button class="export-selector-btn" data-value="monto">POR MONTO MAYOR</button>
+                            <button class="export-selector-btn" data-value="estado">POR ESTADO</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contenedor Cobros (Filtros Recaudación) -->
+                <div id="section-cobros" class="hidden-filter">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <!-- Cobrados en el Mes -->
+                        <div class="filter-group-corporate">
+                            <label class="export-label-corporate">
+                                <i class="fas fa-calendar-check" style="margin-right: 8px; color: var(--gold);"></i>Cobrados en el Mes
+                            </label>
+                            <div class="export-selector-group" id="export-selector-mes" style="flex-wrap: wrap; max-height: 200px; overflow-y: auto; padding: 5px; background: rgba(0,0,0,0.1); border-radius: 8px;">
+                                ${monthsHtml}
+                            </div>
+                        </div>
+
+                        <!-- Cobrados Por -->
+                        <div class="filter-group-corporate">
+                            <label class="export-label-corporate">
+                                <i class="fas fa-user-tie" style="margin-right: 8px; color: var(--gold);"></i>Cobrado Por (Usuario)
+                            </label>
+                            <div class="export-selector-group" id="export-selector-cobrador" style="flex-wrap: wrap; max-height: 200px; overflow-y: auto; padding: 5px; background: rgba(0,0,0,0.1); border-radius: 8px;">
+                                ${usersHtml}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-file-pdf" style="margin-right: 8px;"></i>Generar Reporte',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#0E5936',
+        cancelButtonColor: '#64748b',
+        focusConfirm: false,
+        didOpen: () => {
+            // Lógica del Selector de Modo (Slider)
+            const modeBtns = document.querySelectorAll('.report-mode-btn');
+            const secGeneral = document.getElementById('section-general');
+            const secCobros = document.getElementById('section-cobros');
+            const descMode = document.getElementById('export-mode-desc');
+
+            modeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    modeBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const mode = btn.dataset.mode;
+
+                    if (mode === 'general') {
+                        secGeneral.classList.remove('hidden-filter');
+                        secCobros.classList.add('hidden-filter');
+                        descMode.innerText = 'Visualice el inventario actual de la cartera con saldos y estados.';
+                    } else {
+                        secGeneral.classList.add('hidden-filter');
+                        secCobros.classList.remove('hidden-filter');
+                        descMode.innerText = 'Muestra el detalle de pagos recaudados por mes y usuario.';
+                    }
+                });
+            });
+
+            // Configurar eventos de los botones (Multi-selección)
+            const multiGroups = ['estado', 'pais', 'mes', 'cobrador'];
+            multiGroups.forEach(groupId => {
+                const container = document.getElementById(`export-selector-${groupId}`);
+                if (!container) return;
+                const buttons = container.querySelectorAll('.export-selector-btn');
+                
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const val = btn.dataset.value;
+                        if (val === 'todos') {
+                            buttons.forEach(b => b.classList.remove('active'));
+                            btn.classList.add('active');
+                        } else {
+                            const todosBtn = container.querySelector('[data-value="todos"]');
+                            if (todosBtn) todosBtn.classList.remove('active');
+                            btn.classList.toggle('active');
+                            
+                            const activeCount = container.querySelectorAll('.export-selector-btn.active').length;
+                            if (activeCount === 0 && todosBtn) {
+                                todosBtn.classList.add('active');
+                            }
+                        }
+                    });
+                });
+            });
+
+            // Single select para Orden
+            const orderContainer = document.getElementById('export-selector-order');
+            const orderButtons = orderContainer.querySelectorAll('.export-selector-btn');
+            orderButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    orderButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+        },
+        preConfirm: () => {
+            const getActiveValues = (id) => {
+                const container = document.getElementById(`export-selector-${id}`);
+                if (!container) return 'todos';
+                const active = Array.from(container.querySelectorAll('.export-selector-btn.active'))
+                                    .map(btn => btn.dataset.value);
+                return active.includes('todos') ? 'todos' : active;
+            };
+
+            return {
+                reportType: document.querySelector('.report-mode-btn.active').dataset.mode,
+                estado: getActiveValues('estado'),
+                pais: getActiveValues('pais'),
+                mes: getActiveValues('mes'),
+                cobrador: getActiveValues('cobrador'),
+                order: document.getElementById('export-selector-order').querySelector('.export-selector-btn.active').dataset.value
+            }
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            processCreditosExport(result.value);
+        }
+    });
+};
+
+/**
+ * Filtra y ordena los datos para el reporte
+ */
+async function processCreditosExport(filters) {
+    // Si el usuario eligió reporte de cobros, usamos esa lógica
+    if (filters.reportType === 'cobros') {
+        return await processCobrosExport(filters);
+    }
+
+    let listToExport = [...allCreditos];
+
+    // 1. Filtro por Estado (Multi-selección)
+    if (filters.estado !== 'todos') {
+        const estados = Array.isArray(filters.estado) ? filters.estado : [filters.estado];
+        listToExport = listToExport.filter(c => estados.includes(c.estado_credito || 'PENDIENTE'));
+    }
+
+    // 2. Filtro por País (Multi-selección)
+    if (filters.pais !== 'todos') {
+        const paises = Array.isArray(filters.pais) ? filters.pais : [filters.pais];
+        listToExport = listToExport.filter(c => {
+            const paisNorm = normalizePais(c.socio?.paisresidencia);
+            return paises.includes(paisNorm);
+        });
+    }
+
+    // 3. Ordenamiento
+    switch (filters.order) {
+        case 'codigo':
+            listToExport.sort((a, b) => (a.codigo_credito || '').localeCompare(b.codigo_credito || ''));
+            break;
+        case 'socio':
+            listToExport.sort((a, b) => (a.socio?.nombre || '').localeCompare(b.socio?.nombre || ''));
+            break;
+        case 'monto':
+            listToExport.sort((a, b) => (parseFloat(b.capital || 0) - parseFloat(a.capital || 0)));
+            break;
+        case 'estado':
+            const priority = { 'MOROSO': 1, 'ACTIVO': 2, 'PAUSADO': 3, 'PENDIENTE': 4, 'PRECANCELADO': 5, 'CANCELADO': 6 };
+            listToExport.sort((a, b) => (priority[a.estado_credito] || 99) - (priority[b.estado_credito] || 99));
+            break;
+    }
+
+    if (listToExport.length === 0) {
+        Swal.fire('Sin resultados', 'No se encontraron créditos que coincidan con estos filtros.', 'info');
+        return;
+    }
+
+    generateCreditosPDF(listToExport, filters);
+}
+
+/**
+ * Lógica específica para el Reporte de Cobros (Modo Horizontal)
+ */
+async function processCobrosExport(filters) {
+    try {
+        const supabase = window.getSupabaseClient();
+        
+        // 1. Construir query de pagos con joins necesarios
+        let query = supabase
+            .from('ic_creditos_pagos')
+            .select(`
+                id_pago,
+                fecha_pago,
+                monto_pagado,
+                metodo_pago,
+                observaciones,
+                cobrado_por,
+                cobrador:ic_users!ic_creditos_pagos_cobrado_por_fkey ( nombre ),
+                detalle:ic_creditos_amortizacion!ic_creditos_pagos_id_detalle_fkey (
+                    pago_interes,
+                    cuota_total,
+                    fecha_vencimiento,
+                    credito:ic_creditos!ic_creditos_amortizacion_id_credito_fkey (
+                        codigo_credito,
+                        estado_credito,
+                        socio:ic_socios ( nombre, paisresidencia )
+                    )
+                )
+            `);
+
+        // 2. Aplicar filtros de cobrador
+        if (filters.cobrador !== 'todos') {
+            const cobradores = Array.isArray(filters.cobrador) ? filters.cobrador : [filters.cobrador];
+            query = query.in('cobrado_por', cobradores);
+        }
+
+        const { data: pagos, error } = await query;
+        if (error) throw error;
+
+        // Normalizar estructura: Aplanar el join anidado (pagos -> detalle -> credito)
+        let listToExport = (pagos || []).map(p => ({
+            ...p,
+            credito_info: p.detalle?.credito || {}
+        }));
+
+        // 3. Filtro por Mes
+        if (filters.mes !== 'todos') {
+            const meses = Array.isArray(filters.mes) ? filters.mes : [filters.mes];
+            listToExport = listToExport.filter(p => {
+                const monthKey = p.fecha_pago ? p.fecha_pago.substring(0, 7) : '';
+                return meses.includes(monthKey);
+            });
+        }
+
+        // 4. Filtro por País
+        if (filters.pais !== 'todos') {
+            const paises = Array.isArray(filters.pais) ? filters.pais : [filters.pais];
+            listToExport = listToExport.filter(p => {
+                const paisNorm = normalizePais(p.credito_info?.socio?.paisresidencia);
+                return paises.includes(paisNorm);
+            });
+        }
+
+        // 5. Ordenamiento por FECHA DE COBRO (Más antiguo a más reciente)
+        listToExport.sort((a, b) => new Date(a.fecha_pago) - new Date(b.fecha_pago));
+
+        if (listToExport.length === 0) {
+            Swal.fire('Sin resultados', 'No se encontraron registros de cobro para estos filtros.', 'info');
+            return;
+        }
+
+        // 6. Generar PDF especializado
+        generateCobrosPDF(listToExport, filters);
+
+    } catch (err) {
+        console.error('Error en reporte de cobros:', err);
+        Swal.fire('Error', 'No se pudo procesar el reporte de cobros', 'error');
+    }
+}
+
+/**
+ * Reporte Horizontal de Cobros
+ */
+async function generateCobrosPDF(data, filters) {
+    try {
+        const { jsPDF } = window.jspdf;
+        // p = portrait, l = landscape
+        const doc = new jsPDF('l', 'mm', 'a4'); 
+        const pageWidth = doc.internal.pageSize.getWidth();
+
+        const logoUrl = 'https://i.ibb.co/3mC22Hc4/inka-corp.png';
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('es-EC');
+        const timeStr = now.toLocaleTimeString('es-EC');
+
+        // Logo y Encabezado
+        try { doc.addImage(logoUrl, 'PNG', 15, 12, 18, 18); } catch (e) {}
+        
+        doc.setFontSize(20);
+        doc.setTextColor(11, 78, 50);
+        doc.text('INKA CORP', 38, 18);
+        
+        doc.setFontSize(12);
+        doc.setTextColor(100);
+        doc.text('REPORTE DETALLADO DE RECAUDACIÓN Y COBROS', 38, 25);
+        
+        doc.setFontSize(9);
+        doc.setTextColor(150);
+        doc.text(`Generado: ${dateStr} | ${timeStr}`, pageWidth - 60, 18);
+        doc.text(`Registros: ${data.length}`, pageWidth - 60, 23);
+
+        // Filtros en el encabezado
+        doc.setFontSize(8);
+        doc.setTextColor(11, 78, 50);
+        const mesTxt = filters.mes === 'todos' ? 'TODOS' : (Array.isArray(filters.mes) ? filters.mes.join(', ') : filters.mes);
+        const cobTxt = filters.cobrador === 'todos' ? 'TODOS' : 'FILTRADO POR USUARIO';
+        doc.text(`FILTROS COBRO: MESES [${mesTxt.toUpperCase()}] | COBRADORES [${cobTxt}]`, 15, 34);
+
+        doc.setDrawColor(242, 187, 58);
+        doc.setLineWidth(0.6);
+        doc.line(15, 36, pageWidth - 15, 36);
+
+        // Totales para el resumen final
+        let totalGeneral = 0;
+        const totalPorCobrador = {};
+
+        const tableData = data.map((p, index) => {
+            const monto = parseFloat(p.monto_pagado || 0);
+            const cuotaEsperada = parseFloat(p.detalle?.cuota_total || 0);
+            // Mora = lo cobrado que exceda la cuota programada
+            const mora = Math.max(0, monto - cuotaEsperada);
+            
+            totalGeneral += monto;
+            
+            const cobradorOriginal = p.cobrador?.nombre || 'SISTEMA';
+            totalPorCobrador[cobradorOriginal] = (totalPorCobrador[cobradorOriginal] || 0) + monto;
+
+            // Formatear COBRADOR: 1ra y 3ra palabra (ej: "LUIS ALBERTO PINTA" -> "LUIS PINTA")
+            const cParts = cobradorOriginal.split(' ').filter(x => x.length > 0);
+            const cobradorShort = (cParts[0] || '') + (cParts[2] ? ' ' + cParts[2] : '');
+
+            const row = [
+                index + 1,
+                (p.credito_info?.socio?.nombre || 'N/A').toUpperCase(),
+                getPaisCode(p.credito_info?.socio?.paisresidencia),
+                formatMoney(monto),
+                formatMoney(mora),
+                p.fecha_pago ? window.formatDateMedium(window.parseDate(p.fecha_pago)) : '-',
+                cobradorShort.toUpperCase(),
+                p.metodo_pago
+            ];
+            row._raw = p; // Adjuntar datos para didParseCell
+            return row;
+        });
+
+        doc.autoTable({
+            startY: 40,
+            head: [['#', 'SOCIO', 'PAÍS', 'VALOR COB.', 'MORA CONT.', 'FECHA PAGO', 'COBRADO POR', 'MÉTODO PAGO']],
+            body: tableData,
+            theme: 'striped',
+            styles: { fontSize: 7.5, cellPadding: 2.5, valign: 'middle' },
+            headStyles: { fillColor: [11, 78, 50], textColor: [242, 187, 58], fontStyle: 'bold', halign: 'center' },
+            columnStyles: {
+                0: { halign: 'center', cellWidth: 10 },
+                1: { halign: 'left' },
+                2: { halign: 'center', cellWidth: 15 },
+                3: { halign: 'right', cellWidth: 28, fontStyle: 'bold' },
+                4: { halign: 'right', cellWidth: 28 },
+                5: { halign: 'center', cellWidth: 30 },
+                6: { halign: 'left', cellWidth: 40 },
+                7: { halign: 'center', cellWidth: 40 }
+            },
+            margin: { left: 15, right: 15 },
+            didParseCell: function(data) {
+                if (data.section === 'body') {
+                    const raw = data.row.raw._raw;
+                    const fPago = raw.fecha_pago;
+                    const fVenc = raw.detalle?.fecha_vencimiento;
+
+                    // Si la fecha de pago es estrictamente posterior al vencimiento -> resaltado
+                    if (fPago && fVenc && new Date(fPago) > new Date(fVenc)) {
+                        data.cell.styles.fillColor = [254, 226, 226]; // Rosa sutil
+                        data.cell.styles.textColor = [153, 27, 27];   // Texto rojo oscuro para contraste
+                    }
+                }
+            },
+            didDrawPage: function(data) {
+                // Pie de página
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.text(`Página ${doc.internal.getNumberOfPages()}`, 15, doc.internal.pageSize.getHeight() - 10);
+            }
+        });
+
+        // Sección de Resumen y Totales (al final de la tabla)
+        let finalY = doc.lastAutoTable.finalY + 10;
+        
+        // Si no hay espacio suficiente, crear nueva página
+        if (finalY > doc.internal.pageSize.getHeight() - 40) {
+            doc.addPage();
+            finalY = 20;
+        }
+
+        doc.setFontSize(10);
+        doc.setTextColor(11, 78, 50);
+        doc.text('RESUMEN DE RECAUDACIÓN POR COBRADOR:', 15, finalY);
+        finalY += 6;
+
+        doc.setFontSize(9);
+        doc.setTextColor(60);
+        Object.keys(totalPorCobrador).forEach(nombre => {
+            doc.text(`${nombre}:`, 15, finalY);
+            doc.text(formatMoney(totalPorCobrador[nombre]), 100, finalY, { align: 'right' });
+            finalY += 5;
+        });
+
+        doc.setDrawColor(200);
+        doc.line(15, finalY, 100, finalY);
+        finalY += 6;
+        
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(11, 78, 50);
+        doc.text('TOTAL GENERAL RECAUDADO:', 15, finalY);
+        doc.text(formatMoney(totalGeneral), 100, finalY, { align: 'right' });
+
+        doc.save(`Recaudacion_INKA_${now.getTime()}.pdf`);
+        showToast('Reporte de cobros generado', 'success');
+
+    } catch (e) {
+        console.error(e);
+        showToast('Error generando PDF de cobros', 'error');
+    }
+}
+
+/**
+ * Genera el archivo PDF con el branding de la empresa
+ */
+async function generateCreditosPDF(data, filters) {
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+
+        const logoUrl = 'https://i.ibb.co/3mC22Hc4/inka-corp.png';
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('es-EC');
+        const timeStr = now.toLocaleTimeString('es-EC');
+
+        // Logo
+        try {
+            doc.addImage(logoUrl, 'PNG', 15, 12, 18, 18);
+        } catch (e) {
+            console.warn('Logo no disponible');
+        }
+
+        // Encabezado principal
+        doc.setFontSize(18);
+        doc.setTextColor(11, 78, 50); // Verde INKA
+        doc.text('INKA CORP', 38, 18);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(100, 116, 139); // Slate 500
+        doc.text('REPORTE EJECUTIVO DE CARTERA DE CRÉDITOS', 38, 24);
+        
+        doc.setFontSize(8);
+        doc.setTextColor(148, 163, 184); // Slate 400
+        doc.text(`Generado: ${dateStr} | ${timeStr}`, 148, 18);
+        doc.text(`Total registros: ${data.length}`, 148, 23);
+
+        // Sub-info de filtros
+        doc.setFontSize(7); // Reducir un poco para que quepan más filtros
+        doc.setTextColor(11, 78, 50);
+        
+        const estTxt = filters.estado === 'todos' ? 'TODOS' : (Array.isArray(filters.estado) ? filters.estado.join(', ') : filters.estado);
+        const paisTxt = filters.pais === 'todos' ? 'TODOS' : (Array.isArray(filters.pais) ? filters.pais.join(', ') : filters.pais);
+        const mesTxt = filters.mes === 'todos' ? 'TODOS' : (Array.isArray(filters.mes) ? filters.mes.join(', ') : filters.mes);
+        const orderLabels = { 'socio': 'SOCIO (A-Z)', 'monto': 'CAPITAL (DESC)', 'codigo': 'CÓDIGO', 'estado': 'ESTADO' };
+        const ordTxt = orderLabels[filters.order] || filters.order;
+
+        let filterText = `Estados [${estTxt}] | Países [${paisTxt}] | Meses [${mesTxt}] | Orden [${ordTxt}]`;
+        doc.text(`FILTROS: ${filterText.toUpperCase()}`, 15, 34);
+
+        // Línea divisoria decorativa
+        doc.setDrawColor(242, 187, 58); // Dorado INKA
+        doc.setLineWidth(0.5);
+        doc.line(15, 36, 195, 36);
+
+        // Tabla de datos
+        const tableData = data.map((c, index) => {
+            const fechaBase = parseDate(c.fecha_primer_pago);
+            if (fechaBase) {
+                fechaBase.setMonth(fechaBase.getMonth() + (c.cuotas_pagadas || 0));
+            }
+            const proxPagoStr = (c.estado_credito === 'CANCELADO' || c.estado_credito === 'PRECANCELADO') 
+                ? '-' 
+                : formatDateMedium(fechaBase);
+
+            const estadoLabel = ESTADO_CONFIG[c.estado_credito]?.label || c.estado_credito;
+
+            return [
+                index + 1,
+                (c.socio?.nombre || 'N/A').toUpperCase(),
+                formatMoney(c.capital),
+                getPaisCode(c.socio?.paisresidencia),
+                `${c.cuotas_pagadas || 0}/${c.plazo}`,
+                proxPagoStr,
+                estadoLabel
+            ];
+        });
+
+        doc.autoTable({
+            startY: 40,
+            head: [['#', 'SOCIO', 'CAPITAL', 'PAÍS', 'CUOTAS', 'PRÓX. PAGO', 'ESTADO']],
+            body: tableData,
+            theme: 'striped',
+            styles: { fontSize: 7, cellPadding: 2, valign: 'middle' },
+            headStyles: { 
+                fillColor: [11, 78, 50], 
+                textColor: [242, 187, 58], // Texto dorado sobre fondo verde
+                fontStyle: 'bold',
+                halign: 'center'
+            },
+            columnStyles: {
+                0: { halign: 'center', cellWidth: 8 },
+                1: { halign: 'left' },
+                2: { halign: 'right', cellWidth: 22 },
+                3: { halign: 'center', cellWidth: 15 },
+                4: { halign: 'center', cellWidth: 15 },
+                5: { halign: 'center', cellWidth: 25 },
+                6: { halign: 'center', cellWidth: 30 }
+            },
+            margin: { left: 15, right: 15 },
+            didParseCell: function (data) {
+                if (data.section === 'body' && data.column.index === 6) {
+                    const status = data.cell.raw;
+                    if (status === 'CARTERA EN MORA') {
+                        data.cell.styles.fillColor = [254, 226, 226]; // Rosa sutil (Red 100)
+                        data.cell.styles.textColor = [185, 28, 28];   // Rojo oscuro
+                        data.cell.styles.fontStyle = 'bold';
+                    } else if (status === 'CARTERA ACTIVA') {
+                        data.cell.styles.fillColor = [220, 252, 231]; // Verde sutil (Green 100)
+                        data.cell.styles.textColor = [21, 128, 61];   // Verde oscuro
+                        data.cell.styles.fontStyle = 'bold';
+                    } else if (status === 'CRÉDITOS PAUSADOS') {
+                        data.cell.styles.fillColor = [254, 243, 199]; // Ámbar sutil
+                        data.cell.styles.textColor = [180, 83, 9];
+                        data.cell.styles.fontStyle = 'bold';
+                    } else if (status === 'POR APROBAR') {
+                        data.cell.styles.fillColor = [237, 233, 254]; // Violeta sutil
+                        data.cell.styles.textColor = [109, 40, 217];
+                    }
+                }
+            },
+            didDrawPage: function (data) {
+                // Pie de página
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                const pageNum = doc.internal.getNumberOfPages();
+                doc.text(`Página ${pageNum}`, 15, doc.internal.pageSize.getHeight() - 10);
+                doc.text('Sistema Administrativo INKA CORP © 2024', 135, doc.internal.pageSize.getHeight() - 10);
+            }
+        });
+
+        // Guardar
+        const filename = `Reporte_Creditos_INKA_${now.getTime()}.pdf`;
+        doc.save(filename);
+        
+        if (window.showToast) {
+            showToast('PDF generado exitosamente', 'success');
+        }
+
+    } catch (error) {
+        console.error('PDF Error:', error);
+        Swal.fire('Error', 'No se pudo generar el reporte PDF', 'error');
+    }
+}
 

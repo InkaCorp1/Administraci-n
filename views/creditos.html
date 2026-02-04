@@ -97,11 +97,13 @@
             <img src="https://flagcdn.com/w40/pe.png" alt="PE" class="toolbar-flag">
         </button>
 
+        <div class="toolbar-separator"></div>
+
         <!-- Búsqueda -->
         <div class="toolbar-search">
             <i class="fas fa-search"></i>
             <input type="text" id="search-creditos" class="search-input-toolbar"
-                placeholder="Buscar por código, nombre o cédula...">
+                placeholder="Buscar por nombre o cédula...">
         </div>
     </div>
 
@@ -127,6 +129,12 @@
             <span class="counter-label">Precancelados</span>
             <span id="count-precancelado" class="counter-value">0</span>
         </span>
+
+        <!-- Botón Reportes Mover aquí -->
+        <button class="btn-reporte-global" onclick="openExportCreditosModal()" title="Exportar Reporte">
+            <i class="fas fa-file-pdf"></i>
+            <span>Generar Reporte</span>
+        </button>
     </div>
 
     <!-- Contenedor de Secciones por Estado -->
@@ -639,6 +647,8 @@
         padding: 0.5rem 0;
         margin-bottom: 1rem;
         flex-wrap: wrap;
+        align-items: center; /* Alinea botón y contadores */
+        width: 100%;
     }
 
     .estado-counter {
@@ -646,6 +656,51 @@
         align-items: center;
         gap: 0.5rem;
         font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+        background: var(--gray-800);
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .estado-counter:hover {
+        border-color: var(--gray-600);
+    }
+
+    .estado-counter.active {
+        border-color: var(--gold);
+        background: rgba(212, 175, 55, 0.05);
+    }
+
+    /* Botón Reporte Global (Cápsula) */
+    .btn-reporte-global {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.5rem 1.25rem;
+        background: #0E5936;
+        color: white;
+        border: 1px solid rgba(242, 187, 58, 0.3);
+        border-radius: 9999px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-left: auto; /* Empuja el botón a la derecha */
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-reporte-global:hover {
+        background: #083d25;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(11, 78, 50, 0.3);
+        border-color: var(--gold);
+    }
+
+    .btn-reporte-global i {
+        color: var(--gold);
+        font-size: 1rem;
     }
 
     .counter-label {
@@ -833,40 +888,97 @@
         background: rgba(212, 175, 55, 0.3);
     }
 
-    /* Badges */
+    /* Badges con mejor sombreado */
     .badge-activo {
-        background: rgba(16, 185, 129, 0.15);
-        color: #10B981;
+        background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        color: white;
+        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
     }
 
     .badge-moroso {
-        background: rgba(239, 68, 68, 0.15);
-        color: #EF4444;
+        background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+        color: white;
+        box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
     }
 
     .badge-cancelado {
-        background: rgba(107, 114, 128, 0.15);
-        color: #9CA3AF;
+        background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%);
+        color: white;
+        box-shadow: 0 2px 4px rgba(107, 114, 128, 0.3);
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
     }
 
     .badge-precancelado {
-        background: rgba(59, 130, 246, 0.15);
-        color: #3B82F6;
+        background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+        color: white;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
     }
 
-    .badge-pagado {
-        background: rgba(16, 185, 129, 0.15);
-        color: #10B981;
+    .badge-pausado {
+        background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+        color: white;
+        box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
     }
 
     .badge-pendiente {
-        background: rgba(245, 158, 11, 0.15);
-        color: #F59E0B;
+        background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+        color: white;
+        box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
     }
 
-    .badge-vencido {
-        background: rgba(239, 68, 68, 0.15);
-        color: #EF4444;
+    /* Paises Row */
+    .pais-container-row {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .pais-flag-img-row {
+        width: 18px;
+        height: 12px;
+        object-fit: cover;
+        border-radius: 1px;
+    }
+
+    .pais-code-row {
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: var(--gray-300);
     }
 
     /* Action Buttons */
@@ -2462,5 +2574,22 @@
             border-radius: 0;
             max-width: none !important;
         }
+    }
+
+    .pago-status {
+        line-height: 1.2;
+    }
+
+    .pago-status small {
+        font-size: 0.75rem;
+        font-weight: 500;
+        opacity: 0.8;
+        display: block;
+        margin-top: 2px;
+    }
+
+    .text-date {
+        font-weight: 600;
+        color: var(--gray-300);
     }
 </style>

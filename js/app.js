@@ -394,6 +394,14 @@ function startCacheRefresh() {
 // INICIALIZACIÓN
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
+    // Bloqueo total desde JS si se intenta cargar en móvil
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 850;
+    if (isMobile && !window.location.pathname.includes('/mobile/')) {
+        console.log('[APP] Bloqueando carga de PC en móvil...');
+        window.location.replace(window.location.origin + window.location.pathname.replace(/\/$/, '') + '/mobile/');
+        return;
+    }
+
     // No inicializar si estamos en la carpeta mobile o es la vista móvil
     if (window.location.pathname.includes('/mobile/') || window.location.pathname.includes('movil.html')) {
         return;

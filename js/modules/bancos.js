@@ -77,10 +77,14 @@ function setupBancosEventListeners() {
         formPago.addEventListener('submit', handleBancoPaymentSubmit);
     }
 
-    // Botón Generar Reporte de Pagos
-    const btnReporte = document.getElementById('btn-generar-reporte-pagos');
-    if (btnReporte) {
-        btnReporte.addEventListener('click', generateMonthlyPaymentsReport);
+    // Botón Generar Reporte de Pagos (En Detalle y General)
+    const btnReporteModal = document.getElementById('btn-generar-reporte-pagos');
+    if (btnReporteModal) {
+        btnReporteModal.addEventListener('click', generateMonthlyPaymentsReport);
+    }
+    const btnReporteGeneral = document.getElementById('btn-reporte-general-bancos');
+    if (btnReporteGeneral) {
+        btnReporteGeneral.addEventListener('click', generateMonthlyPaymentsReport);
     }
 
     // Previews de imagen
@@ -595,6 +599,14 @@ async function openBancoDetail(banco) {
     document.getElementById('det-banco-plazo').textContent = `${banco.plazo} cuotas`;
     document.getElementById('det-banco-cuota').textContent = '$' + parseFloat(banco.mensual || 0).toLocaleString('es-EC', { minimumFractionDigits: 2 });
     document.getElementById('det-banco-interes').textContent = `${banco.interes}%`;
+
+    // Calculo refinado de Monto Entregado: valor (solicitado) - valor_descontado
+    const montoSolicitado = parseFloat(banco.valor || 0);
+    const montoDescontado = parseFloat(banco.valor_descontado || 0);
+    const montoEntregado = montoSolicitado - montoDescontado;
+
+    document.getElementById('det-banco-entregado').textContent = '$' + montoEntregado.toLocaleString('es-EC', { minimumFractionDigits: 2 });
+    document.getElementById('det-banco-total-pagar').textContent = '$' + parseFloat(banco.monto_final || 0).toLocaleString('es-EC', { minimumFractionDigits: 2 });
     document.getElementById('det-banco-deudor').textContent = banco.a_nombre_de;
     document.getElementById('det-banco-motivo').textContent = banco.motivo;
 
@@ -612,29 +624,8 @@ async function checkMonthlyPayments(bancoId) {
     const btn = document.getElementById('btn-generar-reporte-pagos');
     if (!btn) return;
 
-    btn.classList.add('hidden'); // Reset
-
-    try {
-        const supabase = window.getSupabaseClient();
-        const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-
-        // Check specifically for THIS bank first (to enable button access)
-        const { data, error } = await supabase
-            .from('ic_situacion_bancaria_detalle')
-            .select('id_detalle')
-            .eq('transaccion', bancoId)
-            .eq('estado', 'PAGADO')
-            .ilike('fecha_pagado', `${currentMonth}%`) // Starts with YYYY-MM
-            .limit(1);
-
-        // Also check if fecha_pagado is used or fecha_pago. Using fecha_pagado (real payment date).
-
-        if (!error && data && data.length > 0) {
-            btn.classList.remove('hidden');
-        }
-    } catch (e) {
-        console.error('Error verificando pagos del mes:', e);
-    }
+    // Ya no lo ocultamos por defecto, el usuario puede querer ver reportes de meses anteriores
+    btn.classList.remove('hidden');
 }
 
 /**
@@ -645,92 +636,307 @@ async function checkMonthlyPayments(bancoId) {
  */
 async function generateMonthlyPaymentsReport() {
     try {
-        // 1. Pedir mes y año
-        const { value: selectedDate } = await Swal.fire({
-            title: 'Seleccionar Mes del Reporte',
+        const { value: formValues } = await Swal.fire({
+            title: 'Reporte de Pagos',
+            width: '500px',
+            background: '#ffffff',
+            customClass: {
+                popup: 'premium-swal-popup'
+            },
             html: `
-                <div style="display:flex; flex-direction:column; gap:10px; align-items:center;">
-                    <label for="swal-report-date">Seleccione una fecha dentro del mes deseado:</label>
-                    <input type="date" id="swal-report-date" class="swal2-input" value="${new Date().toISOString().slice(0, 10)}">
+                <div class="export-options-container" style="text-align: left; padding: 10px 5px;">
+                    <!-- Selector de Modo (Slider) -->
+                    <div class="report-mode-selector">
+                        <button type="button" class="report-mode-btn active" data-mode="month" id="btn-mode-month">
+                            <i class="fas fa-calendar-alt"></i> POR MES
+                        </button>
+                        <button type="button" class="report-mode-btn" data-mode="range" id="btn-mode-range">
+                            <i class="fas fa-calendar-day"></i> RANGO
+                        </button>
+                    </div>
+
+                    <p id="export-mode-desc" style="margin-bottom: 20px; color: #64748B; font-size: 0.9rem; text-align: center;">
+                        Seleccione el mes para el reporte consolidado.
+                    </p>
+                    
+                    <!-- Sección MENSUAL -->
+                    <div id="container-month" class="mode-container">
+                        <div class="filter-group-corporate">
+                            <label class="export-label-corporate">
+                                <i class="fas fa-check-circle" style="margin-right: 8px; color: #F2BB3A;"></i>Seleccione Mes
+                            </label>
+                            <input type="month" id="swal-month" class="premium-input-swal" value="${new Date().toISOString().substring(0, 7)}">
+                        </div>
+                    </div>
+
+                    <!-- Sección RANGO (Oculta) -->
+                    <div id="container-range" class="mode-container hidden">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="filter-group-corporate">
+                                <label class="export-label-corporate">Desde</label>
+                                <input type="date" id="swal-start" class="premium-input-swal">
+                            </div>
+                            <div class="filter-group-corporate">
+                                <label class="export-label-corporate">Hasta</label>
+                                <input type="date" id="swal-end" class="premium-input-swal">
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <style>
+                    /* Estilos Corporativos (Inspirados en Creditos) */
+                    .premium-swal-popup {
+                        border-radius: 1.25rem;
+                        padding-bottom: 1.5rem;
+                    }
+
+                    .report-mode-selector {
+                        display: flex;
+                        background: #F1F5F9;
+                        border-radius: 12px;
+                        padding: 4px;
+                        margin-bottom: 20px;
+                        border: 1px solid #E2E8F0;
+                    }
+
+                    .report-mode-btn {
+                        flex: 1;
+                        padding: 10px 15px;
+                        border: none;
+                        background: transparent;
+                        color: #64748B;
+                        font-size: 0.8rem;
+                        font-weight: 700;
+                        cursor: pointer;
+                        border-radius: 8px;
+                        transition: all 0.3s ease;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 8px;
+                    }
+
+                    .report-mode-btn.active {
+                        color: #ffffff;
+                        background: #0E5936; /* Corporate Green */
+                        box-shadow: 0 4px 10px rgba(14, 89, 54, 0.2);
+                    }
+
+                    .export-label-corporate {
+                        display: block; 
+                        font-weight: 700; 
+                        margin-bottom: 8px; 
+                        color: #0E5936;
+                        font-size: 0.85rem;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }
+
+                    .filter-group-corporate {
+                        background: #F8FAFC;
+                        padding: 10px;
+                        border-radius: 10px;
+                        border: 1px solid #E2E8F0;
+                    }
+
+                    .premium-input-swal {
+                        width: 100%;
+                        padding: 10px;
+                        border-radius: 8px;
+                        border: 1px solid #CBD5E1;
+                        font-family: inherit;
+                        font-size: 0.95rem;
+                        color: #1E293B;
+                        outline: none;
+                        transition: border-color 0.2s;
+                    }
+
+                    .premium-input-swal:focus {
+                        border-color: #0E5936;
+                        box-shadow: 0 0 0 3px rgba(14, 89, 54, 0.1);
+                    }
+
+                    .hidden { display: none; }
+                </style>
             `,
             showCancelButton: true,
-            confirmButtonText: 'Generar PDF',
+            confirmButtonText: '<i class="fas fa-file-pdf"></i> Generar PDF',
             cancelButtonText: 'Cancelar',
-            confirmButtonColor: '#0b4e32', // Colors from App Brand
-            cancelButtonColor: '#64748b',
-            customClass: {
-                container: 'swal-high-z-index'
+            confirmButtonColor: '#0E5936',
+            cancelButtonColor: '#64748B',
+            focusConfirm: false,
+            didOpen: () => {
+                // Apply border radius manually via style if class isn't enough
+                Swal.getPopup().style.borderRadius = '1.25rem';
+
+                const btnMonth = Swal.getHtmlContainer().querySelector('#btn-mode-month');
+                const btnRange = Swal.getHtmlContainer().querySelector('#btn-mode-range');
+                const containerMonth = Swal.getHtmlContainer().querySelector('#container-month');
+                const containerRange = Swal.getHtmlContainer().querySelector('#container-range');
+                const desc = Swal.getHtmlContainer().querySelector('#export-mode-desc');
+
+                btnMonth.addEventListener('click', () => {
+                    btnMonth.classList.add('active');
+                    btnRange.classList.remove('active');
+                    containerMonth.classList.remove('hidden');
+                    containerRange.classList.add('hidden');
+                    desc.textContent = 'Seleccione el mes para el reporte consolidado.';
+                });
+
+                btnRange.addEventListener('click', () => {
+                    btnRange.classList.add('active');
+                    btnMonth.classList.remove('active');
+                    containerRange.classList.remove('hidden');
+                    containerMonth.classList.add('hidden');
+                    desc.textContent = 'Defina un rango de fechas personalizado.';
+                });
             },
             preConfirm: () => {
-                return document.getElementById('swal-report-date').value;
+                const isRange = Swal.getHtmlContainer().querySelector('#btn-mode-range').classList.contains('active');
+                if (isRange) {
+                    const start = document.getElementById('swal-start').value;
+                    const end = document.getElementById('swal-end').value;
+                    if (!start || !end) {
+                        Swal.showValidationMessage('Por favor seleccione ambas fechas');
+                        return false;
+                    }
+                    return { type: 'range', start, end };
+                } else {
+                    const month = document.getElementById('swal-month').value;
+                    if (!month) {
+                        Swal.showValidationMessage('Por favor seleccione el mes');
+                        return false;
+                    }
+                    return { type: 'month', month };
+                }
             }
         });
 
-        if (!selectedDate) return;
+        if (!formValues) return;
 
-        const targetMonth = selectedDate.slice(0, 7); // YYYY-MM
-        const [year, month] = targetMonth.split('-');
+        let startDate, endDate, titlePeriod;
 
-        // Calculate date range for filter
-        const startDate = `${targetMonth}-01`;
-        const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
-        const endDate = `${targetMonth}-${lastDay}`;
+        if (formValues.type === 'month') {
+            const [year, month] = formValues.month.split('-');
+            startDate = `${year}-${month}-01`;
+            endDate = `${year}-${month}-${new Date(year, month, 0).getDate()}`;
+            const monthNames = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
+            titlePeriod = `REPORTE DE PAGOS: ${monthNames[parseInt(month) - 1]} ${year}`;
+        } else {
+            startDate = formValues.start;
+            endDate = formValues.end;
+            titlePeriod = `DESDE ${startDate} HASTA ${endDate}`;
+        }
 
-        window.showLoader(`Generando reporte PDF (${targetMonth})...`);
+        if (typeof window.enableLoader === 'function') window.enableLoader();
+        window.showLoader(`Generando reporte PDF...`);
+
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
+        // Explicitly set A4 Portrait (210mm x 297mm)
+        const doc = new jsPDF('p', 'mm', 'a4');
         const supabase = window.getSupabaseClient();
 
-        // Fetch ALL payments for the target month across ALL banks
-        const { data: pagos, error } = await supabase
+        // Fetch payments for the period (Step 1)
+        const { data: pagosRaw, error: errorPagos } = await supabase
             .from('ic_situacion_bancaria_detalle')
-            .select(`
-                *,
-                ic_situacion_bancaria (nombre_banco, a_nombre_de)
-            `)
+            .select('*')
             .eq('estado', 'PAGADO')
             .gte('fecha_pagado', startDate)
             .lte('fecha_pagado', endDate)
             .order('fecha_pagado', { ascending: true });
 
-        if (error) throw error;
-        if (!pagos || pagos.length === 0) throw new Error(`No hay pagos registrados en ${targetMonth} para generar el reporte.`);
+        if (errorPagos) throw errorPagos;
+        if (!pagosRaw || pagosRaw.length === 0) throw new Error(`No hay pagos registrados entre ${startDate} y ${endDate} para generar el reporte.`);
+
+        // Get unique transaction IDs (Step 2)
+        const transaccionIds = [...new Set(pagosRaw.map(p => p.transaccion))];
+
+        // Fetch bank names and debtors for these transitions (Step 3)
+        const { data: bancosInfo, error: errorBancos } = await supabase
+            .from('ic_situacion_bancaria')
+            .select('id_transaccion, nombre_banco, a_nombre_de')
+            .in('id_transaccion', transaccionIds);
+
+        if (errorBancos) throw errorBancos;
+
+        // Create a map for easy access
+        const bancosMap = {};
+        (bancosInfo || []).forEach(b => {
+            bancosMap[b.id_transaccion] = b;
+        });
+
+        // Enrich payments with bank info (Mapping)
+        const pagos = pagosRaw.map(p => ({
+            ...p,
+            ic_situacion_bancaria: bancosMap[p.transaccion] || { nombre_banco: 'Banco', a_nombre_de: 'N/A' }
+        }));
 
         // Generate PDF content
         let yPos = 20;
+        const pageHeight = 297; // A4 Height in mm
+        const marginBottom = 20;
 
-        // Header Global
-        doc.setFontSize(14);
+        const logoUrl = 'https://i.ibb.co/3mC22Hc4/inka-corp.png';
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('es-EC');
+        const timeStr = now.toLocaleTimeString('es-EC');
+
+        // Logo
+        try {
+            doc.addImage(logoUrl, 'PNG', 15, 12, 18, 18);
+        } catch (e) {
+            console.warn('Logo no disponible');
+        }
+
+        // Header Global Matching Credits Key Styles
+        doc.setFontSize(18);
         doc.setFont('helvetica', 'bold');
-        doc.text("ESTADO DE PAGOS DE OBLIGACIONES DE LA CORPORACION INKA CORP", 105, yPos, { align: "center" });
-        yPos += 7;
+        doc.setTextColor(11, 78, 50); // Verde INKA #0B4E32
+        doc.text("INKA CORP", 38, 18);
+
         doc.setFontSize(10);
-        doc.text("DEPARTAMENTO DE GERENCIA", 105, yPos, { align: "center" });
-
-        yPos += 5;
-        doc.setDrawColor(204, 84, 34); // Accent Orange/Gold line
-        doc.setLineWidth(1);
-        doc.line(20, yPos, 190, yPos);
-
-        yPos += 10;
-        doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
-        doc.text(`Generado el: ${new Date().toLocaleString('es-EC')}`, 190, yPos, { align: "right" });
+        doc.setTextColor(100, 116, 139); // Slate 500
+        doc.text("REPORTE DE ESTADO DE PAGOS BANCARIOS", 38, 24);
+
+        doc.setFontSize(8);
+        doc.setTextColor(148, 163, 184); // Slate 400
+        doc.text(`Generado: ${dateStr} | ${timeStr}`, 148, 18);
+        doc.text(`Total registros: ${pagos.length}`, 148, 23);
+
+        // Sub-info TitlePeriod
+        yPos = 34;
+        doc.setFontSize(9);
+        doc.setTextColor(11, 78, 50); // Verde Inka
+        doc.setFont('helvetica', 'bold');
+        doc.text(`PERIODO: ${titlePeriod}`, 15, yPos);
+
+        // Línea divisoria decorativa (Gold)
+        yPos += 2;
+        doc.setDrawColor(242, 187, 58); // Dorado #F2BB3A
+        doc.setLineWidth(0.5);
+        doc.line(15, yPos, 195, yPos);
 
         yPos += 10;
 
         // Loop through payments
+        let count = 0;
+        const total = pagos.length;
+
         for (const pago of pagos) {
-            // Check page break
-            if (yPos > 240) {
-                doc.addPage();
-                yPos = 20;
-            }
+            count++;
+            window.showLoader(`Procesando comprobante ${count} de ${total}...`);
 
             const boxHeight = 90; // Approx height for each entry
 
-            // Draw Box Border (Optional, like example?) Example has separate boxes.
+            // Check page break: If explicit box height exceeds printable area
+            if (yPos + boxHeight > (pageHeight - marginBottom)) {
+                doc.addPage();
+                yPos = 20; // Reset to top margin
+            }
+
+            // Draw Box Border
             doc.setDrawColor(220, 220, 220);
             doc.setLineWidth(0.5);
             doc.roundedRect(15, yPos, 180, boxHeight, 3, 3);
@@ -744,38 +950,56 @@ async function generateMonthlyPaymentsReport() {
 
             let textY = yPos + 10;
             const leftMargin = 20;
+            const maxTextWidth = 60; // Reduced to 60 to prevent overlap with image at x=110
 
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
-            doc.text(`ENTIDAD: ${bancoName}`, leftMargin, textY);
 
-            textY += 6;
-            doc.text(`DEUDOR: ${deudor}`, leftMargin, textY);
+            doc.text(`ENTIDAD:`, leftMargin, textY);
+            doc.setFont('helvetica', 'normal'); // Normal for value
+            // Split text if too long
+            const bancoLines = doc.splitTextToSize(bancoName, maxTextWidth);
+            doc.text(bancoLines, leftMargin + 25, textY);
+            textY += (bancoLines.length * 5) + 2;
 
-            textY += 6;
-            doc.text(`VALOR PAGADO: $${valor}`, leftMargin, textY);
-
-            textY += 6;
+            doc.setFont('helvetica', 'bold');
+            doc.text(`DEUDOR:`, leftMargin, textY);
             doc.setFont('helvetica', 'normal');
-            doc.text(`FECHA PAGO: ${fecha}`, leftMargin, textY);
+            const deudorLines = doc.splitTextToSize(deudor, maxTextWidth);
+            doc.text(deudorLines, leftMargin + 25, textY);
+            textY += (deudorLines.length * 5) + 2;
+
+            doc.setFont('helvetica', 'bold');
+            doc.text(`VALOR PAGADO:`, leftMargin, textY);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`$${valor}`, leftMargin + 28, textY);
 
             textY += 6;
+            doc.setFont('helvetica', 'bold');
+            doc.text(`FECHA PAGO:`, leftMargin, textY);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`${fecha}`, leftMargin + 25, textY);
+
+            // Removing Ref. Fotografía text as requested
+            /*
+            textY += 10;
             doc.setFontSize(8);
             doc.setTextColor(100);
             doc.text(`Ref. Fotografía:`, leftMargin, textY);
             textY += 4;
+            // Truncate long ref filenames or wrap
             doc.text(`${refFoto}`, leftMargin, textY, { maxWidth: 80 });
             doc.setTextColor(0);
+            */
 
             // Right Column: Image
             if (pago.fotografia) {
                 try {
                     // Load image
-                    // Note: This relies on 'js/image-utils.js' or direct fetch if CORS allows.
-                    // Assuming public URL.
                     const imgData = await fetchImageAsBase64(pago.fotografia);
                     if (imgData) {
                         // Fit image in right box: x=110, y=yPos+5, w=80, h=80
+                        // Use 'keepAspect' mostly, but we fit in box
                         doc.addImage(imgData, 'JPEG', 110, yPos + 5, 80, 80, undefined, 'FAST');
                     }
                 } catch (imgErr) {
@@ -789,32 +1013,60 @@ async function generateMonthlyPaymentsReport() {
             yPos += boxHeight + 10; // Space + Gap
         }
 
-        doc.save(`Estado_Pagos_Bancos_${targetMonth}.pdf`);
-        window.hideLoader();
-        window.showToast('Reporte generado correctamente', 'success');
+        doc.save(`Estado_Pagos_Bancos_${titlePeriod.replace(/ /g, '_')}.pdf`);
+
+        await window.showAlert('El reporte PDF se ha generado y descargado correctamente.', 'Reporte Listo', 'success');
 
     } catch (error) {
-        window.hideLoader();
         console.error('Error generando reporte:', error);
         window.showAlert('Error al generar reporte: ' + error.message, 'Error', 'error');
+    } finally {
+        window.hideLoader();
+        if (typeof window.disableLoader === 'function') window.disableLoader();
     }
 }
 
 /**
  * Helper to fetch image and convert to Base64 (using canvas or fetch)
  */
+/**
+ * Helper to fetch image and convert to Base64 (using canvas or fetch)
+ * Automatically fixes "Drive" or damaged URLs (removes $)
+ */
 async function fetchImageAsBase64(url) {
     if (!url) return null;
+
+    // 1. Fix user-reported issue: Remove '$' sign if strictly in the /d/$ID format
+    // e.g. https://lh3.../d/$123 -> https://lh3.../d/123
+    let cleanUrl = url.replace('/d/$', '/d/');
+
+    // 2. Convert Standard Drive View Links to Direct Image links
+    // Format 1: drive.google.com/file/d/ID/view
+    // Format 2: drive.google.com/open?id=ID
+    const driveRegex = /file\/d\/([a-zA-Z0-9_-]+)|id=([a-zA-Z0-9_-]+)/;
+    const match = cleanUrl.match(driveRegex);
+
+    if (match) {
+        const fileId = match[1] || match[2];
+        if (fileId) {
+            cleanUrl = `https://lh3.googleusercontent.com/d/${fileId}=w1000`;
+        }
+    }
+
     try {
-        const response = await fetch(url);
+        const response = await fetch(cleanUrl);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
         const blob = await response.blob();
+        if (blob.type.includes('html')) return null; // Drive sometimes returns login page as HTML
+
         return new Promise((resolve) => {
             const reader = new FileReader();
             reader.onloadend = () => resolve(reader.result);
             reader.readAsDataURL(blob);
         });
     } catch (e) {
-        console.warn('Could not fetch image for PDF (CORS?):', url);
+        console.warn('Could not fetch image for PDF (CORS? or Invalid URL):', cleanUrl, e);
         return null;
     }
 }

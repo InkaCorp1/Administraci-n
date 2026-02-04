@@ -38,48 +38,50 @@
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
     <script>
-        // Detección de dispositivo móvil y redirección
-        function checkDevice() {
-            // Verificar si el usuario forzó la versión de escritorio
-            if (sessionStorage.getItem('forceDesktop') === 'true') {
-                return false;
-            }
+        /**
+         * REDIRECCIÓN AGRESIVA A MÓVIL
+         * Evita en un 100% que cargue el Layout de PC en dispositivos pequeños.
+         */
+        function forceMobileRedirect() {
+            // Limpiar forzado de escritorio
+            sessionStorage.removeItem('forceDesktop');
+            localStorage.removeItem('forceDesktop');
 
-            // Detectar si es móvil por User Agent o por tamaño de pantalla
             const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            const isSmallScreen = window.innerWidth <= 850; // Aumentado a 850 para mejor cobertura
+            const isSmallScreen = window.innerWidth <= 850;
 
             if (isMobileUA || isSmallScreen) {
+                // Si ya estamos en la carpeta mobile, no hacer nada
+                if (window.location.pathname.includes('/mobile/')) return false;
+
                 const urlParams = new URLSearchParams(window.location.search);
-                const viewParam = urlParams.get('view');
-                const path = window.location.pathname;
-                const lastPart = path.split('/').pop().replace('.html', '');
+                const view = urlParams.get('view');
+                
+                // Módulos que existen en versión móvil
+                const mobileModules = ['creditos', 'desembolsos', 'aportes', 'bancos', 'simulador', 'socios'];
+                const targetView = (view && mobileModules.includes(view)) ? view : '';
 
-                // Mapear de PC a Móvil (SOLO módulos con versión móvil oficial)
-                const mobileSupportedViews = ['creditos', 'desembolsos', 'aportes', 'bancos', 'simulador'];
-                const viewFromPath = viewParam || (lastPart && mobileSupportedViews.includes(lastPart) && lastPart !== 'index' ? lastPart : '');
-
-                // Si el módulo no tiene versión móvil, NO redirigir (mantener vista PC)
-                if ((viewParam || lastPart) && !mobileSupportedViews.includes(viewFromPath || lastPart)) {
-                    console.log('[DeviceCheck] Módulo no disponible en móvil, manteniendo vista PC.');
-                    return false;
+                // Construir URL base a la carpeta mobile
+                let baseUrl = window.location.origin + window.location.pathname;
+                if (!baseUrl.endsWith('/')) {
+                    baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
                 }
-
-                // Redirigir a la CARPETA mobile (raíz de esa carpeta) para evitar 404
-                const mobileUrl = viewFromPath ? `mobile/?view=${viewFromPath}` : 'mobile/';
-                window.location.href = mobileUrl;
+                
+                const finalUrl = baseUrl + 'mobile/' + (targetView ? '?view=' + targetView : '');
+                
+                console.warn('[SECURITY] Redirigiendo a versión móvil forzada.');
+                window.location.replace(finalUrl);
                 return true;
             }
             return false;
         }
 
-        // Ejecución inmediata
-        checkDevice();
+        // Ejecutar antes de que el navegador pinte nada
+        if (forceMobileRedirect()) {
+            document.documentElement.style.display = 'none';
+        }
 
-        // Escuchar cambios de tamaño (por si se redimensiona o rota el dispositivo)
-        window.addEventListener('resize', () => {
-            checkDevice();
-        });
+        window.addEventListener('resize', () => forceMobileRedirect());
     </script>
 </head>
 
@@ -243,39 +245,42 @@
 
     <!-- Registro de Service Worker PWA -->
     <script>
-        // Registrar Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
                     .then((registration) => {
-                        console.log('[PWA] Service Worker registrado:', registration.scope);
+                        console.log('[PWA] Service Worker registrado');
 
-                        // Detectar actualizaciones del Service Worker
+                        // Detectar actualizaciones
                         registration.onupdatefound = () => {
                             const installingWorker = registration.installing;
                             installingWorker.onstatechange = () => {
-                                if (installingWorker.state === 'installed') {
-                                    if (navigator.serviceWorker.controller) {
-                                        // Nueva versión disponible, recarga automática para aplicar
-                                        console.log('[PWA] Nueva versión detectada, recargando...');
-                                        window.location.reload();
+                                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // Nueva versión disponible en el servidor (GitHub)
+                                    if (window.Swal) {
+                                        Swal.fire({
+                                            title: 'Actualización Requerida',
+                                            text: 'Hay una nueva versión disponible. La aplicación se reiniciará para garantizar que uses la última versión del repositorio.',
+                                            icon: 'info',
+                                            confirmButtonText: 'ACTUALIZAR AHORA',
+                                            confirmButtonColor: '#0B4E32',
+                                            allowOutsideClick: false,
+                                            allowEscapeKey: false
+                                        }).then((result) => {
+                                            if (result.isConfirmed) {
+                                                forceAppUpdate();
+                                            }
+                                        });
+                                    } else {
+                                        if (confirm('Nueva versión disponible. ¿Actualizar ahora?')) {
+                                            forceAppUpdate();
+                                        }
                                     }
                                 }
                             };
                         };
                     })
-                    .catch((error) => {
-                        console.error('[PWA] Error al registrar SW:', error);
-                    });
-            });
-
-            // Asegurarse de que el Service Worker tome el control rápidamente
-            let refreshing = false;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (!refreshing) {
-                    window.location.reload();
-                    refreshing = true;
-                }
+                    .catch((error) => console.error('[PWA] Error en registro:', error));
             });
         }
     </script>

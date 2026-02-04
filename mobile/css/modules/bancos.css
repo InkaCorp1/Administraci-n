@@ -7,6 +7,53 @@
     gap: 1.25rem;
 }
 
+/* Resumen de Estadísticas Premium */
+.lite-bancos-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 0 1rem 0.5rem 1rem;
+    margin-bottom: 5px;
+}
+
+.lite-summary-card {
+    background: white;
+    padding: 1rem;
+    border-radius: 20px;
+    border: 1px solid rgba(11, 78, 50, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.lite-summary-card.highlight {
+    background: linear-gradient(135deg, #0B4E32 0%, #146E3A 100%);
+    border: none;
+}
+
+.lite-summary-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.lite-summary-card.highlight .lite-summary-label {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.lite-summary-value {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #0B4E32;
+}
+
+.lite-summary-card.highlight .lite-summary-value {
+    color: var(--gold);
+}
+
 /* Express Bank Cards con Temas Dinámicos */
 .lite-bank-card.theme-card {
     background: var(--bank-bg);
@@ -257,6 +304,35 @@
     opacity: 0.8;
     font-weight: 600;
     margin-top: 2px;
+}
+
+/* Grid de detalles extra en móvil */
+.lite-bank-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed rgba(0, 0, 0, 0.08);
+}
+
+.lite-detail-col {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.lite-detail-label {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.lite-detail-value {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--bank-primary);
 }
 
 .amortization-table-mobile-container {

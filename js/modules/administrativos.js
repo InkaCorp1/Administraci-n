@@ -118,7 +118,7 @@ async function loadAdmData(forceRefresh = false) {
     if (!forceRefresh && window.hasCacheData && window.hasCacheData('administrativos')) {
         gastosAdmData = window.getCacheData('administrativos');
         renderAdmDataImmediate();
-        
+
         // Si el caché es reciente, no re-consultar
         if (window.isCacheValid && window.isCacheValid('administrativos')) {
             return;
@@ -440,7 +440,7 @@ async function handleAdmFormSubmit(e) {
 
         if (error) throw error;
 
-        window.showToast('Gasto guardado exitosamente', 'success');
+        await window.showAlert('El gasto administrativo se ha guardado correctamente.', '¡Guardado Exitoso!', 'success');
         document.getElementById('modal-gasto-adm').classList.add('hidden');
         await loadAdmData();
 

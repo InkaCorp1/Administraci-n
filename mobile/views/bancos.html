@@ -10,6 +10,17 @@
     </div>
 </div>
 
+<div class="lite-bancos-summary">
+    <div class="lite-summary-card">
+        <span class="lite-summary-label">Créditos Activos</span>
+        <span class="lite-summary-value" id="mobile-stat-bancos-activos">0</span>
+    </div>
+    <div class="lite-summary-card highlight">
+        <span class="lite-summary-label">Deuda Total</span>
+        <span class="lite-summary-value" id="mobile-stat-bancos-deuda-total">$0.00</span>
+    </div>
+</div>
+
 <div id="mobile-bancos-list" class="lite-list-container">
     <!-- Bancos se cargan aquí -->
     <div class="loading-state">
@@ -32,6 +43,21 @@
             <div class="lite-bank-info">
                 <h4 id="lite-bank-name">---</h4>
                 <div id="lite-bank-debtor" class="lite-bank-debtor">---</div>
+
+                <div class="lite-bank-detail-grid">
+                    <div class="lite-detail-col">
+                        <span class="lite-detail-label">Solicitado</span>
+                        <span class="lite-detail-value" id="lite-bank-solicitado">$0.00</span>
+                    </div>
+                    <div class="lite-detail-col">
+                        <span class="lite-detail-label">Entregado</span>
+                        <span class="lite-detail-value" id="lite-bank-entregado">$0.00</span>
+                    </div>
+                    <div class="lite-detail-col">
+                        <span class="lite-detail-label">T. Pagar</span>
+                        <span class="lite-detail-value" id="lite-bank-total-pagar">$0.00</span>
+                    </div>
+                </div>
             </div>
 
             <div class="amortization-table-mobile-container">
@@ -91,18 +117,31 @@
                 </div>
 
                 <div class="lite-upload-section">
-                    <div id="lite-pago-placeholder" class="lite-upload-area"
-                        onclick="document.getElementById('lite-pago-input').click()">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <span>Toca para subir comprobante</span>
+                    <div id="lite-pago-placeholder">
+                        <div class="lite-upload-choices">
+                            <div class="lite-upload-btn-choice"
+                                onclick="document.getElementById('lite-pago-input-camera').click()">
+                                <i class="fas fa-camera"></i>
+                                <span>Tomar Foto</span>
+                            </div>
+                            <div class="lite-upload-btn-choice"
+                                onclick="document.getElementById('lite-pago-input-gallery').click()">
+                                <i class="fas fa-images"></i>
+                                <span>Galería</span>
+                            </div>
+                        </div>
                     </div>
                     <div id="lite-pago-preview-container" class="lite-preview-container hidden">
-                        <img id="lite-pago-preview" src="" alt="Vista previa">
+                        <img id="lite-pago-preview" src="" alt="Vista previa"
+                            style="max-height: 250px; object-fit: contain;">
                         <button type="button" class="lite-remove-preview" onclick="clearLitePagoPreview()">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
-                    <input type="file" id="lite-pago-input" accept="image/*" class="hidden"
+                    <!-- Inputs Ocultos -->
+                    <input type="file" id="lite-pago-input-camera" accept="image/*" capture="environment" class="hidden"
+                        onchange="handleLiteImageSelect(event)">
+                    <input type="file" id="lite-pago-input-gallery" accept="image/*" class="hidden"
                         onchange="handleLiteImageSelect(event)">
                 </div>
 
@@ -112,6 +151,15 @@
                     </button>
                 </div>
             </form>
+            <style>
+                #lite-pago-valor-inputs {
+                    pointer-events: auto !important;
+                    cursor: text !important;
+                    user-select: text !important;
+                    background-color: #ffffff !important;
+                    opacity: 1 !important;
+                }
+            </style>
         </div>
     </div>
 </div>

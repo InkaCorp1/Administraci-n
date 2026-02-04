@@ -29,6 +29,41 @@
     <!-- Core Config/JS -->
     <script src="../js/config.js"></script>
     <script src="../js/auth.js"></script>
+    <script>
+        /**
+         * REDIRECCIÓN AGRESIVA A ESCRITORIO
+         * Evita que un usuario en PC vea la versión móvil recortada.
+         */
+        function forceDesktopRedirect() {
+            const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isLargeScreen = window.innerWidth > 850;
+
+            // Si es un PC (No Mobile UA) y la pantalla es grande
+            if (!isMobileUA && isLargeScreen) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const view = urlParams.get('view');
+                
+                // Módulos que existen en PC
+                const pcModules = ['creditos', 'desembolsos', 'aportes', 'bancos', 'simulador', 'socios', 'dashboard'];
+                const targetView = (view && pcModules.includes(view)) ? view : '';
+
+                // Volver a la raíz (PC)
+                const pcUrl = targetView ? `../?view=${targetView}` : '../';
+                
+                console.warn('[SECURITY] Redirigiendo a versión de escritorio forzada.');
+                window.location.replace(pcUrl);
+                return true;
+            }
+            return false;
+        }
+
+        // Ejecutar antes de pintar
+        if (forceDesktopRedirect()) {
+            document.documentElement.style.display = 'none';
+        }
+
+        window.addEventListener('resize', () => forceDesktopRedirect());
+    </script>
 </head>
 
 <body class="mobile-body">
@@ -47,6 +82,9 @@
                     <span class="header-logo-text">INKA CORP</span>
                 </div>
                 <div class="header-actions">
+                    <button class="header-btn" id="report-btn-mobile" style="display: none;">
+                        <i class="fas fa-file-pdf"></i>
+                    </button>
                     <button class="header-btn" id="refresh-btn" onclick="location.reload()">
                         <i class="fas fa-sync-alt"></i>
                     </button>
@@ -120,11 +158,11 @@
                     </div>
                     <span>Desembolsos</span>
                 </div>
-                <div class="quick-item" onclick="goToDesktopModule('dashboard'); toggleQuickMenu()">
-                    <div class="quick-icon bg-gold">
-                        <i class="fas fa-chart-line"></i>
+                <div class="quick-item" onclick="loadMobileView('socios'); toggleQuickMenu()">
+                    <div class="quick-icon" style="background-color: #3b82f6;">
+                        <i class="fas fa-users"></i>
                     </div>
-                    <span>Reportes</span>
+                    <span>Socios</span>
                 </div>
             </div>
         </div>
@@ -352,21 +390,32 @@
 
                 <!-- Subida de Comprobante -->
                 <div style="margin-bottom: 2rem;">
-                    <label style="font-weight: 600; margin-bottom: 0.5rem; display: block; font-size: 0.85rem;">Evidencia de Pago (Foto) <span style="color: #ef4444;">*</span></label>
-                    <div id="pago-lite-upload-container" style="position: relative; height: 160px; border: 2px dashed #cbd5e1; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; overflow: hidden;">
-                        <input type="file" id="pago-lite-file-input" accept="image/*" capture="environment" style="position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 2;">
+                    <label style="font-weight: 600; margin-bottom: 0.5rem; display: block; font-size: 0.85rem;">Evidencia de Pago <span style="color: #ef4444;">*</span></label>
+                    <div id="pago-lite-upload-container" style="position: relative; min-height: 140px; border: 2px dashed #cbd5e1; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; overflow: hidden; padding: 15px;">
                         
                         <!-- Preview (inicialmente oculto) -->
-                        <img id="pago-lite-preview" style="display: none; width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;">
+                        <img id="pago-lite-preview" style="display: none; width: 100%; max-height: 250px; object-fit: contain; border-radius: 12px;">
                         
-                        <div id="pago-lite-upload-placeholder" style="text-align: center;">
-                            <i class="fas fa-camera" style="font-size: 2rem; color: var(--primary); margin-bottom: 8px;"></i>
-                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;">Presiona para tomar foto</p>
+                        <div id="pago-lite-upload-placeholder" style="width: 100%;">
+                            <div class="lite-upload-choices">
+                                <div class="lite-upload-btn-choice" onclick="document.getElementById('pago-lite-file-input-camera').click()">
+                                    <i class="fas fa-camera"></i>
+                                    <span>Tomar Foto</span>
+                                </div>
+                                <div class="lite-upload-btn-choice" onclick="document.getElementById('pago-lite-file-input-gallery').click()">
+                                    <i class="fas fa-images"></i>
+                                    <span>Galería</span>
+                                </div>
+                            </div>
                         </div>
 
-                        <button id="pago-lite-remove-file" type="button" onclick="window.clearLiteReceipt()" style="display: none; position: absolute; top: 10px; right: 10px; background: rgba(220, 38, 38, 0.9); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; z-index: 3;">
+                        <button id="pago-lite-remove-file" type="button" onclick="window.clearLiteReceipt()" style="display: none; position: absolute; top: 10px; right: 10px; background: rgba(220, 38, 38, 0.9); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; z-index: 10;">
                             <i class="fas fa-times"></i>
                         </button>
+
+                        <!-- Inputs Ocultos -->
+                        <input type="file" id="pago-lite-file-input-camera" accept="image/*" capture="environment" style="display: none;">
+                        <input type="file" id="pago-lite-file-input-gallery" accept="image/*" style="display: none;">
                     </div>
                 </div>
 
@@ -394,6 +443,36 @@
             const { error } = await window.getSupabaseClient().auth.signOut();
             if (error) console.error(error);
             window.location.href = '../login.html';
+        }
+
+        // Registro de Service Worker para Móvil
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('../sw.js')
+                    .then((registration) => {
+                        registration.onupdatefound = () => {
+                            const installingWorker = registration.installing;
+                            installingWorker.onstatechange = () => {
+                                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    if (window.Swal) {
+                                        Swal.fire({
+                                            title: 'Nueva versión',
+                                            text: 'Actualiza la app para seguir usándola. Se borrarán datos de sesión para seguridad.',
+                                            icon: 'info',
+                                            confirmButtonText: 'ACTUALIZAR',
+                                            confirmButtonColor: '#0B4E32',
+                                            allowOutsideClick: false
+                                        }).then((result) => {
+                                            if (result.isConfirmed) forceAppUpdate();
+                                        });
+                                    } else {
+                                        if (confirm('Actualización disponible. ¿Actualizar?')) forceAppUpdate();
+                                    }
+                                }
+                            };
+                        };
+                    });
+            } );
         }
     </script>
 </body>

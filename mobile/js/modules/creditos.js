@@ -60,7 +60,8 @@ async function fetchLiteCreditos() {
 
             const getNextPayment = (c) => {
                 if (!c.fecha_primer_pago) return new Date(8640000000000000);
-                const baseDate = new Date(c.fecha_primer_pago);
+                const baseDate = window.parseDate(c.fecha_primer_pago);
+                if (!baseDate) return new Date(8640000000000000);
                 baseDate.setMonth(baseDate.getMonth() + (c.cuotas_pagadas || 0));
                 return baseDate;
             };
@@ -115,7 +116,23 @@ function renderLiteCreditos(creditos) {
         if (list && list.length > 0) {
             const config = estadoConfig[estado] || { icon: 'fa-folder', color: '#9CA3AF', label: estado, bgColor: 'rgba(156, 163, 175, 0.15)' };
             
-            const listHtml = list.map(c => `
+            const listHtml = list.map(c => {
+                let statusLabel = c.estado_credito;
+                if (c.estado_credito === 'MOROSO' && c.fecha_primer_pago) {
+                    const nextDate = window.parseDate(c.fecha_primer_pago);
+                    if (nextDate) {
+                        nextDate.setMonth(nextDate.getMonth() + (c.cuotas_pagadas || 0));
+                        const hoy = new Date();
+                        hoy.setHours(0, 5, 0, 0); // Margen para evitar desfases
+                        if (nextDate < hoy) {
+                            const diffTime = hoy - nextDate;
+                            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                            statusLabel = `MOROSO - ${diffDays} DÍAS VENCIDO`;
+                        }
+                    }
+                }
+
+                return `
                 <div class="lite-credit-card" onclick="showLiteCreditDetails('${c.id_credito}')">
                     <div class="lite-credit-header">
                         <div class="lite-credit-code">
@@ -135,7 +152,7 @@ function renderLiteCreditos(creditos) {
                         <div style="font-size: 0.75rem; color: var(--text-muted);">${c.socio?.cedula || '---'}</div>
                     </div>
                     <div class="lite-credit-status" style="justify-content: space-between; width: 100%;">
-                         <span class="lite-status-badge badge-${c.estado_credito?.toLowerCase()}">${c.estado_credito}</span>
+                         <span class="lite-status-badge badge-${c.estado_credito?.toLowerCase()}">${statusLabel}</span>
                          <button class="lite-btn-pay-inline" onclick="event.stopPropagation(); window.handleQuickCreditPayment('${c.id_credito}', this)">
                             <i class="fas fa-dollar-sign"></i> Pagar
                          </button>
@@ -143,7 +160,7 @@ function renderLiteCreditos(creditos) {
                     <div class="lite-credit-footer">
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
                             <i class="fas fa-calendar-alt"></i>
-                            <span>${c.fecha_desembolso ? new Date(c.fecha_desembolso).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</span>
+                            <span>${c.fecha_desembolso ? window.formatDate(c.fecha_desembolso) : 'N/A'}</span>
                         </div>
                         <div style="margin-left: auto; font-weight: 700; color: var(--primary);">
                             <i class="fas fa-layer-group" style="font-size: 0.7rem; opacity: 0.6;"></i>
@@ -151,7 +168,7 @@ function renderLiteCreditos(creditos) {
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
 
             html += `
                 <div class="lite-status-group" data-estado="${estado}">
@@ -313,19 +330,37 @@ function showLiteCreditDetails(id) {
 
     const estadoEl = document.getElementById('lite-det-estado');
     if (estadoEl) {
-        estadoEl.textContent = c.estado_credito;
+        let statusLabel = c.estado_credito;
+        if (c.estado_credito === 'MOROSO' && c.fecha_primer_pago) {
+            const nextDate = window.parseDate(c.fecha_primer_pago);
+            if (nextDate) {
+                nextDate.setMonth(nextDate.getMonth() + (c.cuotas_pagadas || 0));
+                const hoy = new Date();
+                hoy.setHours(0, 5, 0, 0); 
+                if (nextDate < hoy) {
+                    const diffTime = hoy - nextDate;
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                    statusLabel = `MOROSO - ${diffDays} DÍAS VENCIDO`;
+                }
+            }
+        }
+        estadoEl.textContent = statusLabel;
         estadoEl.className = `lite-det-status badge-${c.estado_credito?.toLowerCase()}`;
     }
 
     // Nuevos campos
-    const fechaDes = c.fecha_desembolso ? new Date(c.fecha_desembolso).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' }) : '---';
+    const fechaDes = c.fecha_desembolso ? window.formatDate(c.fecha_desembolso, { month: 'long' }) : '---';
     document.getElementById('lite-det-fecha-val').textContent = fechaDes;
 
     // Calcular próximo vencimiento
     if (c.fecha_primer_pago) {
-        const nextDate = new Date(c.fecha_primer_pago);
-        nextDate.setMonth(nextDate.getMonth() + (c.cuotas_pagadas || 0));
-        document.getElementById('lite-det-vencimiento').textContent = nextDate.toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' });
+        const nextDate = window.parseDate(c.fecha_primer_pago);
+        if (nextDate) {
+            nextDate.setMonth(nextDate.getMonth() + (c.cuotas_pagadas || 0));
+            document.getElementById('lite-det-vencimiento').textContent = window.formatDate(nextDate, { month: 'long' });
+        } else {
+            document.getElementById('lite-det-vencimiento').textContent = 'Error';
+        }
     } else {
         document.getElementById('lite-det-vencimiento').textContent = 'No definido';
     }
@@ -337,7 +372,9 @@ function showLiteCreditDetails(id) {
             btnWhatsapp.style.display = 'flex';
             btnWhatsapp.onclick = () => {
                 // Cálculo de días de mora
-                const nextDate = new Date(c.fecha_primer_pago);
+                const nextDate = window.parseDate(c.fecha_primer_pago);
+                if (!nextDate) return;
+                
                 nextDate.setMonth(nextDate.getMonth() + (c.cuotas_pagadas || 0));
                 const today = new Date();
                 const diffTime = Math.abs(today - nextDate);
@@ -355,7 +392,7 @@ function showLiteCreditDetails(id) {
                 const msg = encodeURIComponent(
                     `*INKA CORP - NOTIFICACIÓN DE PAGO*\n\n` +
                     `Hola *${c.socio.nombre}*, esperamos que te encuentres bien.\n\n` +
-                    `Te escribimos para informarte que tu crédito *${c.codigo_credito}* presenta ${persuasividad} de *${diffDays} días* (vencía el ${nextDate.toLocaleDateString('es-EC')}).\n\n` +
+                    `Te escribimos para informarte que tu crédito *${c.codigo_credito}* presenta ${persuasividad} de *${diffDays} días* (vencía el ${window.formatDate(nextDate)}).\n\n` +
                     `Entendemos que pueden surgir imprevistos, por lo que te invitamos a cancelar tu cuota de *$${parseFloat(c.cuota_con_ahorro).toFixed(2)}* lo antes posible para evitar recargos adicionales por mora.\n\n` +
                     `Agradecemos de antemano tu compromiso para ponerte al día y mantener tu historial impecable.\n\n` +
                     `¿A qué hora podrías realizar el depósito hoy?`
@@ -368,7 +405,7 @@ function showLiteCreditDetails(id) {
         }
     }
 
-    document.getElementById('lite-det-fecha').textContent = `Desembolso: ${c.fecha_desembolso ? new Date(c.fecha_desembolso).toLocaleDateString('es-EC') : '--/--/----'}`;
+    document.getElementById('lite-det-fecha').textContent = `Desembolso: ${c.fecha_desembolso ? window.formatDate(c.fecha_desembolso) : '--/--/----'}`;
 
     // Botón Pagar en Modal
     const btnPagar = document.getElementById('btn-pagar-credito');
@@ -432,11 +469,12 @@ window.openPaymentModalMobile = async function(detalleId, btn) {
 
         // Reset inputs
         const fechaInput = document.getElementById('pago-lite-fecha');
-        // Fecha actual en formato YYYY-MM-DD para Ecuador
+        // Fecha actual en formato YYYY-MM-DD local
         const now = new Date();
-        const offset = -5; // Ecuador UTC-5
-        const ecDate = new Date(now.getTime() + (offset * 3600000));
-        fechaInput.value = now.toISOString().split('T')[0];
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        fechaInput.value = `${year}-${month}-${day}`;
         
         document.getElementById('pago-lite-referencia').value = '';
         const refInput = document.getElementById('pago-lite-referencia');
@@ -477,7 +515,14 @@ window.openPaymentModalMobile = async function(detalleId, btn) {
         };
 
         document.getElementById('pago-lite-convenio-toggle').onchange = handleConvenioToggleLite;
-        document.getElementById('pago-lite-file-input').onchange = (e) => handleLiteReceiptSelect(e.target);
+        
+        // Configurar selección de comprobantes (Cámara y Galería)
+        const cameraInput = document.getElementById('pago-lite-file-input-camera');
+        const galleryInput = document.getElementById('pago-lite-file-input-gallery');
+        
+        if (cameraInput) cameraInput.onchange = (e) => handleLiteReceiptSelect(e.target);
+        if (galleryInput) galleryInput.onchange = (e) => handleLiteReceiptSelect(e.target);
+
         document.getElementById('btn-lite-confirmar-pago').onclick = confirmarPagoLite;
 
         // Reset convenio
@@ -646,11 +691,15 @@ function handleLiteReceiptSelect(input) {
 
 window.clearLiteReceipt = function() {
     currentSelectedReceiptFile = null;
-    document.getElementById('pago-lite-file-input').value = '';
+    const cameraInput = document.getElementById('pago-lite-file-input-camera');
+    const galleryInput = document.getElementById('pago-lite-file-input-gallery');
+    if (cameraInput) cameraInput.value = '';
+    if (galleryInput) galleryInput.value = '';
+    
     document.getElementById('pago-lite-preview').style.display = 'none';
     document.getElementById('pago-lite-upload-placeholder').style.display = 'block';
     document.getElementById('pago-lite-remove-file').style.display = 'none';
-}
+};
 
 /**
  * Procesa el pago final en Supabase
@@ -876,9 +925,10 @@ async function getConsecutiveUnpaidInstallmentsLite(creditoId, startDetalleId) {
 function calcularMoraLite(fechaVencimiento, fechaPagoStr) {
     if (!fechaVencimiento) return { diasMora: 0, montoMora: 0, estaEnMora: false };
     
-    // Normalizar fechas a mediodía para evitar problemas de timezone
-    const fVenc = new Date(fechaVencimiento + 'T12:00:00');
-    const fPago = new Date(fechaPagoStr + 'T12:00:00');
+    const fVenc = window.parseDate(fechaVencimiento);
+    const fPago = window.parseDate(fechaPagoStr);
+    
+    if (!fVenc || !fPago) return { diasMora: 0, montoMora: 0, estaEnMora: false };
     
     const diffTime = fPago.getTime() - fVenc.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -1154,7 +1204,9 @@ async function sincronizarEstadosMorososLite(creditos) {
         if (!c.fecha_primer_pago) return;
 
         // Calcular próxima fecha de pago
-        const fechaBase = new Date(c.fecha_primer_pago + 'T00:00:00'); // Forzar hora local/Ecuador aproximada
+        const fechaBase = window.parseDate(c.fecha_primer_pago);
+        if (!fechaBase) return;
+        
         fechaBase.setMonth(fechaBase.getMonth() + (c.cuotas_pagadas || 0));
         
         // Si la fecha de vencimiento es menor a hoy (ya pasó)
@@ -1181,4 +1233,478 @@ async function sincronizarEstadosMorososLite(creditos) {
             console.error('[Sync Lite] Error:', err);
         }
     }
+}
+
+// ==========================================
+// REPORTERÍA MÓVIL (BRANDEADA Y SINCRONIZADA)
+// ==========================================
+
+const MOBILE_PAIS_CONFIG = {
+    'ECUADOR': { code: 'ECU' },
+    'USA': { code: 'USA' },
+    'ESTADOS UNIDOS': { code: 'USA' },
+    'PERU': { code: 'PEN' },
+    'PERÚ': { code: 'PEN' },
+    'ESPAÑA': { code: 'ESP' }
+};
+
+const MOBILE_ESTADO_CONFIG = {
+    'ACTIVO': { label: 'CARTERA ACTIVA' },
+    'MOROSO': { label: 'CARTERA EN MORA' },
+    'PAUSADO': { label: 'CRÉDITOS PAUSADOS' },
+    'PENDIENTE': { label: 'POR APROBAR' },
+    'CANCELADO': { label: 'CRED. LIQUIDADOS' },
+    'PRECANCELADO': { label: 'PRECANCELADOS' }
+};
+
+function getMobPaisCode(pais) {
+    if (!pais) return '---';
+    const p = pais.toUpperCase();
+    return MOBILE_PAIS_CONFIG[p]?.code || p.substring(0, 3);
+}
+
+window.openMobileExportModal = async function() {
+    let collectors = [];
+    try {
+        const supabase = window.getSupabaseClient();
+        const { data } = await supabase.from('ic_users').select('id, nombre').eq('activo', true).order('nombre');
+        collectors = data || [];
+    } catch (e) {
+        console.warn('Error loading collectors:', e);
+    }
+
+    const now = new Date();
+    const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    let monthsHtml = `<button class="export-selector-btn active" data-value="todos">TODOS LOS MESES</button>`;
+    for (let i = 0; i < 11; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const label = `${monthNames[d.getMonth()].toUpperCase()} ${d.getFullYear().toString().substring(2)}`;
+        const value = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+        monthsHtml += `<button class="export-selector-btn" data-value="${value}">${label}</button>`;
+    }
+
+    let usersHtml = `<button class="export-selector-btn active" data-value="todos">TODOS LOS USUARIOS</button>`;
+    collectors.forEach(u => {
+        const shortName = u.nombre.split(' ')[0].toUpperCase();
+        usersHtml += `<button class="export-selector-btn" data-value="${u.id}">${shortName}</button>`;
+    });
+
+    Swal.fire({
+        title: '<i class="fas fa-file-pdf"></i> Reportes de Créditos',
+        showCloseButton: true,
+        heightAuto: false, 
+        customClass: {
+            container: 'swal-mobile-container',
+            popup: 'report-full-modal',
+            title: 'report-modal-title'
+        },
+        showClass: {
+            popup: 'animate__none' 
+        },
+        html: `
+            <div class="export-options-container">
+                <!-- Selector de Modo con estilo Lite -->
+                <div class="report-mode-selector">
+                    <button class="report-mode-btn active" data-mode="general">
+                        <i class="fas fa-layer-group"></i> GENERAL
+                    </button>
+                    <button class="report-mode-btn" data-mode="cobros">
+                        <i class="fas fa-hand-holding-dollar"></i> COBROS
+                    </button>
+                </div>
+
+                <!-- Info Section -->
+                <div style="background: #e0f2fe; border-left: 4px solid #0ea5e9; padding: 12px 16px; border-radius: 12px; margin-bottom: 20px;">
+                    <p id="mob-export-desc" style="margin: 0; color: #0369a1; font-size: 0.8rem; font-weight: 500; line-height: 1.4;">
+                        Inventario actual de cartera con saldos y estados.
+                    </p>
+                </div>
+                
+                <!-- Sección General -->
+                <div id="mob-section-general">
+                    <div style="background: white; border-radius: 16px; padding: 1.25rem; margin-bottom: 15px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                        <label class="export-label-corporate"><i class="fas fa-filter"></i> Estado de Cartera</label>
+                        <div class="export-selector-group" id="mob-selector-estado">
+                            <button class="export-selector-btn active" data-value="todos">TODOS</button>
+                            <button class="export-selector-btn" data-value="ACTIVO">ACTIVOS</button>
+                            <button class="export-selector-btn" data-value="MOROSO">MORA</button>
+                            <button class="export-selector-btn" data-value="PAUSADO">PAUSA</button>
+                            <button class="export-selector-btn" data-value="PENDIENTE">PEND.</button>
+                            <button class="export-selector-btn" data-value="CANCELADO">CANC.</button>
+                        </div>
+                    </div>
+
+                    <div style="background: white; border-radius: 16px; padding: 1.25rem; margin-bottom: 15px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                        <label class="export-label-corporate"><i class="fas fa-globe"></i> País de Residencia</label>
+                        <div class="export-selector-group" id="mob-selector-pais">
+                            <button class="export-selector-btn active" data-value="todos">TODOS</button>
+                            <button class="export-selector-btn" data-value="ECUADOR">ECUADOR</button>
+                            <button class="export-selector-btn" data-value="USA">EE.UU.</button>
+                            <button class="export-selector-btn" data-value="PERU">PERÚ</button>
+                            <button class="export-selector-btn" data-value="ESPAÑA">ESPAÑA</button>
+                        </div>
+                    </div>
+
+                    <div style="background: white; border-radius: 16px; padding: 1.25rem; margin-bottom: 15px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                        <label class="export-label-corporate"><i class="fas fa-sort-amount-down"></i> Ordenar Por</label>
+                        <div class="export-selector-group" id="mob-selector-order">
+                            <button class="export-selector-btn active" data-value="socio">SOCIO (A-Z)</button>
+                            <button class="export-selector-btn" data-value="monto">MONTO CAPITAL</button>
+                            <button class="export-selector-btn" data-value="estado">POR ESTADO</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección Cobros -->
+                <div id="mob-section-cobros" class="hidden-filter">
+                    <div style="background: white; border-radius: 16px; padding: 1.25rem; margin-bottom: 15px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                        <label class="export-label-corporate"><i class="fas fa-calendar-check"></i> Mes de Recaudación</label>
+                        <div class="export-selector-group" id="mob-selector-mes">
+                            ${monthsHtml}
+                        </div>
+                    </div>
+
+                    <div style="background: white; border-radius: 16px; padding: 1.25rem; margin-bottom: 15px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                        <label class="export-label-corporate"><i class="fas fa-user-tie"></i> Cobrado Por</label>
+                        <div class="export-selector-group" id="mob-selector-cobrador">
+                            ${usersHtml}
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 10px; opacity: 0.5; font-size: 0.7rem; font-weight: 600;">
+                    INKA CORP • EXPORTADOR PDF v2.0
+                </div>
+            </div>
+        `,
+        showCancelButton: true,
+        cancelButtonText: 'CANCELAR',
+        confirmButtonText: '<i class="fas fa-file-arrow-down"></i> GENERAR PDF',
+        confirmButtonColor: '#0E5936',
+        cancelButtonColor: '#64748b',
+        didOpen: () => {
+            const modeBtns = document.querySelectorAll('.report-mode-btn');
+            const secGeneral = document.getElementById('mob-section-general');
+            const secCobros = document.getElementById('mob-section-cobros');
+            const descMode = document.getElementById('mob-export-desc');
+
+            modeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    modeBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const mode = btn.dataset.mode;
+                    if (mode === 'general') {
+                        secGeneral.classList.remove('hidden-filter');
+                        secCobros.classList.add('hidden-filter');
+                        descMode.innerText = 'Inventario actual de cartera con saldos y estados.';
+                    } else {
+                        secGeneral.classList.add('hidden-filter');
+                        secCobros.classList.remove('hidden-filter');
+                        descMode.innerText = 'Detalle de pagos recaudados por mes y usuario.';
+                    }
+                });
+            });
+
+            // Configurar grupos multi-selección
+            ['estado', 'pais', 'mes', 'cobrador'].forEach(groupId => {
+                const container = document.getElementById(`mob-selector-${groupId}`);
+                if (!container) return;
+                const buttons = container.querySelectorAll('.export-selector-btn');
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const val = btn.dataset.value;
+                        if (val === 'todos') {
+                            buttons.forEach(b => b.classList.remove('active'));
+                            btn.classList.add('active');
+                        } else {
+                            const todosBtn = container.querySelector('[data-value="todos"]');
+                            if (todosBtn) todosBtn.classList.remove('active');
+                            btn.classList.toggle('active');
+                            if (container.querySelectorAll('.export-selector-btn.active').length === 0 && todosBtn) {
+                                todosBtn.classList.add('active');
+                            }
+                        }
+                    });
+                });
+            });
+
+            // Single select para Orden
+            const orderContainer = document.getElementById('mob-selector-order');
+            const orderButtons = orderContainer.querySelectorAll('.export-selector-btn');
+            orderButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    orderButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+        },
+        preConfirm: () => {
+            const getActiveValues = (id) => {
+                const container = document.getElementById(`mob-selector-${id}`);
+                if (!container) return 'todos';
+                const active = Array.from(container.querySelectorAll('.export-selector-btn.active')).map(btn => btn.dataset.value);
+                return active.includes('todos') ? 'todos' : active;
+            };
+            return {
+                reportType: document.querySelector('.report-mode-btn.active').dataset.mode,
+                estado: getActiveValues('estado'),
+                pais: getActiveValues('pais'),
+                mes: getActiveValues('mes'),
+                cobrador: getActiveValues('cobrador'),
+                order: document.querySelector('#mob-selector-order .active').dataset.value
+            };
+        }
+    }).then(result => {
+        if (result.isConfirmed) processMobExport(result.value);
+    });
+};
+
+async function processMobExport(filters) {
+    Swal.fire({ 
+        title: 'Generando Reporte...', 
+        allowOutsideClick: false, 
+        didOpen: () => Swal.showLoading() 
+    });
+    
+    if (filters.reportType === 'cobros') {
+        await processMobCobrosExport(filters);
+    } else {
+        let list = [...liteCreditosData];
+
+        // 1. Filtro Estado
+        if (filters.estado !== 'todos') {
+            const estados = Array.isArray(filters.estado) ? filters.estado : [filters.estado];
+            list = list.filter(c => estados.includes(c.estado_credito));
+        }
+
+        // 2. Filtro País
+        if (filters.pais !== 'todos') {
+            const paises = Array.isArray(filters.pais) ? filters.pais : [filters.pais];
+            list = list.filter(c => {
+                const p = (c.socio?.paisresidencia || '').toUpperCase();
+                return paises.some(pref => p.includes(pref));
+            });
+        }
+
+        // 3. Ordenamiento (Igual que PC)
+        switch (filters.order) {
+            case 'socio':
+                list.sort((a, b) => (a.socio?.nombre || '').localeCompare(b.socio?.nombre || ''));
+                break;
+            case 'monto':
+                list.sort((a, b) => parseFloat(b.capital || 0) - parseFloat(a.capital || 0));
+                break;
+            case 'estado':
+                const priority = { 'MOROSO': 1, 'ACTIVO': 2, 'PAUSADO': 3, 'PENDIENTE': 4, 'PRECANCELADO': 5, 'CANCELADO': 6 };
+                list.sort((a, b) => (priority[a.estado_credito] || 99) - (priority[b.estado_credito] || 99));
+                break;
+        }
+
+        generateMobCreditosPDF(list, filters);
+        Swal.close();
+    }
+}
+
+async function processMobCobrosExport(filters) {
+    try {
+        const supabase = window.getSupabaseClient();
+        let query = supabase.from('ic_creditos_pagos').select(`
+            id_pago, fecha_pago, monto_pagado, metodo_pago, cobrado_por,
+            cobrador:ic_users!ic_creditos_pagos_cobrado_por_fkey ( nombre ),
+            detalle:ic_creditos_amortizacion!ic_creditos_pagos_id_detalle_fkey (
+                cuota_total, fecha_vencimiento,
+                credito:ic_creditos!ic_creditos_amortizacion_id_credito_fkey (
+                    codigo_credito, socio:ic_socios ( nombre, paisresidencia )
+                )
+            )
+        `);
+
+        // Filtro por Cobrador
+        if (filters.cobrador !== 'todos') {
+            const cobradores = Array.isArray(filters.cobrador) ? filters.cobrador : [filters.cobrador];
+            query = query.in('cobrado_por', cobradores);
+        }
+
+        const { data: pagos, error } = await query;
+        if (error) throw error;
+
+        let list = (pagos || []).map(p => ({ ...p, credito_info: p.detalle?.credito || {} }));
+        
+        // Filtro por Mes
+        if (filters.mes !== 'todos') {
+            const meses = Array.isArray(filters.mes) ? filters.mes : [filters.mes];
+            list = list.filter(p => p.fecha_pago && meses.includes(p.fecha_pago.substring(0, 7)));
+        }
+
+        list.sort((a, b) => new Date(a.fecha_pago) - new Date(b.fecha_pago));
+        
+        if (list.length === 0) {
+            Swal.fire('Sin resultados', 'No se encontraron cobros con estos filtros.', 'info');
+            return;
+        }
+
+        generateMobCobrosPDF(list, filters);
+        Swal.close();
+    } catch (err) {
+        console.error(err);
+        Swal.fire('Error', 'No se pudieron cargar los cobros', 'error');
+    }
+}
+
+function generateMobCreditosPDF(data, filters) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const verde = [11, 78, 50];
+    const dorado = [242, 187, 58];
+    const now = new Date();
+
+    // Branding (Igual que PC)
+    try { doc.addImage('https://i.ibb.co/3mC22Hc4/inka-corp.png', 'PNG', 15, 12, 18, 18); } catch(e){}
+    doc.setFontSize(18); doc.setTextColor(...verde); doc.text('INKA CORP', 38, 18);
+    doc.setFontSize(10); doc.setTextColor(100); doc.text('REPORTE EJECUTIVO DE CARTERA (MÓVIL)', 38, 24);
+    doc.setFontSize(8); doc.setTextColor(150); doc.text(`Generado: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`, 148, 18);
+
+    doc.setDrawColor(...dorado); doc.setLineWidth(0.5); doc.line(15, 36, 195, 36);
+
+    const rows = data.map((c, i) => {
+        const fechaBase = window.parseDate(c.fecha_primer_pago);
+        if (fechaBase) fechaBase.setMonth(fechaBase.getMonth() + (c.cuotas_pagadas || 0));
+        
+        const proxPago = (c.estado_credito === 'CANCELADO' || c.estado_credito === 'PRECANCELADO') ? '-' : window.formatDate(fechaBase);
+
+        return [
+            i + 1,
+            (c.socio?.nombre || 'N/A').toUpperCase(),
+            `$${parseFloat(c.capital).toFixed(2)}`,
+            getMobPaisCode(c.socio?.paisresidencia),
+            `${c.cuotas_pagadas}/${c.plazo}`,
+            proxPago,
+            MOBILE_ESTADO_CONFIG[c.estado_credito]?.label || c.estado_credito
+        ];
+    });
+
+    doc.autoTable({
+        startY: 40,
+        head: [['#', 'SOCIO', 'CAPITAL', 'PAÍS', 'CUOTAS', 'PRÓX. PAGO', 'ESTADO']],
+        body: rows,
+        theme: 'striped',
+        headStyles: { fillColor: verde, textColor: dorado, fontStyle: 'bold', halign: 'center' },
+        styles: { fontSize: 7, cellPadding: 2 },
+        columnStyles: {
+            0: { halign: 'center', cellWidth: 8 },
+            2: { halign: 'right' },
+            3: { halign: 'center' },
+            4: { halign: 'center' },
+            5: { halign: 'center' },
+            6: { halign: 'center' }
+        },
+        didParseCell: (d) => {
+            if (d.section === 'body' && d.column.index === 6) {
+                const status = d.cell.raw;
+                if (status === 'CARTERA EN MORA') {
+                    d.cell.styles.fillColor = [254, 226, 226];
+                    d.cell.styles.textColor = [185, 28, 28];
+                    d.cell.styles.fontStyle = 'bold';
+                } else if (status === 'CARTERA ACTIVA') {
+                    d.cell.styles.fillColor = [220, 252, 231];
+                    d.cell.styles.textColor = [21, 128, 61];
+                }
+            }
+        },
+        didDrawPage: (d) => {
+            doc.setFontSize(8); doc.setTextColor(150);
+            doc.text(`Página ${doc.internal.getNumberOfPages()}`, 15, doc.internal.pageSize.getHeight() - 10);
+            doc.text('INKA CORP SISTEMAS © 2024', 150, doc.internal.pageSize.getHeight() - 10);
+        }
+    });
+
+    doc.save(`Reporte_Cartera_Mob_${now.getTime()}.pdf`);
+}
+
+function generateMobCobrosPDF(data, filters) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('l', 'mm', 'a4');
+    const verde = [11, 78, 50];
+    const dorado = [242, 187, 58];
+    const now = new Date();
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // Branding (Igual que PC)
+    try { doc.addImage('https://i.ibb.co/3mC22Hc4/inka-corp.png', 'PNG', 15, 12, 18, 18); } catch(e){}
+    doc.setFontSize(20); doc.setTextColor(...verde); doc.text('INKA CORP', 38, 18);
+    doc.setFontSize(12); doc.setTextColor(100); doc.text('REPORTE DETALLADO DE RECAUDACIÓN (MÓVIL)', 38, 25);
+    doc.setFontSize(9); doc.setTextColor(150); doc.text(`Generado: ${now.toLocaleString()}`, pageWidth - 60, 18);
+
+    doc.setDrawColor(...dorado); doc.setLineWidth(0.6); doc.line(15, 36, pageWidth - 15, 36);
+    
+    let totalGeneral = 0;
+    const resumenCobradores = {};
+
+    const rows = data.map((p, i) => {
+        const monto = parseFloat(p.monto_pagado || 0);
+        const mora = Math.max(0, monto - parseFloat(p.detalle?.cuota_total || 0));
+        totalGeneral += monto;
+        
+        const cobName = p.cobrador?.nombre || 'SISTEMA';
+        resumenCobradores[cobName] = (resumenCobradores[cobName] || 0) + monto;
+
+        const cParts = cobName.split(' ');
+        const cShort = (cParts[0] || '') + (cParts[2] ? ' ' + cParts[2] : '');
+
+        const row = [
+            i + 1,
+            (p.credito_info?.socio?.nombre || 'N/A').toUpperCase(),
+            getMobPaisCode(p.credito_info?.socio?.paisresidencia),
+            `$${monto.toFixed(2)}`,
+            `$${mora.toFixed(2)}`,
+            window.formatDate(p.fecha_pago),
+            cShort.toUpperCase(),
+            (p.metodo_pago || 'EFECTIVO').toUpperCase()
+        ];
+        row._raw = p;
+        return row;
+    });
+
+    doc.autoTable({
+        startY: 40,
+        head: [['#', 'SOCIO', 'PAÍS', 'VALOR COB.', 'MORA CONT.', 'FECHA PAGO', 'COBRADOR', 'MÉTODO']],
+        body: rows,
+        theme: 'striped',
+        headStyles: { fillColor: verde, textColor: dorado, fontStyle: 'bold', halign: 'center' },
+        styles: { fontSize: 7.5, cellPadding: 2.5 },
+        columnStyles: {
+            0: { halign: 'center', cellWidth: 10 },
+            3: { halign: 'right', fontStyle: 'bold' },
+            4: { halign: 'right' },
+            5: { halign: 'center' }
+        },
+        didParseCell: (d) => {
+            if (d.section === 'body') {
+                const raw = d.row.raw._raw;
+                if (raw?.fecha_pago && raw?.detalle?.fecha_vencimiento && new Date(raw.fecha_pago) > new Date(raw.detalle.fecha_vencimiento)) {
+                    d.cell.styles.fillColor = [254, 226, 226];
+                    d.cell.styles.textColor = [153, 27, 27];
+                }
+            }
+        }
+    });
+
+    let finalY = doc.lastAutoTable.finalY + 10;
+    if (finalY > doc.internal.pageSize.getHeight() - 50) { doc.addPage(); finalY = 20; }
+
+    doc.setFontSize(10); doc.setTextColor(...verde); doc.text('RESUMEN POR COBRADOR:', 15, finalY);
+    finalY += 6;
+    doc.setFontSize(9); doc.setTextColor(60);
+    Object.keys(resumenCobradores).forEach(name => {
+        doc.text(`${name}:`, 15, finalY);
+        doc.text(`$${resumenCobradores[name].toFixed(2)}`, 100, finalY, { align: 'right' });
+        finalY += 5;
+    });
+
+    doc.setLineWidth(0.3); doc.line(15, finalY, 100, finalY); finalY += 6;
+    doc.setFontSize(11); doc.setFont(undefined, 'bold');
+    doc.text('TOTAL GENERAL RECAUDADO:', 15, finalY);
+    doc.text(`$${totalGeneral.toFixed(2)}`, 100, finalY, { align: 'right' });
+
+    doc.save(`Recaudacion_Mob_${now.getTime()}.pdf`);
 }

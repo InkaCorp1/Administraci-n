@@ -3,30 +3,32 @@
  * PWA Offline Support
  */
 
-const CACHE_NAME = 'inkacorp-v21';
-const STATIC_CACHE = 'inkacorp-static-v21';
+const CACHE_NAME = 'inkacorp-v22';
+const STATIC_CACHE = 'inkacorp-static-v22';
 
 // Archivos esenciales para cachear (Shell de la app)
 const ESSENTIAL_FILES = [
     './',
     'index.html',
+    'login.html',
     'mobile/index.html',
     '404.html',
     'css/styles.css',
     'js/config.js',
     'js/auth.js',
     'js/app.js',
+    'mobile/js/mobile-app.js',
     'js/image-utils.js',
-    'manifest.json',
-    'favicon.ico'
+    'manifest.json'
 ];
 
-// Módulos JS que se cargan bajo demanda pero son importantes
+// Módulo JS y CSS importantes
 const MODULE_FILES = [
     'js/modules/socios.js',
     'js/modules/socios_edit.js',
     'js/modules/solicitud_credito.js',
     'js/modules/creditos.js',
+    'mobile/js/modules/creditos.js',
     'js/modules/creditos_preferenciales.js',
     'js/modules/polizas.js',
     'js/modules/precancelaciones.js',
@@ -34,17 +36,19 @@ const MODULE_FILES = [
     'js/modules/simulador.js',
     'js/modules/aportes.js',
     'js/modules/bancos.js',
-    'js/modules/administrativos.js'
+    'js/modules/administrativos.js',
+    'mobile/css/mobile-styles.css'
 ];
 
 // Instalación del Service Worker
 self.addEventListener('install', (event) => {
-    console.log('[SW] Installing v21...');
+    console.log('[SW] Installing v22...');
+    self.skipWaiting(); // Forzar activación
     const allFiles = [...ESSENTIAL_FILES, ...MODULE_FILES];
     event.waitUntil(
         caches.open(STATIC_CACHE)
             .then((cache) => {
-                const fetchOptions = { cache: 'reload' };
+                const fetchOptions = { cache: 'reload' }; // Forzar fetch desde red al cachear
                 return Promise.all(
                     allFiles.map(url => {
                         return fetch(url, fetchOptions).then(response => {
@@ -54,23 +58,31 @@ self.addEventListener('install', (event) => {
                     })
                 );
             })
-            .then(() => self.skipWaiting())
     );
 });
 
 // Activación - limpiar caches antiguos
 self.addEventListener('activate', (event) => {
-    console.log('[SW] Activating v21...');
+    console.log('[SW] Activating v22...');
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames
-                    .filter((name) => name.startsWith('inkacorp-') && name !== STATIC_CACHE && name !== CACHE_NAME)
+                    .filter((name) => name.startsWith('inkacorp-') && name !== STATIC_CACHE)
                     .map((name) => caches.delete(name))
             );
         }).then(() => self.clients.claim())
     );
 });
+
+// Mensaje para forzar actualización desde el cliente
+self.addEventListener('message', (event) => {
+    if (event.data === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
+});
+
+// Estrategia: Network First con Fallback SPA Robustecido
 
 // Estrategia: Network First con Fallback SPA Robustecido
 self.addEventListener('fetch', (event) => {
