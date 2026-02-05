@@ -1902,58 +1902,74 @@ async function handleSaveNewBanco() {
         const primerPago = document.getElementById('new-banco-primer-pago').value;
         const deudor = document.getElementById('new-banco-deudor').value;
         const motivo = document.getElementById('new-banco-motivo').value;
-        const valor_recibido = document.getElementById('new-banco-recibido').value || 0; // Cash received
+        const valor_recibido = document.getElementById('new-banco-recibido').value || 0;
+        const periodicidad = document.getElementById('new-banco-periodicidad')?.value || 'MENSUAL';
 
         const id_transaccion = `TRX-${Date.now()}`; // Generate unique ID
 
         const supabase = window.getSupabaseClient();
 
         // 1. Insert Header (ic_situacion_bancaria)
+        // Build a safe payload: map local names -> DB column names and filter unknowns
+        const _num = v => (v === '' || v === null || v === undefined) ? null : Number(String(v).replace(/[,\s]/g, ''));
+        const _int = v => { const n = _num(v); return n == null ? null : Math.trunc(n); };
+
+        const columnMap = {
+            id_transaccion: id_transaccion,
+            nombre_banco: nombre_banco,
+            tipo_transaccion: tipo,           // mapped from `tipo`
+            valor: _num(monto),               // Monto Solicitado
+            valor_descontado: _num(monto) - _num(valor_recibido),
+            monto_final: _num(total),
+            plazo: _int(plazo),
+            plazo_tipo: periodicidad,
+            interes: _num(interes),
+            mensual: _num(mensual),
+            fecha_transaccion: fecha || null,
+            primer_pago: primerPago || null,
+            a_nombre_de: deudor || null,
+            motivo: motivo || null,
+            logo_banco: logo_url || null,
+            estado: 'ACTIVO',
+            contador: _int(plazo) // Total quotas
+        };
+
+        const payload = Object.fromEntries(
+            Object.entries(columnMap).filter(([k, v]) => v !== undefined)
+        );
+
         const { error: headerError } = await supabase
             .from('ic_situacion_bancaria')
-            .insert({
-                id_transaccion: id_transaccion,
-                nombre_banco: nombre_banco,
-                tipo: tipo,
-                monto_inicial: monto,
-                monto_final: total,
-                plazo: plazo,
-                interes: interes,
-                mensual: mensual,
-                fecha_inicio: fecha,
-                a_nombre_de: deudor,
-                motivo: motivo,
-                valor_recibido: valor_recibido, // If column exists
-                logo_banco: logo_url,
-                estado: 'ACTIVO',
-                contador: plazo // Total quotas
-            });
+            .insert(payload);
 
         if (headerError) throw headerError;
 
         // 2. Generate Amortization Table (ic_situacion_bancaria_detalle)
         const detalles = [];
-        let currentDate = new Date(primerPago || fecha); // Use primerPago for credits
-
-        // If primerPago is set, use it. If not (policy), handle differently or just start next month
+        
+        // Base date: Use primerPago if provided, otherwise the transaction date
+        const baseDate = primerPago ? new Date(primerPago + 'T12:00:00') : new Date(fecha + 'T12:00:00');
+        
+        // If it's a policy and no primerPago was set, start next month
         if (!primerPago && tipo === 'POLIZA') {
-            currentDate.setMonth(currentDate.getMonth() + 1);
+            baseDate.setMonth(baseDate.getMonth() + 1);
         }
 
         for (let i = 1; i <= plazo; i++) {
+            // Calculate date precisely to keep the same day
+            const installmentDate = new Date(baseDate);
+            installmentDate.setMonth(baseDate.getMonth() + (i - 1));
+            
             detalles.push({
+                id_detalle: `${id_transaccion}-C${i}`, // Custom text ID
                 transaccion: id_transaccion,
                 cuota: i,
-                fecha_pago: currentDate.toISOString().split('T')[0],
-                valor: mensual, // Fixed quota
+                fecha_pago: installmentDate.toISOString().split('T')[0],
+                valor: mensual,
                 estado: 'PENDIENTE',
-                interes: 0, // Simplified
-                capital: 0, // Simplified
-                saldo: total - (mensual * i)
+                fecha_pagado: null,
+                fotografia: null
             });
-
-            // Next Month
-            currentDate.setMonth(currentDate.getMonth() + 1);
         }
 
         const { error: detailError } = await supabase

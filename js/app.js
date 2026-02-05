@@ -602,6 +602,47 @@ function setupEventListeners() {
         sidebarOverlay.addEventListener('click', closeSidebar);
     }
 
+    // Protege contra "scroll chaining" desde el sidebar hacia modales (fallback JS para navegadores antiguos)
+    (function attachSidebarScrollGuard() {
+        const nav = document.querySelector('.nav-menu');
+        const sb = document.getElementById('sidebar');
+        if (!nav || !sb) return;
+
+        let touchStartY = 0;
+
+        // Wheel (ratón/trackpad) - prevenir que el desplazamiento en el extremo burpee al modal
+        nav.addEventListener('wheel', function (ev) {
+            // Solo intervenir si el sidebar está abierto
+            if (sb.classList.contains('collapsed')) return;
+
+            const delta = ev.deltaY;
+            const atTop = nav.scrollTop === 0 && delta < 0;
+            const atBottom = Math.ceil(nav.scrollTop + nav.clientHeight) >= nav.scrollHeight && delta > 0;
+
+            if (atTop || atBottom) {
+                ev.preventDefault();
+                ev.stopPropagation();
+            }
+        }, { passive: false });
+
+        // Touch (móviles) — bloqueo cuando se intenta hacer overscroll en los extremos
+        nav.addEventListener('touchstart', function (ev) {
+            touchStartY = ev.touches[0]?.clientY || 0;
+        }, { passive: true });
+
+        nav.addEventListener('touchmove', function (ev) {
+            if (sb.classList.contains('collapsed')) return;
+            const currentY = ev.touches[0]?.clientY || 0;
+            const dy = touchStartY - currentY;
+            const atTop = nav.scrollTop === 0 && dy < 0;
+            const atBottom = Math.ceil(nav.scrollTop + nav.clientHeight) >= nav.scrollHeight && dy > 0;
+            if (atTop || atBottom) {
+                ev.preventDefault();
+                ev.stopPropagation();
+            }
+        }, { passive: false });
+    })();
+
     // Home Shortcut
     const homeBtn = document.getElementById('home-shortcut');
     if (homeBtn) {

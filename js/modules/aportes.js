@@ -87,6 +87,122 @@ function setupAportesEventListeners() {
         formAporte.addEventListener('submit', handleAporteSubmit);
     }
 
+    // Search input for aporte modal (filtro en tiempo real)
+    const aporteSearch = document.getElementById('aporte-socio-search');
+    const aporteHidden = document.getElementById('aporte-socio');
+    const aporteDatalist = document.getElementById('aporte-socio-list');
+    const aporteSelectedView = document.getElementById('aporte-socio-selected');
+
+    if (aporteSearch) {
+        const suggestionsEl = document.getElementById('aporte-socio-suggestions');
+        let focusedIndex = -1;
+
+        // Render suggestions under the input using filterAporteSocios
+        async function renderSuggestions(q) {
+            const matches = await filterAporteSocios(q) || [];
+            if (!suggestionsEl) return matches;
+
+            if (!matches || matches.length === 0) {
+                suggestionsEl.innerHTML = '';
+                suggestionsEl.classList.add('hidden');
+                focusedIndex = -1;
+                return matches;
+            }
+
+            suggestionsEl.innerHTML = matches.map((m, idx) =>
+                `<div role="option" aria-selected="false" class="aporte-suggestion" data-idx="${idx}" data-id="${m.idsocio}">
+                    <div class="suggestion-name">${(m.nombre || '').replace(/</g,'&lt;')}</div>
+                </div>`
+            ).join('');
+
+            suggestionsEl.classList.remove('hidden');
+            focusedIndex = -1;
+
+            // attach click handlers
+            Array.from(suggestionsEl.children).forEach(node => {
+                node.addEventListener('click', (ev) => {
+                    const id = node.getAttribute('data-id');
+                    selectAporteById(id);
+                    hideSuggestions();
+                });
+            });
+
+            return matches;
+        }
+
+        function showSuggestions() { if (suggestionsEl) suggestionsEl.classList.remove('hidden'); }
+        function hideSuggestions() { if (suggestionsEl) suggestionsEl.classList.add('hidden'); focusedIndex = -1; }
+
+        function highlight(index) {
+            if (!suggestionsEl) return;
+            const items = suggestionsEl.querySelectorAll('.aporte-suggestion');
+            items.forEach((it, i) => {
+                const sel = i === index;
+                it.setAttribute('aria-selected', sel ? 'true' : 'false');
+                it.classList.toggle('is-active', sel);
+                if (sel) it.scrollIntoView({ block: 'nearest' });
+            });
+            focusedIndex = index;
+        }
+
+        aporteSearch.addEventListener('input', async (e) => {
+            clearSelectedAporte(false);
+            await renderSuggestions(e.target.value);
+        });
+
+        aporteSearch.addEventListener('keydown', (e) => {
+            const items = suggestionsEl ? suggestionsEl.querySelectorAll('.aporte-suggestion') : [];
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (items.length === 0) return;
+                const next = Math.min(focusedIndex + 1, items.length - 1);
+                highlight(next);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (items.length === 0) return;
+                const prev = Math.max(focusedIndex - 1, 0);
+                highlight(prev);
+            } else if (e.key === 'Enter') {
+                if (focusedIndex >= 0 && suggestionsEl) {
+                    const node = suggestionsEl.querySelector(`.aporte-suggestion[data-idx="${focusedIndex}"]`);
+                    if (node) {
+                        selectAporteById(node.getAttribute('data-id'));
+                        hideSuggestions();
+                        e.preventDefault();
+                    }
+                } else {
+                    // if exact single match, select it
+                    const matches = (sociosAportes || []).filter(s => (s.nombre || '').toLowerCase() === (aporteSearch.value || '').trim().toLowerCase() || String(s.idsocio) === (aporteSearch.value || '').trim());
+                    if (matches.length === 1) {
+                        selectAporteById(matches[0].idsocio);
+                        hideSuggestions();
+                        e.preventDefault();
+                    }
+                }
+            } else if (e.key === 'Escape') {
+                hideSuggestions();
+                clearSelectedAporte(true);
+            }
+        });
+
+        aporteSearch.addEventListener('focus', (e) => {
+            if ((aporteSearch.value || '').trim().length > 0) renderSuggestions(aporteSearch.value);
+        });
+
+        // click outside hides suggestions
+        document.addEventListener('click', (ev) => {
+            if (!document.getElementById('modal-aporte')) return;
+            const within = ev.target.closest && ev.target.closest('#modal-aporte');
+            if (!within) return;
+            const insideInput = ev.target.closest && ev.target.closest('#aporte-socio-search');
+            const insideSug = ev.target.closest && ev.target.closest('#aporte-socio-suggestions');
+            if (!insideInput && !insideSug) hideSuggestions();
+        });
+
+        function hideSuggestionsOnBlur() { setTimeout(() => hideSuggestions(), 120); }
+        aporteSearch.addEventListener('blur', hideSuggestionsOnBlur);
+    }
+
     // Filtros de Historial
     const btnFilter = document.getElementById('btn-filter-aportes');
     if (btnFilter) {
@@ -274,8 +390,10 @@ async function llenarSelectsSocios() {
         const selectFilter = document.getElementById('filter-aporte-socio');
 
         if (selectAporte) {
-            selectAporte.innerHTML = '<option value="">Seleccione una persona...</option>' +
-                socios.map(s => `<option value="${s.idsocio}">${s.nombre}</option>`).join('');
+            // selectAporte fue eliminado del DOM — mantener compatibilidad: escribir el primer match en el hidden si existe
+            if (socios.length === 1) {
+                selectAporte.value = socios[0].idsocio;
+            }
         }
 
         if (selectFilter) {
@@ -283,8 +401,129 @@ async function llenarSelectsSocios() {
                 socios.map(s => `<option value="${s.idsocio}">${s.nombre}</option>`).join('');
         }
 
+        // Reset visual/search state
+        const aporteSearch = document.getElementById('aporte-socio-search');
+        if (aporteSearch) aporteSearch.value = '';
+        if (typeof filterAporteSocios === 'function') filterAporteSocios('');
+
     } catch (error) {
         console.error('Error al llenar selects de socios:', error);
+    }
+}
+
+/**
+ * Filtra el select `#aporte-socio` usando el array `sociosAportes` (sin volver a pedir al servidor)
+ * @param {string} query
+ */
+function escapeHtml(str){ return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function filterAporteSocios(query) {
+    const q = String(query || '').trim().toLowerCase();
+
+    // Si aún no tenemos socios cargados, cargarlos (fallback silencioso)
+    if (!Array.isArray(sociosAportes) || sociosAportes.length === 0) {
+        try {
+            await llenarSelectsSocios();
+        } catch (err) {
+            console.warn('filterAporteSocios: no se pudieron cargar socios a tiempo', err);
+        }
+    }
+
+    const matches = q === ''
+        ? sociosAportes
+        : sociosAportes.filter(s => (s.nombre || '').toLowerCase().includes(q) || String(s.idsocio).includes(q));
+
+    // Poblar datalist con coincidencias (para que el navegador muestre sugerencias)
+    const aporteDatalist = document.getElementById('aporte-socio-list');
+    if (aporteDatalist) {
+        if (!matches || matches.length === 0) {
+            aporteDatalist.innerHTML = `<option value="No se encontraron socios"></option>`;
+        } else {
+            aporteDatalist.innerHTML = matches.map(s => `<option value="${escapeHtml(s.nombre)}"></option>`).join('');
+        }
+    }
+
+    return matches;
+}
+
+/**
+ * Setea la selección actual del socio: actualiza el hidden, muestra la 'pill' y limpia el input
+ */
+function selectAporteById(id) {
+    const found = sociosAportes.find(s => String(s.idsocio) === String(id));
+    const aporteHidden = document.getElementById('aporte-socio');
+    const aporteSearch = document.getElementById('aporte-socio-search');
+    const aporteSelectedView = document.getElementById('aporte-socio-selected');
+    if (!found || !aporteHidden || !aporteSearch || !aporteSelectedView) return;
+
+    aporteHidden.value = found.idsocio;
+    aporteSelectedView.classList.remove('hidden');
+    aporteSelectedView.innerHTML = `
+        <div class="selected-socio-pill">
+            <i class="fas fa-user-circle mr-2"></i>
+            <span class="selected-socio-name">${escapeHtml(found.nombre)}</span>
+            <button type="button" class="btn-clear-selected" aria-label="Quitar socio">&times;</button>
+        </div>
+    `;
+    aporteSearch.value = '';
+
+    // Clear handler for the pill
+    const btn = aporteSelectedView.querySelector('.btn-clear-selected');
+    if (btn) btn.addEventListener('click', () => clearSelectedAporte(true));
+}
+
+function clearSelectedAporte(focusInput = false) {
+    const aporteHidden = document.getElementById('aporte-socio');
+    const aporteSearch = document.getElementById('aporte-socio-search');
+    const aporteSelectedView = document.getElementById('aporte-socio-selected');
+    if (aporteHidden) aporteHidden.value = '';
+    if (aporteSelectedView) { aporteSelectedView.classList.add('hidden'); aporteSelectedView.innerHTML = ''; }
+    if (focusInput && aporteSearch) aporteSearch.focus();
+}
+
+
+/**
+ * Intenta abrir el dropdown nativo de un <select> de forma no destructiva.
+ * Prueba varios métodos (keydown ArrowDown, mousedown/click) y atrapa errores.
+ */
+function openSelectDropdown(select) {
+    if (!select) return;
+
+    // 1) Focus + ArrowDown (funciona en Chrome/Edge/Firefox en escritorio)
+    try {
+        select.focus();
+        const kd = new KeyboardEvent('keydown', { key: 'ArrowDown', code: 'ArrowDown', keyCode: 40, which: 40, bubbles: true, cancelable: true });
+        select.dispatchEvent(kd);
+    } catch (e) {
+        /* noop */
+    }
+
+    // 2) Simular mousedown/click (algunos navegadores abren el dropdown con mousedown)
+    try {
+        const md = new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window });
+        select.dispatchEvent(md);
+        const mu = new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window });
+        select.dispatchEvent(mu);
+        const ck = new MouseEvent('click', { bubbles: true, cancelable: true, view: window });
+        select.dispatchEvent(ck);
+    } catch (e) {
+        /* noop */
+    }
+
+    // 3) Fallback para móviles: temporariamente mostrar el select como lista (no persistente)
+    try {
+        if ('ontouchstart' in window && !select.hasAttribute('data-size-temp')) {
+            const size = Math.min(8, Math.max(3, select.options.length));
+            select.setAttribute('data-size-temp', String(size));
+            select.setAttribute('size', String(size));
+            // Restaurar después de 2s para no romper el layout permanentemente
+            setTimeout(() => {
+                select.removeAttribute('size');
+                select.removeAttribute('data-size-temp');
+            }, 2000);
+        }
+    } catch (e) {
+        /* noop */
     }
 }
 
@@ -294,9 +533,16 @@ async function llenarSelectsSocios() {
 async function handleAporteSubmit(e) {
     e.preventDefault();
 
-    const socioId = document.getElementById('aporte-socio').value;
+    // resolver socioId desde el hidden; si está vacío, intentar resolver por texto escrito
+    let socioId = (document.getElementById('aporte-socio') || {}).value || '';
     const monto = document.getElementById('aporte-monto').value;
     const fecha = document.getElementById('aporte-fecha').value;
+
+    if (!socioId) {
+        const q = (document.getElementById('aporte-socio-search') || {}).value || '';
+        const matches = sociosAportes.filter(s => (s.nombre || '').toLowerCase() === q.trim().toLowerCase() || String(s.idsocio) === q.trim());
+        if (matches.length === 1) socioId = matches[0].idsocio;
+    }
 
     if (!socioId || !monto || !fecha) {
         showAlert('Por favor complete todos los campos obligatorios', 'Atención', 'warning');

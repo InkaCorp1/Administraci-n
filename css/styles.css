@@ -288,7 +288,13 @@ button {
     flex: 1;
     padding: 1rem;
     overflow-y: auto;
+    /* Evita que al llegar al extremo del sidebar el scroll se propague al modal (scroll chaining) */
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
+
+/* Cuando el sidebar está cerrado no es necesario aplicar la protección extra, pero la regla
+   es inofensiva y mejora compatibilidad táctil en navegadores modernos. */
 
 .nav-section-title {
     font-size: 0.7rem;

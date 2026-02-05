@@ -101,12 +101,20 @@
             <div class="modal-body">
                 <div class="form-group-premium">
                     <label for="aporte-socio">Socio / Aportante</label>
-                    <div class="input-with-icon">
-                        <i class="fas fa-user-circle"></i>
-                        <select id="aporte-socio" class="form-control-premium" required>
-                            <option value="">Seleccione una persona...</option>
-                        </select>
+                    <!-- Barra de búsqueda añadida (filtra el select de abajo) -->
+                    <div class="input-with-icon" style="margin-bottom: .5rem; position: relative;">
+                        <i class="fas fa-search"></i>
+                        <input id="aporte-socio-search" class="form-control-premium" type="text" placeholder="Buscar socio..." autocomplete="off" aria-label="Buscar socio" aria-autocomplete="list" aria-haspopup="listbox" aria-controls="aporte-socio-suggestions">
+
+                        <!-- Contenedor de sugerencias personalizado (solo aparece mientras se escribe) -->
+                        <div id="aporte-socio-suggestions" class="aporte-suggestions hidden" role="listbox" aria-label="Sugerencias de socios"></div>
                     </div>
+
+                    <!-- Select eliminado del DOM por petición: mantenemos un input oculto para compatibilidad con el submit -->
+                    <input type="hidden" id="aporte-socio" name="aporte-socio">
+
+                    <!-- Contenedor visual para mostrar el socio seleccionado (reemplaza la apariencia previa del select) -->
+                    <div id="aporte-socio-selected" class="selected-socio hidden" aria-live="polite" role="status"></div> 
                 </div>
                 <div class="form-row">
                     <div class="form-group-premium">
