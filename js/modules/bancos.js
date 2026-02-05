@@ -1611,7 +1611,9 @@ function setupNewBancoListeners() {
     // Auto-calculo on input change
     const formInputs = document.querySelectorAll('#form-nuevo-banco input, #form-nuevo-banco select');
     formInputs.forEach(input => {
+        // 'input' covers typing; 'change' ensures pickers/spinners/date inputs also refresh the preview
         input.addEventListener('input', updateBancoPreview);
+        input.addEventListener('change', updateBancoPreview);
     });
 
     // Toggle fields based on type
@@ -1804,6 +1806,17 @@ function updateBancoPreview() {
     let cuota = 0;
     let total = parseFloat(document.getElementById('new-banco-total').value) || 0;
     const manualCuota = parseFloat(document.getElementById('new-banco-valor-recibir').value) || 0;
+
+    // Si el usuario no ingresó 'total' pero sí puso monto/interés/plazo, estimar un Total a pagar
+    // (fallback simple: capital + interés simple proporcional al plazo). Esto evita que la
+    // tarjeta quede en $0.00 cuando el usuario sólo completa Monto/Interés/Plazo.
+    if (total === 0 && monto > 0) {
+        const periodicidad = (document.getElementById('new-banco-periodicidad') || {}).value || 'MENSUAL';
+        // Interpretación conservadora: 'interes' es % anual; plazo viene en meses si periodicidad=MENSUAL
+        const years = periodicidad.toUpperCase() === 'MENSUAL' ? (plazo / 12) : plazo;
+        const interesTotal = (interes > 0 && years > 0) ? monto * (interes / 100) * years : 0;
+        total = monto + interesTotal;
+    }
 
     if (manualCuota > 0) {
         // El usuario suministró una cuota manual: usarla (override)
