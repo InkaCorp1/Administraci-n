@@ -68,7 +68,8 @@
         <div class="modal-header-premium">
             <div class="bank-info-header">
                 <div class="bank-logo-container">
-                    <img id="modal-bank-logo" src="" alt="Banco">
+                    <img id="modal-bank-logo" src="" alt="Banco" class="hidden">
+                    <div id="modal-bank-logo-icon" class="hidden"><i class="fas fa-university"></i></div>
                 </div>
                 <div class="bank-title-group">
                     <h2 id="modal-bank-name" class="modal-title-premium">Nombre del Banco</h2>
@@ -82,8 +83,8 @@
 
         <div class="modal-body-premium">
             <div class="split-view">
-                <!-- Columna Izquierda: Información -->
-                <div class="info-column">
+                <!-- Columna Izquierda: Información y Tabla -->
+                <div class="table-column">
                     <div class="detail-section">
                         <h3 class="section-title"><i class="fas fa-info-circle"></i> Datos del Crédito</h3>
                         <div class="detail-grid">
@@ -122,6 +123,45 @@
                         </div>
                     </div>
 
+                    <h3 class="section-title"><i class="fas fa-table"></i> Tabla de Amortización</h3>
+
+                    <!-- SKELETON: mostrado mientras se carga la tabla para evitar parpadeo -->
+                    <div id="modal-banco-skeleton" class="modal-skeleton hidden" aria-hidden="true">
+                        <div class="skeleton-left">
+                            <div class="skeleton-line short"></div>
+                            <div class="skeleton-table">
+                                <div class="skeleton-row"><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell small"></div></div>
+                                <div class="skeleton-row"><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell small"></div></div>
+                                <div class="skeleton-row"><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell small"></div></div>
+                                <div class="skeleton-row"><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell small"></div></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-right">
+                            <div class="skeleton-line medium"></div>
+                            <div class="skeleton-line small"></div>
+                            <div class="skeleton-box"></div>
+                        </div>
+                    </div>
+
+                    <div class="amortizacion-scroll">
+                        <table class="premium-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Vencimiento</th>
+                                    <th>Valor</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-amortizacion-banco">
+                                <!-- Filas dinámicas -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Resumen de Pagos (tarjetita) -->
+                <div class="preview-column">
                     <div class="detail-section">
                         <h3 class="section-title"><i class="fas fa-chart-pie"></i> Resumen de Pagos</h3>
                         <div class="resumen-pago">
@@ -145,26 +185,13 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <!-- Columna Derecha: Tabla Amortización -->
-                <div class="table-column">
-                    <h3 class="section-title"><i class="fas fa-table"></i> Tabla de Amortización</h3>
-                    <div class="amortizacion-scroll">
-                        <table class="premium-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Vencimiento</th>
-                                    <th>Valor</th>
-                                    <th>Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabla-amortizacion-banco">
-                                <!-- Filas dinámicas -->
-                            </tbody>
-                        </table>
+                        <!-- Skeleton para la columna de resumen (evita parpadeo) -->
+                        <div id="modal-banco-skeleton-right" class="modal-skeleton-right hidden" aria-hidden="true">
+                            <div class="skeleton-line medium"></div>
+                            <div class="skeleton-line small"></div>
+                            <div class="skeleton-box small"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -176,6 +203,10 @@
             </button>
             <button id="btn-precancelar-banco" class="btn btn-warning">
                 <i class="fas fa-hand-holding-usd"></i> Precancelar
+            </button>
+            <!-- Botón para eliminar un crédito agregado por error. Pide confirmación y borra definitivamente -->
+            <button class="btn btn-danger" id="btn-delete-banco" onclick="deleteBancoPermanently(event, currentBancoId)" title="Eliminar crédito (irrevocable)" aria-label="Eliminar crédito">
+                <i class="fas fa-ban"></i> Eliminar
             </button>
             <button class="btn btn-secondary" data-close-modal>Cerrar</button>
         </div>
@@ -352,18 +383,21 @@
             </button>
         </div>
         <div class="modal-body-premium">
-            <div class="split-view reverse-mobile">
+            <div class="split-view">
                 <!-- Columna Izquierda: Formulario -->
                 <div class="form-column">
                     <form id="form-nuevo-banco" class="premium-form">
 
                         <div class="form-row">
                             <div class="form-group-premium grow">
-                                <label for="new-banco-nombre"><i class="fas fa-university"></i> Banco</label>
-                                <select id="new-banco-nombre" required class="input-premium">
-                                    <option value="">Seleccione Banco...</option>
-                                    <!-- Options loaded from DB -->
-                                </select>
+                                <label for="new-banco-search"><i class="fas fa-university"></i> Banco</label>
+                                <div class="searchable-select" id="banco-search-container">
+                                    <input type="text" id="new-banco-search" class="input-premium" placeholder="Buscar o seleccionar banco..." autocomplete="off" required>
+                                    <div id="banco-options-list" class="options-list hidden">
+                                        <!-- Opciones dinámicas -->
+                                    </div>
+                                    <input type="hidden" id="new-banco-nombre" required>
+                                </div>
                             </div>
                             <div class="form-group-premium">
                                 <label for="new-banco-tipo"><i class="fas fa-tag"></i> Tipo</label>
@@ -414,25 +448,26 @@
                                 <input type="date" id="new-banco-primer-pago" class="input-premium">
                             </div>
                             <div class="form-group-premium hidden" id="group-valor-recibir">
-                                <label for="new-banco-valor-recibir">Valor Mensual a Recibir</label>
-                                <input type="number" id="new-banco-valor-recibir" step="0.01" class="input-premium">
+                                <label for="new-banco-valor-recibir">Valor mensual a pagar (cuota)</label>
+                                <input type="number" id="new-banco-valor-recibir" step="0.01" class="input-premium" placeholder="Ingresar cuota mensual (opcional)">
                             </div>
                         </div>
 
                         <div class="form-group-premium">
                             <label for="new-banco-deudor">A Nombre De</label>
                             <input type="text" id="new-banco-deudor" required class="input-premium">
-                            <div class="form-row">
-                                <div class="form-group-premium grow">
-                                    <label for="new-banco-motivo">Motivo</label>
-                                    <input type="text" id="new-banco-motivo" required class="input-premium">
-                                </div>
-                                <div class="form-group-premium">
-                                    <label for="new-banco-recibido">Valor Recibido (Cash)</label>
-                                    <input type="number" id="new-banco-recibido" step="0.01" class="input-premium">
-                                </div>
-                            </div>
+                        </div>
 
+                        <div class="form-row">
+                            <div class="form-group-premium grow">
+                                <label for="new-banco-motivo">Motivo</label>
+                                <input type="text" id="new-banco-motivo" required class="input-premium">
+                            </div>
+                            <div class="form-group-premium">
+                                <label for="new-banco-recibido">Valor Recibido (Cash)</label>
+                                <input type="number" id="new-banco-recibido" step="0.01" class="input-premium">
+                            </div>
+                        </div>
                     </form>
                 </div>
 

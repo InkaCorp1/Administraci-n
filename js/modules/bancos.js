@@ -466,12 +466,17 @@ function renderBancosCards(data, pagosMap = {}) {
 
             <!-- Logo en la esquina inferior derecha -->
             ${(() => {
-                let logoUrl = banco.logo_banco || 'img/bank-placeholder.png';
+                let logoUrl = banco.logo_banco;
                 if ((banco.nombre_banco || '').toUpperCase().includes('PICHINCHA')) {
                     logoUrl = 'https://lh3.googleusercontent.com/d/10zy2rxIR2dp_MfdGO7JiOjVvovGSIGCZ=w2048?name=Pichincha.png';
                 }
-                const zoomClass = getLogoZoomClass(banco.nombre_banco);
-                return `<img src="${logoUrl}" class="bank-card-logo ${zoomClass}" alt="Logo">`;
+
+                if (logoUrl) {
+                    const zoomClass = getLogoZoomClass(banco.nombre_banco);
+                    return `<img src="${logoUrl}" class="bank-card-logo ${zoomClass}" alt="Logo">`;
+                } else {
+                    return `<div class="bank-card-logo-icon"><i class="fas fa-university"></i></div>`;
+                }
             })()}
         `;
         grid.appendChild(card);
@@ -547,6 +552,56 @@ async function unarchiveBanco(event, id) {
 }
 
 /**
+ * Elimina permanentemente un crédito bancario (incluye detalle).
+ * Muestra confirmación tipo 'danger' y, si el usuario acepta, borra primero
+ * los registros de `ic_situacion_bancaria_detalle` y luego el encabezado
+ * en `ic_situacion_bancaria`. Cierra el modal y recarga la lista al terminar.
+ */
+async function deleteBancoPermanently(event, id) {
+    event?.stopPropagation?.();
+    if (!id) return;
+
+    const confirmado = await window.showConfirm(
+        'Esta acción eliminará completamente el crédito y todos sus comprobantes/pagos. \n\nESTA OPERACIÓN ES IRREVERSIBLE. ¿Deseas continuar?',
+        'Eliminar crédito definitivamente',
+        { confirmText: 'Eliminar permanentemente', cancelText: 'Cancelar', type: 'danger' }
+    );
+    if (!confirmado) return;
+
+    const btn = document.getElementById('btn-delete-banco');
+    if (btn) { btn.disabled = true; btn.classList.add('loading'); }
+
+    try {
+        const supabase = window.getSupabaseClient();
+        if (!supabase) throw new Error('Cliente Supabase no disponible');
+
+        // 1) Borrar detalle (si existe)
+        const { error: errDet } = await supabase
+            .from('ic_situacion_bancaria_detalle')
+            .delete()
+            .eq('transaccion', id);
+        if (errDet) throw errDet;
+
+        // 2) Borrar encabezado
+        const { error: errHead } = await supabase
+            .from('ic_situacion_bancaria')
+            .delete()
+            .eq('id_transaccion', id);
+        if (errHead) throw errHead;
+
+        window.showToast('Crédito eliminado correctamente', 'success');
+        closePremiumModals();
+        await loadBancosData(true);
+    } catch (err) {
+        console.error('Error al eliminar crédito:', err);
+        window.showAlert('No se pudo eliminar el crédito: ' + (err?.message || err), 'Error', 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.classList.remove('loading'); }
+    }
+}
+window.deleteBancoPermanently = deleteBancoPermanently;
+
+/**
  * Filtra las tarjetas por texto
  */
 function filterBancos(query) {
@@ -571,26 +626,34 @@ async function openBancoDetail(banco) {
 
     // Llenar datos básicos
     // Consolidación de Logo para Banco Pichincha (usar logo moderno)
-    let logoUrl = banco.logo_banco || 'img/bank-placeholder.png';
+    let logoUrl = banco.logo_banco;
     if ((banco.nombre_banco || '').toUpperCase().includes('PICHINCHA')) {
         logoUrl = 'https://lh3.googleusercontent.com/d/10zy2rxIR2dp_MfdGO7JiOjVvovGSIGCZ=w2048?name=Pichincha.png';
     }
 
     const logoImg = document.getElementById('modal-bank-logo');
-    logoImg.src = logoUrl;
+    const logoIcon = document.getElementById('modal-bank-logo-icon');
 
-    // Aplicar Zoom según la institución
-    const bankName = (banco.nombre_banco || '').toUpperCase();
-    logoImg.classList.remove('logo-zoom-max', 'logo-zoom-high', 'logo-zoom-low'); // Reset entries
+    if (logoUrl) {
+        logoImg.src = logoUrl;
+        logoImg.classList.remove('hidden');
+        logoIcon.classList.add('hidden');
 
-    if (bankName.includes('DAQUILEMA')) {
-        logoImg.classList.add('logo-zoom-max');
-    } else if (bankName.includes('MUSHUC')) {
-        logoImg.classList.add('logo-zoom-high');
-    } else if (bankName.includes('PACIFICO') || bankName.includes('TUPAK')) {
-        logoImg.classList.add('logo-zoom-low');
+        // Aplicar Zoom según la institución
+        const bankName = (banco.nombre_banco || '').toUpperCase();
+        logoImg.classList.remove('logo-zoom-max', 'logo-zoom-high', 'logo-zoom-low'); // Reset entries
+
+        if (bankName.includes('DAQUILEMA')) {
+            logoImg.classList.add('logo-zoom-max');
+        } else if (bankName.includes('MUSHUC')) {
+            logoImg.classList.add('logo-zoom-high');
+        } else if (bankName.includes('PACIFICO') || bankName.includes('TUPAK')) {
+            logoImg.classList.add('logo-zoom-low');
+        }
+    } else {
+        logoImg.classList.add('hidden');
+        logoIcon.classList.remove('hidden');
     }
-    // Pichincha queda sin clase (zoom: 1) para evitar que se vea muy grande
 
     document.getElementById('modal-bank-name').textContent = banco.nombre_banco;
     document.getElementById('modal-credit-id').textContent = `ID: ${banco.id_transaccion}`;
@@ -610,11 +673,48 @@ async function openBancoDetail(banco) {
     document.getElementById('det-banco-deudor').textContent = banco.a_nombre_de;
     document.getElementById('det-banco-motivo').textContent = banco.motivo;
 
-    // Mostrar modal
+    // Mostrar modal y mostrar skeleton mientras se carga la tabla
+    showBancoSkeleton();
     modal.classList.remove('hidden');
+    document.body.classList.add('modal-open');
 
-    // Cargar tabla de amortización
-    await loadAmortizacionBanco(banco.id_transaccion);
+    try {
+        // Cargar tabla de amortización (puede tardar — mantener skeleton hasta que termine)
+        await loadAmortizacionBanco(banco.id_transaccion);
+    } finally {
+        // Siempre ocultar skeleton aunque la carga falle para no bloquear la UI
+        hideBancoSkeleton();
+    }
+}
+
+// Muestra el skeleton y oculta las secciones que parpadean
+function showBancoSkeleton() {
+    const sk = document.getElementById('modal-banco-skeleton');
+    const skR = document.getElementById('modal-banco-skeleton-right');
+    const tabla = document.getElementById('tabla-amortizacion-banco');
+    const resumen = document.querySelector('.preview-column .resumen-pago');
+    const values = document.querySelector('.preview-column .values-grid');
+
+    if (sk) sk.classList.remove('hidden');
+    if (skR) skR.classList.remove('hidden');
+    if (tabla) tabla.classList.add('hidden');
+    if (resumen) resumen.classList.add('hidden');
+    if (values) values.classList.add('hidden');
+}
+
+// Oculta el skeleton y restaura las secciones reales
+function hideBancoSkeleton() {
+    const sk = document.getElementById('modal-banco-skeleton');
+    const skR = document.getElementById('modal-banco-skeleton-right');
+    const tabla = document.getElementById('tabla-amortizacion-banco');
+    const resumen = document.querySelector('.preview-column .resumen-pago');
+    const values = document.querySelector('.preview-column .values-grid');
+
+    if (sk) sk.classList.add('hidden');
+    if (skR) skR.classList.add('hidden');
+    if (tabla) tabla.classList.remove('hidden');
+    if (resumen) resumen.classList.remove('hidden');
+    if (values) values.classList.remove('hidden');
 }
 
 /**
@@ -1152,6 +1252,7 @@ function openPagoBancoModal(item) {
 
     clearBancoPreview();
     document.getElementById('modal-pago-banco').classList.remove('hidden');
+    document.body.classList.add('modal-open');
 }
 
 /**
@@ -1161,6 +1262,7 @@ function showComprobanteViewer(item) {
     document.getElementById('viewer-img-banco').src = item.fotografia || 'img/no-image.png';
     document.getElementById('viewer-fecha-banco').textContent = item.fecha_pagado || 'N/A';
     document.getElementById('modal-comprobante-banco').classList.remove('hidden');
+    document.body.classList.add('modal-open');
 }
 
 /**
@@ -1212,6 +1314,7 @@ function updateAmortizacionProgress(data) {
  */
 function closePremiumModals() {
     document.querySelectorAll('.modal-premium').forEach(m => m.classList.add('hidden'));
+    document.body.classList.remove('modal-open');
 }
 
 /**
@@ -1334,6 +1437,7 @@ function openPrecancelarModal() {
 
     clearPrepayPreview();
     document.getElementById('modal-precancelar-banco').classList.remove('hidden');
+    document.body.classList.add('modal-open');
 }
 
 /**
@@ -1480,6 +1584,30 @@ function setupNewBancoListeners() {
         btnSave.addEventListener('click', handleSaveNewBanco);
     }
 
+    // Buscador de Bancos
+    const searchInput = document.getElementById('new-banco-search');
+    const listContainer = document.getElementById('banco-options-list');
+
+    if (searchInput) {
+        searchInput.addEventListener('focus', () => {
+            listContainer.classList.remove('hidden');
+        });
+
+        searchInput.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            const filtered = bancosLogosList.filter(b => b.bancos.toLowerCase().includes(val));
+            renderBancoSearchOptions(filtered);
+            listContainer.classList.remove('hidden');
+        });
+    }
+
+    // Cerrar lista al hacer clic fuera
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#banco-search-container')) {
+            if (listContainer) listContainer.classList.add('hidden');
+        }
+    });
+
     // Auto-calculo on input change
     const formInputs = document.querySelectorAll('#form-nuevo-banco input, #form-nuevo-banco select');
     formInputs.forEach(input => {
@@ -1506,13 +1634,22 @@ setupBancosEventListeners = function () {
 async function openNewBancoModal() {
     // Reset form
     document.getElementById('form-nuevo-banco').reset();
+    
+    // Reset Search Component
+    const searchInput = document.getElementById('new-banco-search');
+    const hiddenInput = document.getElementById('new-banco-nombre');
+    if (searchInput) searchInput.value = '';
+    if (hiddenInput) {
+        hiddenInput.value = '';
+        hiddenInput.dataset.logo = '';
+    }
 
     // Load Banks List if empty
     if (bancosLogosList.length === 0) {
         await loadBancoLogos();
+    } else {
+        renderBancoSearchOptions(bancosLogosList);
     }
-
-    // Set default date
     document.getElementById('new-banco-fecha').value = new Date().toISOString().split('T')[0];
 
     // Reset UI state
@@ -1520,10 +1657,11 @@ async function openNewBancoModal() {
     updateBancoPreview();
 
     document.getElementById('modal-nuevo-banco').classList.remove('hidden');
+    document.body.classList.add('modal-open');
 }
 
 /**
- * Carga la lista de bancos y logos para el select
+ * Carga la lista de bancos y logos para el select duplicado/buscable
  */
 async function loadBancoLogos() {
     try {
@@ -1535,22 +1673,70 @@ async function loadBancoLogos() {
 
         if (error) throw error;
 
-        bancosLogosList = data || [];
-
-        const select = document.getElementById('new-banco-nombre');
-        select.innerHTML = '<option value="">Seleccione Banco...</option>';
-
-        bancosLogosList.forEach(b => {
-            const opt = document.createElement('option');
-            opt.value = b.bancos;
-            opt.dataset.logo = b.imagenes || '';
-            opt.textContent = b.bancos;
-            select.appendChild(opt);
+        // Sort: Banks with logos first
+        bancosLogosList = (data || []).sort((a, b) => {
+            const hasA = !!a.imagenes;
+            const hasB = !!b.imagenes;
+            if (hasA && !hasB) return -1;
+            if (!hasA && hasB) return 1;
+            return a.bancos.localeCompare(b.bancos);
         });
+
+        renderBancoSearchOptions(bancosLogosList);
 
     } catch (e) {
         console.error('Error cargando lista de bancos:', e);
     }
+}
+
+/**
+ * Renderiza las opciones del buscador de bancos
+ */
+function renderBancoSearchOptions(list) {
+    const listContainer = document.getElementById('banco-options-list');
+    if (!listContainer) return;
+
+    listContainer.innerHTML = '';
+
+    if (list.length === 0) {
+        listContainer.innerHTML = '<div class="option-item">No se encontraron bancos</div>';
+        return;
+    }
+
+    list.forEach(b => {
+        const item = document.createElement('div');
+        item.className = 'option-item';
+        
+        // Determinar si mostrar imagen o icono
+        const logoHtml = b.imagenes 
+            ? `<img src="${b.imagenes}" class="option-logo" alt="">`
+            : `<div class="option-logo-placeholder"><i class="fas fa-university"></i></div>`;
+
+        item.innerHTML = `
+            ${logoHtml}
+            <span class="option-text">${b.bancos}</span>
+        `;
+        item.onclick = () => selectBancoOption(b);
+        listContainer.appendChild(item);
+    });
+}
+
+/**
+ * Selecciona un banco del buscador
+ */
+function selectBancoOption(bankObj) {
+    const searchInput = document.getElementById('new-banco-search');
+    const hiddenInput = document.getElementById('new-banco-nombre');
+    const listContainer = document.getElementById('banco-options-list');
+
+    searchInput.value = bankObj.bancos;
+    hiddenInput.value = bankObj.bancos;
+    hiddenInput.dataset.logo = bankObj.imagenes || '';
+    
+    listContainer.classList.add('hidden');
+    
+    // Disparar evento input para actualizar previsualización
+    updateBancoPreview();
 }
 
 /**
@@ -1569,7 +1755,8 @@ function toggleBancoFields() {
 
     if (isCredito) {
         groupPrimerPago.classList.remove('hidden');
-        groupValorRecibir.classList.add('hidden');
+        // Mostrar también el campo de cuota para créditos — el usuario puede sobreescribir la cuota calculada
+        groupValorRecibir.classList.remove('hidden');
         document.getElementById('new-banco-primer-pago').required = true;
         document.getElementById('new-banco-valor-recibir').required = false;
     } else {
@@ -1593,31 +1780,36 @@ function updateBancoPreview() {
     const deudor = document.getElementById('new-banco-deudor').value || 'Nombre...';
 
     // Get Logo
-    const select = document.getElementById('new-banco-nombre');
-    const selectedOpt = select.options[select.selectedIndex];
-    let logoUrl = selectedOpt ? selectedOpt.dataset.logo : '';
+    const hiddenInput = document.getElementById('new-banco-nombre');
+    let logoUrl = hiddenInput ? hiddenInput.dataset.logo : '';
 
-    // Normalización para Pichincha
+    // normalización para Pichincha
     if ((bancoName || '').toUpperCase().includes('PICHINCHA')) {
         logoUrl = 'https://lh3.googleusercontent.com/d/10zy2rxIR2dp_MfdGO7JiOjVvovGSIGCZ=w2048?name=Pichincha.png';
+    }
+
+    // Aplicar Colores del Banco a la Previsualización
+    const theme = getBankTheme(bancoName);
+    const previewCardElem = document.getElementById('new-banco-preview-card');
+    if (previewCardElem) {
+        previewCardElem.style.setProperty('--bank-bg', theme.bg);
+        previewCardElem.style.setProperty('--bank-primary', theme.primary);
+        previewCardElem.style.setProperty('--bank-light', theme.light);
+        previewCardElem.style.setProperty('--bank-glow', theme.glow);
+        previewCardElem.style.setProperty('--bank-border', theme.border);
+        previewCardElem.style.setProperty('--bank-pill-text', theme.textOnPill);
     }
 
     // Calculations
     let cuota = 0;
     let total = parseFloat(document.getElementById('new-banco-total').value) || 0;
+    const manualCuota = parseFloat(document.getElementById('new-banco-valor-recibir').value) || 0;
 
-    // Detect if we should calculate total or use the manual one
-    const isManualTotal = event && event.target && event.target.id === 'new-banco-total';
-
-    if (plazo > 0 && monto > 0) {
-        if (!isManualTotal) {
-            // Calculate total only if it's not being manually edited right now
-            const interesTotal = monto * (interes / 100);
-            total = monto + interesTotal;
-            document.getElementById('new-banco-total').value = total.toFixed(2);
-        }
-
-        // Calculate cuota based on current total (whether manual or calculated)
+    if (manualCuota > 0) {
+        // El usuario suministró una cuota manual: usarla (override)
+        cuota = manualCuota;
+    } else if (plazo > 0 && total > 0) {
+        // Calculate cuota based on current manual total
         cuota = total / plazo;
     }
 
@@ -1650,7 +1842,9 @@ function updateBancoPreview() {
             <span class="debtor-label">DEUDOR</span>
             <span class="debtor-name">${deudor}</span>
         </div>
-        ${logoUrl ? `<img src="${logoUrl}" class="bank-card-logo ${getLogoZoomClass(bancoName)}" alt="Logo">` : ''}
+        ${logoUrl 
+            ? `<img src="${logoUrl}" class="bank-card-logo ${getLogoZoomClass(bancoName)}" alt="Logo">` 
+            : `<div class="bank-card-logo-icon"><i class="fas fa-university"></i></div>`}
     `;
 
     document.getElementById('new-banco-preview-card').innerHTML = cardFunc(bancoName, plazo, cuota, '');
@@ -1673,16 +1867,23 @@ async function handleSaveNewBanco() {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
         // Gather Data
-        const nombre_banco = document.getElementById('new-banco-nombre').value;
-        const select = document.getElementById('new-banco-nombre');
-        const logo_url = select.options[select.selectedIndex].dataset.logo;
+        const hiddenInput = document.getElementById('new-banco-nombre');
+        const nombre_banco = hiddenInput.value;
+        const logo_url = hiddenInput.dataset.logo || '';
+
+        if (!nombre_banco) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Guardar y Crear';
+            return window.showAlert('Por favor seleccione un banco de la lista', 'Banco requerido', 'warning');
+        }
 
         const tipo = document.getElementById('new-banco-tipo').value;
         const monto = parseFloat(document.getElementById('new-banco-monto').value);
         const plazo = parseInt(document.getElementById('new-banco-plazo').value);
         const interes = parseFloat(document.getElementById('new-banco-interes').value);
         const total = parseFloat(document.getElementById('new-banco-total').value);
-        const mensual = total / plazo;
+        const manualMensual = parseFloat(document.getElementById('new-banco-valor-recibir').value);
+        const mensual = (manualMensual && manualMensual > 0) ? manualMensual : (plazo > 0 ? total / plazo : 0);
 
         const fecha = document.getElementById('new-banco-fecha').value;
         const primerPago = document.getElementById('new-banco-primer-pago').value;
