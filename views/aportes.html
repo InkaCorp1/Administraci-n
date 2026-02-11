@@ -18,6 +18,10 @@
             <button class="btn btn-outline-light" id="btn-ver-historial-completo">
                 <i class="fas fa-history"></i> Historial Completo
             </button>
+            <button class="btn btn-primary" id="btn-reporte-general-aportes" title="Generar Informe PDF de Aportes"
+                style="background: #0b4e32; color: #f2bb3a;">
+                <i class="fas fa-file-pdf"></i> <span class="desktop-only">Informe PDF</span>
+            </button>
         </div>
     </div>
 
@@ -100,7 +104,7 @@
         <form id="form-aporte">
             <div class="modal-body">
                 <div class="form-group-premium">
-                    <label for="aporte-socio">Socio / Aportante</label>
+                    <label for="aporte-socio-search">Socio / Aportante</label>
                     <!-- Barra de búsqueda añadida (filtra el select de abajo) -->
                     <div class="input-with-icon" style="margin-bottom: .5rem; position: relative;">
                         <i class="fas fa-search"></i>
@@ -111,7 +115,7 @@
                     </div>
 
                     <!-- Select eliminado del DOM por petición: mantenemos un input oculto para compatibilidad con el submit -->
-                    <input type="hidden" id="aporte-socio" name="aporte-socio">
+                    <input type="hidden" id="aporte-socio" name="aporte-socio" aria-hidden="true">
 
                     <!-- Contenedor visual para mostrar el socio seleccionado (reemplaza la apariencia previa del select) -->
                     <div id="aporte-socio-selected" class="selected-socio hidden" aria-live="polite" role="status"></div> 
