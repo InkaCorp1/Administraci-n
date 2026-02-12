@@ -1,0 +1,435 @@
+/**
+ * INKA CORP - Estilos para el Módulo de Resumen General
+ */
+
+.resumen-container {
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    animation: fadeIn 0.3s ease;
+}
+
+.resumen-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.resumen-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    background: #f1f5f9;
+    padding: 0.4rem;
+    border-radius: 0.75rem;
+    width: fit-content;
+}
+
+.tab-btn {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tab-btn.active {
+    background: white;
+    color: #0B4E32;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* Grid de KPIs */
+.resumen-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.kpi-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    border-left: 4px solid #e2e8f0;
+}
+
+.kpi-card.success { border-left-color: #10b981; }
+.kpi-card.primary { border-left-color: #3b82f6; }
+.kpi-card.warning { border-left-color: #f59e0b; }
+
+.kpi-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.success .kpi-icon { background: #ecfdf5; color: #10b981; }
+.primary .kpi-icon { background: #eff6ff; color: #3b82f6; }
+.warning .kpi-icon { background: #fffbeb; color: #f59e0b; }
+
+.kpi-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    display: block;
+}
+
+.kpi-label {
+    font-size: 0.875rem;
+    color: #64748b;
+}
+
+/* Gráficos y Listas */
+.resumen-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+}
+
+.resumen-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Estilos para el Modal de Detalle Moderno */
+.resumen-modal-popup {
+    border-radius: 1.5rem !important;
+    padding: 1rem !important;
+}
+
+.resumen-modal-header {
+    border-bottom: 2px solid #f1f5f9;
+    padding-bottom: 1rem !important;
+}
+
+.resumen-modal-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #0B4E32;
+}
+
+.resumen-modal-title span {
+    font-size: 1.75rem;
+    font-weight: 800;
+}
+
+.resumen-modal-title small {
+    font-size: 1rem;
+    color: #64748b;
+    font-weight: 400;
+}
+
+.resumen-detalle-container {
+    padding: 0.5rem;
+}
+
+.resumen-detalle-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 1rem;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0B4E32;
+}
+
+/* Grid de Asesores en Modal */
+.resumen-asesores-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.asesor-mini-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.2s;
+}
+
+.asesor-mini-card:hover {
+    border-color: #0B4E32;
+    background: #f0fdf4;
+}
+
+.asesor-icon {
+    width: 35px;
+    height: 35px;
+    background: #f1f5f9;
+    color: #0B4E32;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.asesor-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.asesor-info .asesor-name {
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.asesor-info .asesor-monto {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.asesor-divider {
+    width: 1px;
+    height: 35px;
+    background: #e2e8f0;
+    margin: 0 0.25rem;
+}
+
+.asesor-transactions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 70px;
+}
+
+.tx-label {
+    font-size: 0.65rem;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.tx-count {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #0B4E32;
+    line-height: 1.1;
+}
+
+.resumen-detalle-table-wrapper {
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.resumen-detalle-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.95rem;
+}
+
+.resumen-detalle-table th {
+    background: #0B4E32;
+    color: white;
+    padding: 1rem;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    font-weight: 600;
+}
+
+.resumen-detalle-table th:first-child { border-top-left-radius: 0.5rem; }
+.resumen-detalle-table th:last-child { border-top-right-radius: 0.5rem; }
+
+.resumen-detalle-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+}
+
+.resumen-detalle-table tr:hover td {
+    background: #f0fdf4;
+}
+
+.socio-info-cell {
+    display: flex;
+    flex-direction: column;
+}
+
+.socio-name {
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.badge-cobrador {
+    background: #e2e8f0;
+    color: #475569;
+    padding: 0.4rem 0.75rem;
+    border-radius: 2rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.badge-cobrador i {
+    font-size: 0.7rem;
+    color: #0B4E32;
+}
+
+/* Scrollbar elegante */
+.resumen-detalle-table-wrapper::-webkit-scrollbar {
+    width: 8px;
+}
+
+.resumen-detalle-table-wrapper::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 1rem;
+}
+
+.resumen-detalle-table-wrapper::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 1rem;
+}
+
+.resumen-detalle-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.recaudacion-mes-item:hover {
+    background: #f8fafc !important;
+}
+
+/* Gráfico de Barras Moderno */
+.chart-bar-container:hover .chart-bar-fill {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+}
+
+.chart-bar-fill {
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+}
+
+.bar-shine {
+    position: absolute;
+    top: 0;
+    left: 15%;
+    width: 20%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+}
+
+.trend-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 2rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.trend-up {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.trend-down {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.trend-divider {
+    opacity: 0.2;
+    margin: 0 0.4rem;
+    border-left: 1px solid currentColor;
+    height: 14px;
+}
+
+.efficiency-badge {
+    background: #f8fafc;
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid #f1f5f9;
+}
+
+.chart-container {
+    min-height: 350px;
+    width: 100%;
+}
+
+.resumen-card.chart-full-width {
+    overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+    .resumen-row {
+        grid-template-columns: 1fr;
+    }
+}

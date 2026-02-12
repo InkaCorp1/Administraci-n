@@ -113,6 +113,16 @@
                 <h3 class="section-title"><i class="fas fa-bolt"></i> Acceso Rápido</h3>
             </div>
             <div class="modules-grid">
+                <div class="module-card" data-view="resumen_general">
+                    <div class="module-icon resumen">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="module-info">
+                        <span class="module-name">Resumen General</span>
+                        <span class="module-desc">KPis y consolidado</span>
+                    </div>
+                    <i class="fas fa-chevron-right module-arrow"></i>
+                </div>
                 <div class="module-card" data-view="socios">
                     <div class="module-icon socios">
                         <i class="fas fa-users"></i>
@@ -490,6 +500,11 @@
         justify-content: center;
         font-size: 1.1rem;
         flex-shrink: 0;
+    }
+
+    .module-icon.resumen {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%);
+        color: #4ade80;
     }
 
     .module-icon.socios {

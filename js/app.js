@@ -456,7 +456,10 @@ async function initApp() {
     try {
         // Cargar vista inicial
         const initialView = getViewFromURL();
-        const stateUrl = initialView === 'dashboard' ? './' : `${initialView}.html`;
+        
+        // Determinar la URL correcta a mantener en la barra de direcciones
+        const basePath = window.location.pathname.includes('index.html') ? 'index.html' : './';
+        const stateUrl = initialView === 'dashboard' ? basePath : `${basePath}?view=${initialView}`;
         
         // Forzar sincronización de historial al cargar para evitar que el navegador defaultée a index.html
         if (history.replaceState) {
@@ -490,7 +493,7 @@ function getViewFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
     const viewParam = urlParams.get('view');
     const hash = window.location.hash.replace('#', '');
-    const validViews = ['dashboard', 'socios', 'socios_edit', 'solicitud_credito', 'creditos', 'creditos_preferenciales', 'precancelaciones', 'ahorros', 'polizas', 'simulador', 'aportes', 'bancos', 'administrativos'];
+    const validViews = ['dashboard', 'socios', 'socios_edit', 'solicitud_credito', 'creditos', 'creditos_preferenciales', 'precancelaciones', 'resumen_general', 'ahorros', 'polizas', 'simulador', 'aportes', 'bancos', 'administrativos'];
 
     // 1. Prioridad: Parámetro URL (?view=creditos) - SOPORTA HARD REFRESH
     if (viewParam && validViews.includes(viewParam)) return viewParam;
@@ -1084,6 +1087,9 @@ async function loadView(viewName, shouldPushState = true) {
                 break;
             case 'precancelaciones':
                 if (typeof initPrecancelacionesModule === 'function') await initPrecancelacionesModule();
+                break;
+            case 'resumen_general':
+                if (typeof initResumenGeneralModule === 'function') await initResumenGeneralModule();
                 break;
             case 'ahorros':
                 if (typeof initAhorrosModule === 'function') await initAhorrosModule();

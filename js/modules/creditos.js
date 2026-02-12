@@ -1519,6 +1519,8 @@ async function openPaymentModal(detalleId, btn = null) {
 
         // Configurar botón confirmar
         const btnConfirmar = document.getElementById('btn-confirmar-pago');
+        btnConfirmar.disabled = false;
+        btnConfirmar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Pago';
         btnConfirmar.onclick = () => confirmarPago();
 
         // Abrir modal
@@ -1872,6 +1874,13 @@ async function confirmarPago() {
                 message: message
             });
 
+            // Enviar copia al webhook de n8n
+            await sendImageNotificationWebhook({
+                whatsapp: whatsapp,
+                image_base64: image_base64,
+                message: message
+            });
+
             if (socioResult.success) {
                 const noticeimage_base64 = cantidadCuotas === 1 ? await generateNoticeCanvas(reciboData) : await generateMultiQuotaNoticeCanvas(reciboData);
                 const detailList = cantidadCuotas === 1
@@ -1882,6 +1891,13 @@ async function confirmarPago() {
 
                 await sendOwnerWebhook({
                     whatsapp: whatsapp, // Enviamos el whatsapp del socio como referencia o destino si el hook lo requiere
+                    image_base64: noticeimage_base64,
+                    message: ownerMessage
+                });
+
+                // Enviar también al webhook de n8n para el administrador
+                await sendImageNotificationWebhook({
+                    whatsapp: '19175309618',
                     image_base64: noticeimage_base64,
                     message: ownerMessage
                 });
@@ -2906,13 +2922,34 @@ async function sendOwnerWebhook(payload) {
     }
 }
 
-// Exponer función al scope global
+/**
+ * Envía el webhook de notificación de imágenes a n8n (Copia de respaldo/procesamiento)
+ */
+async function sendImageNotificationWebhook(payload) {
+    const WEBHOOK_URL_N8N = 'https://lpn8nwebhook.luispintasolutions.com/webhook/notificarimagenes';
+
+    try {
+        console.log('Enviando notificación de imagen a n8n:', WEBHOOK_URL_N8N);
+        const response = await fetch(WEBHOOK_URL_N8N, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return { success: true };
+    } catch (error) {
+        console.error('Error enviando notificación a n8n:', error);
+        return { success: false, error: error.message };
+    }
+}
 
 // Exponer funciones necesarias al scope global
 window.generateReceiptCanvas = generateReceiptCanvas;
 window.generateNoticeCanvas = generateNoticeCanvas;
 window.sendPaymentWebhook = sendPaymentWebhook;
 window.sendOwnerWebhook = sendOwnerWebhook;
+window.sendImageNotificationWebhook = sendImageNotificationWebhook;
 
 /* ==========================================
    REPORTES Y EXPORTACIÓN (ESTILO CORPORATIVO)
