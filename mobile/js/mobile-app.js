@@ -248,10 +248,18 @@ function parseDate(dateInput) {
 
     try {
         let dateStr = String(dateInput).trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            const parts = dateStr.split('-');
+            // Medianoche local evita problemas de zona horaria con fechas "lógicas"
+            return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        }
+
         if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
-            const onlyDate = dateStr.substring(0, 10);
-            // Forzamos medianoche en Ecuador (UTC-5)
-            return new Date(onlyDate + 'T00:00:00-05:00');
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) return d;
+            
+            const parts = dateStr.substring(0, 10).split('-');
+            return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
         }
         const d = new Date(dateStr);
         return isNaN(d.getTime()) ? null : d;
@@ -270,12 +278,20 @@ function formatDate(dateString, options = {}) {
         const date = parseDate(dateString);
         if (!date) return '-';
 
+        // Lógica de mantenimiento de día: Para fechas literales (YYYY-MM-DD),
+        // no forzamos zona horaria para que el día local sea el correcto.
+        const isOnlyDate = /^\d{4}-\d{2}-\d{2}$/.test(String(dateString).trim());
+
         const defaultOptions = {
             year: 'numeric',
             month: 'short',
-            day: 'numeric',
-            timeZone: 'America/Guayaquil'
+            day: 'numeric'
         };
+
+        if (!isOnlyDate) {
+            defaultOptions.timeZone = 'America/Guayaquil';
+        }
+
         return date.toLocaleDateString('es-EC', { ...defaultOptions, ...options });
     } catch (e) {
         console.error('Error formatting date:', e);

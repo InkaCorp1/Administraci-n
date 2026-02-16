@@ -29,6 +29,7 @@
     <link rel="stylesheet" href="css/administrativos.css">
     <link rel="stylesheet" href="css/agenda.css">
     <link rel="stylesheet" href="css/resumen_general.css">
+    <link rel="stylesheet" href="css/contratos.css?v=1.2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -201,7 +202,12 @@
                     <span>Gastos Administrativos</span>
                 </a>
 
-                <a href="#" class="nav-item" id="nav-agenda" onclick="openAgendaModal(event)">
+                <a href="contratos.html" class="nav-item" data-view="contratos" data-module="contratos">
+                    <i class="fas fa-file-contract"></i>
+                    <span>Contratos</span>
+                </a>
+
+                <a href="#" class="nav-item" id="nav-agenda" data-view="agenda" data-module="agenda">
                     <i class="fas fa-calendar-alt"></i>
                     <span>Agenda y Notas</span>
                 </a>
@@ -234,23 +240,66 @@
     </div>
 
     <!-- Modal Agenda -->
-    <div id="agenda-modal" class="modal-overlay agenda-modal-overlay">
+    <div id="agenda-modal" class="agenda-modal-overlay">
         <div class="agenda-modal-card">
             <div class="agenda-modal-header">
                 <div class="agenda-header-info">
                     <i class="fas fa-calendar-alt"></i>
                     <h2 id="agenda-month-year">Agenda y Notas</h2>
                 </div>
+                <div class="agenda-header-search">
+                    <div class="search-box-agenda">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="agenda-search-input" placeholder="Buscar notas o eventos..." oninput="handleAgendaSearch()">
+                    </div>
+                </div>
                 <div class="agenda-header-actions">
-                    <button id="prev-week" class="agenda-nav-btn"><i class="fas fa-chevron-left"></i></button>
-                    <button id="next-week" class="agenda-nav-btn"><i class="fas fa-chevron-right"></i></button>
+                    <div class="agenda-date-picker-container">
+                        <button id="agenda-datepicker-btn" class="agenda-nav-btn" title="Seleccionar Fecha"><i class="fas fa-calendar-day"></i></button>
+                        <input type="date" id="agenda-date-input" style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;">
+                    </div>
+                    <button id="prev-week" class="agenda-nav-btn" title="Semana Anterior"><i class="fas fa-chevron-left"></i></button>
+                    <button id="agenda-today-btn" class="agenda-today-btn" onclick="goToToday()">Hoy</button>
+                    <button id="next-week" class="agenda-nav-btn" title="Semana Siguiente"><i class="fas fa-chevron-right"></i></button>
                     <button class="agenda-close-btn" onclick="closeAgendaModal()">&times;</button>
                 </div>
             </div>
             <div class="agenda-modal-body">
-                <div class="agenda-grid-container">
-                    <div id="agenda-grid" class="agenda-grid">
-                        <!-- Se generará dinámicamente -->
+                <aside class="agenda-sidebar">
+                    <div class="agenda-sidebar-section">
+                        <h3><i class="fas fa-sticky-note"></i> Notas Rápidas</h3>
+                        <div id="quick-notes-container" class="quick-notes-container">
+                            <!-- Notas rápidas sin fecha -->
+                        </div>
+                        <button class="add-quick-note-btn" onclick="addQuickNote()">
+                            <i class="fas fa-plus"></i> Añadir Nota
+                        </button>
+                    </div>
+
+                    <!-- Nueva sección para resultados de búsqueda global -->
+                    <div id="agenda-search-results-section" class="agenda-sidebar-section" style="display: none;">
+                        <h3><i class="fas fa-search"></i> Resultados Agenda</h3>
+                        <div id="agenda-search-results-container" class="quick-notes-container">
+                            <!-- Se llena dinámicamente -->
+                        </div>
+                    </div>
+
+                    <div class="agenda-sidebar-section">
+                        <h3><i class="fas fa-tags"></i> Categorías</h3>
+                        <div class="category-filters">
+                            <label class="cat-filter"><input type="checkbox" checked data-category="trabajo"> <span class="cat-dot trabajo"></span> Trabajo</label>
+                            <label class="cat-filter"><input type="checkbox" checked data-category="personal"> <span class="cat-dot personal"></span> Personal</label>
+                            <label class="cat-filter"><input type="checkbox" checked data-category="importante"> <span class="cat-dot importante"></span> Muy Importante</label>
+                            <label class="cat-filter"><input type="checkbox" checked data-category="finanzas"> <span class="cat-dot finanzas"></span> Finanzas</label>
+                        </div>
+                    </div>
+                </aside>
+                <div class="agenda-main-content">
+                    <div class="agenda-grid-container">
+                        <div id="agenda-grid" class="agenda-grid">
+                            <!-- Se generará dinámicamente -->
+                        </div>
+                        <div id="current-time-indicator" class="time-indicator"></div>
                     </div>
                 </div>
             </div>
@@ -284,6 +333,8 @@
     <script src="js/modules/bancos.js"></script>
     <script src="js/modules/administrativos.js"></script>
     <script src="js/modules/agenda.js"></script>
+    <script src="js/modules/contratos.js"></script>
+    <script src="js/modules/caja.js"></script>
 
     <!-- Registro de Service Worker PWA -->
     <script>

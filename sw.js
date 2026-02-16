@@ -3,8 +3,8 @@
  * PWA Offline Support
  */
 
-const CACHE_NAME = 'inkacorp-v22';
-const STATIC_CACHE = 'inkacorp-static-v22';
+const CACHE_NAME = 'inkacorp-v25';
+const STATIC_CACHE = 'inkacorp-static-v25';
 
 // Archivos esenciales para cachear (Shell de la app)
 const ESSENTIAL_FILES = [
@@ -37,12 +37,15 @@ const MODULE_FILES = [
     'js/modules/aportes.js',
     'js/modules/bancos.js',
     'js/modules/administrativos.js',
+    'js/modules/contratos.js',
+    'css/contratos.css',
+    'views/contratos.html',
     'mobile/css/mobile-styles.css'
 ];
 
 // Instalación del Service Worker
 self.addEventListener('install', (event) => {
-    console.log('[SW] Installing v22...');
+    console.log('[SW] Installing v25...');
     self.skipWaiting(); // Forzar activación
     const allFiles = [...ESSENTIAL_FILES, ...MODULE_FILES];
     event.waitUntil(
@@ -63,7 +66,7 @@ self.addEventListener('install', (event) => {
 
 // Activación - limpiar caches antiguos
 self.addEventListener('activate', (event) => {
-    console.log('[SW] Activating v22...');
+    console.log('[SW] Activating v25...');
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
@@ -114,7 +117,9 @@ self.addEventListener('fetch', (event) => {
                 }
 
                 // Cachear recursos estáticos exitosos del mismo origen
-                if (response.status === 200 && response.type === 'basic') {
+                // Solo para esquemas http/https (previene errores con chrome-extension)
+                if (response.status === 200 && response.type === 'basic' && 
+                    (event.request.url.startsWith('http') || event.request.url.startsWith('https'))) {
                     const responseClone = response.clone();
                     caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
                 }

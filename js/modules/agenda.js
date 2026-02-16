@@ -5,10 +5,17 @@
 
 let currentWeekStart = new Date();
 // Ajustar al lunes de la semana actual
-const day = currentWeekStart.getDay();
-const diff = currentWeekStart.getDate() - day + (day === 0 ? -6 : 1);
-currentWeekStart.setDate(diff);
-currentWeekStart.setHours(0, 0, 0, 0);
+function resetToMonday(date) {
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+    date.setDate(diff);
+    date.setHours(0, 0, 0, 0);
+    return date;
+}
+resetToMonday(currentWeekStart);
+
+let searchQuery = '';
+let activeCategories = ['trabajo', 'personal', 'importante', 'finanzas'];
 
 /**
  * Abre el modal de agenda
@@ -17,7 +24,15 @@ function openAgendaModal(e) {
     if (e) e.preventDefault();
     const modal = document.getElementById('agenda-modal');
     modal.classList.add('active');
+    
+    // Resetear búsqueda al abrir
+    searchQuery = '';
+    const searchInput = document.getElementById('agenda-search-input');
+    if (searchInput) searchInput.value = '';
+    
     renderAgenda();
+    renderQuickNotes();
+    startTimeIndicator(); 
 }
 
 /**
@@ -26,6 +41,18 @@ function openAgendaModal(e) {
 function closeAgendaModal() {
     const modal = document.getElementById('agenda-modal');
     modal.classList.remove('active');
+    stopTimeIndicator();
+}
+
+/**
+ * Ir a hoy
+ */
+function goToToday() {
+    currentWeekStart = resetToMonday(new Date());
+    // Resetear el input de fecha si existe
+    const dateInput = document.getElementById('agenda-date-input');
+    if (dateInput) dateInput.value = '';
+    renderAgenda();
 }
 
 /**
@@ -42,6 +69,88 @@ function prevWeek() {
 function nextWeek() {
     currentWeekStart.setDate(currentWeekStart.getDate() + 7);
     renderAgenda();
+}
+
+/**
+ * Maneja la búsqueda de notas
+ */
+let searchDebounce;
+function handleAgendaSearch() {
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(() => {
+        const input = document.getElementById('agenda-search-input');
+        if (input) {
+            const val = input.value.toLowerCase().trim();
+            if (searchQuery === val) return; // Evitar renderizado innecesario si el valor no cambió
+            
+            searchQuery = val;
+            console.log('Buscando en Agenda:', searchQuery);
+            
+            // Forzar renderizado completo de la agenda
+            renderAgenda();
+            // Forzar renderizado de notas rápidas
+            renderQuickNotes();
+            // Buscar en todas las semanas
+            renderGlobalSearchResults();
+        }
+    }, 200);
+}
+
+/**
+ * Busca notas en todo el historial y las muestra en el sidebar
+ */
+function renderGlobalSearchResults() {
+    const resultsSection = document.getElementById('agenda-search-results-section');
+    const container = document.getElementById('agenda-search-results-container');
+    if (!resultsSection || !container) return;
+
+    if (!searchQuery) {
+        resultsSection.style.display = 'none';
+        container.innerHTML = '';
+        return;
+    }
+
+    const allNotes = JSON.parse(localStorage.getItem('inka_agenda_notes') || '{}');
+    const matches = [];
+
+    Object.keys(allNotes).forEach(cellId => {
+        const notes = allNotes[cellId];
+        notes.forEach(note => {
+            const title = (note.title || '').toLowerCase();
+            const text = (note.text || '').toLowerCase();
+            if (title.includes(searchQuery) || text.includes(searchQuery)) {
+                matches.push({ ...note, cellId });
+            }
+        });
+    });
+
+    if (matches.length > 0) {
+        resultsSection.style.display = 'block';
+        container.innerHTML = '';
+        
+        matches.forEach(match => {
+            const datePart = match.cellId.split('-').slice(0, 3).join('-');
+            const hourPart = match.cellId.split('-')[3];
+            
+            const resultEl = document.createElement('div');
+            resultEl.className = `quick-note-item cat-${match.category || 'trabajo'}`;
+            resultEl.style.cursor = 'pointer';
+            resultEl.innerHTML = `
+                <small style="color: #64748b; font-weight: bold;">${datePart} - ${hourPart}:00</small>
+                <p style="margin: 0.2rem 0;">${match.title ? `<strong>${match.title}</strong>: ` : ''}${match.text}</p>
+            `;
+            resultEl.onclick = () => {
+                const targetDate = new Date(datePart + 'T12:00:00');
+                currentWeekStart = resetToMonday(targetDate);
+                renderAgenda();
+                // Opcional: scroll al elemento o resaltado temporal
+            };
+            container.appendChild(resultEl);
+        });
+    } else {
+        resultsSection.style.display = 'block';
+        container.innerHTML = '<div class="no-notes-msg" style="padding: 0.5rem; text-align: center; font-size: 0.8rem;">No hay coincidencias en el calendario</div>';
+    }
 }
 
 /**
@@ -70,16 +179,16 @@ function renderAgenda() {
     emptyHeader.className = 'agenda-header-cell time-header';
     grid.appendChild(emptyHeader);
 
-    const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
     const tempDate = new Date(currentWeekStart);
 
     for (let i = 0; i < 7; i++) {
         const header = document.createElement('div');
         header.className = 'agenda-header-cell';
         
+        const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
         const dayName = document.createElement('span');
         dayName.className = 'agenda-day-name';
-        dayName.textContent = days[i];
+        dayName.textContent = dayNames[tempDate.getDay()];
         
         const dayNumber = document.createElement('span');
         dayNumber.className = 'agenda-day-number';
@@ -91,8 +200,7 @@ function renderAgenda() {
         // Resaltar hoy
         const hoy = new Date();
         if (tempDate.toDateString() === hoy.toDateString()) {
-            header.style.background = '#dcfce7';
-            dayNumber.style.color = '#0B4E32';
+            header.classList.add('is-today');
         }
 
         grid.appendChild(header);
@@ -128,6 +236,7 @@ function renderAgenda() {
             grid.appendChild(cell);
         }
     }
+    updateTimeIndicator();
 }
 
 /**
@@ -137,11 +246,31 @@ function renderNotesInCell(cell, cellId) {
     cell.innerHTML = '';
     const notes = getAgendaNotes(cellId);
     
+    // Si hay búsqueda y no hay notas en la celda, no hacemos nada
+    if (notes.length === 0) return;
+
     notes.forEach((note, index) => {
+        // Filtrar por categoría primero
+        const category = note.category || 'trabajo';
+        if (!activeCategories.includes(category)) return;
+
+        // Filtrar por búsqueda (Título o Contenido)
+        const q = searchQuery.toLowerCase().trim();
+        if (q) {
+            const title = (note.title || '').toLowerCase();
+            const text = (note.text || '').toLowerCase();
+            if (!title.includes(q) && !text.includes(q)) return;
+        }
+
         const noteEl = document.createElement('div');
-        noteEl.className = `agenda-note ${note.type === 'reminder' ? 'is-reminder' : ''}`;
-        noteEl.textContent = (note.type === 'reminder' ? '🔔 ' : '') + note.text;
-        noteEl.title = note.text;
+        noteEl.className = `agenda-note cat-${category} ${note.type === 'reminder' ? 'is-reminder' : ''}`;
+        
+        const displayTitle = note.title ? `<strong>${note.title}</strong>: ` : '';
+        noteEl.innerHTML = `
+            <span class="note-dot"></span>
+            <span class="note-text">${(note.type === 'reminder' ? '🔔 ' : '') + displayTitle + note.text}</span>
+        `;
+        noteEl.title = (note.title ? note.title + "\n" : "") + note.text;
         noteEl.onclick = (e) => {
             e.stopPropagation();
             editOrDeleteNote(cellId, index);
@@ -166,19 +295,34 @@ async function addNoteToCell(cellId, date, hour) {
         html: `
             <div class="reminder-form">
                 <div class="agenda-form-group">
-                    <label>Tipo de evento</label>
-                    <select id="event-type" class="agenda-input-styled">
-                        <option value="note">Nota Simple</option>
-                        <option value="reminder">Recordatorio 🔔</option>
-                    </select>
+                    <label>Título (Opcional)</label>
+                    <input type="text" id="event-title" class="agenda-input-styled" placeholder="Ej. Reunión Importante">
                 </div>
-                
                 <div class="agenda-form-group">
                     <label>Contenido</label>
-                    <textarea id="event-text" class="agenda-input-styled" placeholder="¿Qué tienes pendiente?" rows="4"></textarea>
+                    <textarea id="event-text" class="agenda-input-styled" placeholder="¿Qué tienes pendiente?" rows="3"></textarea>
                 </div>
 
-                <div id="reminder-options" style="display: none; flex-direction: column; gap: 1rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="agenda-form-group">
+                        <label>Tipo</label>
+                        <select id="event-type" class="agenda-input-styled">
+                            <option value="note">Nota Simple</option>
+                            <option value="reminder">Recordatorio 🔔</option>
+                        </select>
+                    </div>
+                    <div class="agenda-form-group">
+                        <label>Categoría</label>
+                        <select id="event-category" class="agenda-input-styled">
+                            <option value="trabajo">Trabajo</option>
+                            <option value="personal">Personal</option>
+                            <option value="importante">Muy Importante</option>
+                            <option value="finanzas">Finanzas</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="reminder-options" style="display: none; flex-direction: column; gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed #ddd;">
                     <div class="agenda-form-group">
                         <label>Frecuencia de repetición</label>
                         <select id="reminder-freq" class="agenda-input-styled">
@@ -206,7 +350,9 @@ async function addNoteToCell(cellId, date, hour) {
         preConfirm: () => {
             return {
                 type: document.getElementById('event-type').value,
+                title: document.getElementById('event-title').value,
                 text: document.getElementById('event-text').value,
+                category: document.getElementById('event-category').value,
                 freq: document.getElementById('reminder-freq').value
             }
         }
@@ -216,7 +362,9 @@ async function addNoteToCell(cellId, date, hour) {
         const notes = getAgendaNotes(cellId);
         notes.push({ 
             type: formValues.type,
+            title: formValues.title,
             text: formValues.text, 
+            category: formValues.category,
             freq: formValues.freq,
             date: date,
             hour: hour,
@@ -285,7 +433,7 @@ function processRecurrentReminders() {
     });
 }
 
-function getAgendaNotes(cellId) {
+function getAgendaNotesCombined(cellId) {
     const allNotes = JSON.parse(localStorage.getItem('inka_agenda_notes') || '{}');
     let cellNotes = allNotes[cellId] || [];
     
@@ -317,45 +465,6 @@ async function editOrDeleteNote(cellId, index) {
         return;
     }
 
-    const { value: action } = await Swal.fire({
-        title: 'Editar Nota',
-        input: 'textarea',
-        inputValue: note.text,
-        showCancelButton: true,
-        showDenyButton: true,
-        confirmButtonColor: '#0B4E32',
-        denyButtonColor: '#d33',
-        confirmButtonText: 'Guardar',
-        denyButtonText: 'Eliminar',
-        cancelButtonText: 'Cerrar'
-    });
-
-    if (action === undefined) return; // Cancelado
-
-    // Eliminar
-    if (Swal.isVisible() && document.activeElement.classList.contains('swal2-deny')) {
-        notes.splice(index, 1);
-        saveAgendaNotes(cellId, notes);
-        renderAgenda();
-        return;
-    }
-
-    // Guardar (Si no fue borrado, SweetAlert devuelve el texto del input en 'value')
-    if (typeof action === 'string') {
-        notes[index].text = action;
-        saveAgendaNotes(cellId, notes);
-        renderAgenda();
-    }
-}
-
-// Interceptar el botón de Deny para manejar el borrado
-// Nota: SweetAlertfire devuelve un objeto con isConfirmed, isDenied, etc.
-// Vamos a refinar la función editOrDeleteNote para usar los resultados correctamente.
-
-async function editOrDeleteNote(cellId, index) {
-    const notes = getAgendaNotes(cellId);
-    const note = notes[index];
-
     const result = await Swal.fire({
         title: 'Gestionar Evento',
         customClass: {
@@ -365,12 +474,25 @@ async function editOrDeleteNote(cellId, index) {
         html: `
             <div class="reminder-form">
                 <div class="agenda-form-group">
+                    <label>Título (Opcional)</label>
+                    <input type="text" id="event-title" class="agenda-input-styled" value="${note.title || ''}" placeholder="Ej. Reunión Importante">
+                </div>
+                <div class="agenda-form-group">
                     <label>Contenido del evento</label>
                     <textarea id="event-text" class="agenda-input-styled" rows="4">${note.text}</textarea>
                 </div>
+                <div class="agenda-form-group">
+                    <label>Categoría</label>
+                    <select id="event-category" class="agenda-input-styled">
+                        <option value="trabajo" ${note.category === 'trabajo' ? 'selected' : ''}>Trabajo</option>
+                        <option value="personal" ${note.category === 'personal' ? 'selected' : ''}>Personal</option>
+                        <option value="importante" ${note.category === 'importante' ? 'selected' : ''}>Muy Importante</option>
+                        <option value="finanzas" ${note.category === 'finanzas' ? 'selected' : ''}>Finanzas</option>
+                    </select>
+                </div>
                 ${note.type === 'reminder' ? `
                 <div class="agenda-form-group">
-                    <label>Frecuencia (Informativo)</label>
+                    <label>Frecuencia</label>
                     <input class="agenda-input-styled" value="${note.freq}" disabled>
                 </div>` : ''}
             </div>
@@ -383,13 +505,19 @@ async function editOrDeleteNote(cellId, index) {
         denyButtonText: 'Eliminar',
         cancelButtonText: 'Cerrar',
         preConfirm: () => {
-            return document.getElementById('event-text').value;
+            return {
+                title: document.getElementById('event-title').value,
+                text: document.getElementById('event-text').value,
+                category: document.getElementById('event-category').value
+            };
         }
     });
 
     if (result.isConfirmed) {
         if (result.value) {
-            notes[index].text = result.value;
+            notes[index].title = result.value.title;
+            notes[index].text = result.value.text;
+            notes[index].category = result.value.category;
             saveAgendaNotes(cellId, notes);
             renderAgenda();
         }
@@ -401,11 +529,196 @@ async function editOrDeleteNote(cellId, index) {
 }
 
 /**
+ * Lógica de Notas Rápidas
+ */
+function getQuickNotes() {
+    return JSON.parse(localStorage.getItem('inka_quick_notes') || '[]');
+}
+
+function saveQuickNotes(notes) {
+    localStorage.setItem('inka_quick_notes', JSON.stringify(notes));
+}
+
+function renderQuickNotes() {
+    const container = document.getElementById('quick-notes-container');
+    if (!container) return;
+    
+    const notes = getQuickNotes();
+    container.innerHTML = '';
+    
+    // Filtrar notas
+    const filteredNotes = notes.filter(note => {
+        // Filtrar por categoría
+        const category = note.category || 'trabajo';
+        if (!activeCategories.includes(category)) return false;
+
+        // Filtrar por búsqueda
+        const q = searchQuery.toLowerCase().trim();
+        if (q) {
+            const text = (note.text || '').toLowerCase();
+            if (!text.includes(q)) return false;
+        }
+        return true;
+    });
+    
+    if (filteredNotes.length === 0) {
+        const msg = searchQuery ? 'No se encontraron notas' : 'No hay notas rápidas';
+        container.innerHTML = `<div class="no-notes-msg" style="padding: 1rem; color: #64748b; font-size: 0.85rem; text-align: center;">${msg}</div>`;
+        return;
+    }
+
+    filteredNotes.forEach((note, index) => {
+        const noteEl = document.createElement('div');
+        noteEl.className = `quick-note-item cat-${note.category || 'trabajo'}`;
+        noteEl.innerHTML = `
+            <p>${note.text}</p>
+            <div class="quick-note-actions">
+                <button onclick="editQuickNote(${index})"><i class="fas fa-edit"></i></button>
+                <button onclick="deleteQuickNote(${index})"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
+        container.appendChild(noteEl);
+    });
+}
+
+async function addQuickNote() {
+    const { value: formValues } = await Swal.fire({
+        title: 'Añadir Nota Rápida',
+        html: `
+            <textarea id="quick-note-text" class="agenda-input-styled" placeholder="Escribe algo..." rows="4"></textarea>
+            <select id="quick-note-category" class="agenda-input-styled" style="margin-top: 10px; width: 100%;">
+                <option value="trabajo">Trabajo</option>
+                <option value="personal">Personal</option>
+                <option value="importante">Importante</option>
+                <option value="finanzas">Finanzas</option>
+            </select>
+        `,
+        preConfirm: () => {
+            return {
+                text: document.getElementById('quick-note-text').value,
+                category: document.getElementById('quick-note-category').value
+            }
+        }
+    });
+
+    if (formValues && formValues.text) {
+        const notes = getQuickNotes();
+        notes.unshift({
+            text: formValues.text,
+            category: formValues.category,
+            createdAt: new Date().getTime()
+        });
+        saveQuickNotes(notes);
+        renderQuickNotes();
+    }
+}
+
+async function editQuickNote(index) {
+    const notes = getQuickNotes();
+    const note = notes[index];
+
+    const { value: formValues } = await Swal.fire({
+        title: 'Editar Nota Rápida',
+        html: `
+            <textarea id="quick-note-text" class="agenda-input-styled" rows="4">${note.text}</textarea>
+            <select id="quick-note-category" class="agenda-input-styled" style="margin-top: 10px; width: 100%;">
+                <option value="trabajo" ${note.category === 'trabajo' ? 'selected' : ''}>Trabajo</option>
+                <option value="personal" ${note.category === 'personal' ? 'selected' : ''}>Personal</option>
+                <option value="importante" ${note.category === 'importante' ? 'selected' : ''}>Importante</option>
+                <option value="finanzas" ${note.category === 'finanzas' ? 'selected' : ''}>Finanzas</option>
+            </select>
+        `,
+        preConfirm: () => {
+            return {
+                text: document.getElementById('quick-note-text').value,
+                category: document.getElementById('quick-note-category').value
+            }
+        }
+    });
+
+    if (formValues && formValues.text) {
+        notes[index] = { ...notes[index], ...formValues };
+        saveQuickNotes(notes);
+        renderQuickNotes();
+    }
+}
+
+function deleteQuickNote(index) {
+    const notes = getQuickNotes();
+    notes.splice(index, 1);
+    saveQuickNotes(notes);
+    renderQuickNotes();
+}
+
+/**
+ * Indicador de tiempo actual
+ */
+let timeIndicatorInterval;
+
+function startTimeIndicator() {
+    updateTimeIndicator();
+    timeIndicatorInterval = setInterval(updateTimeIndicator, 60000); // Actualizar cada minuto
+}
+
+function stopTimeIndicator() {
+    clearInterval(timeIndicatorInterval);
+}
+
+function updateTimeIndicator() {
+    const indicator = document.getElementById('current-time-indicator');
+    if (!indicator) return;
+
+    const now = new Date();
+    const hoy = new Date();
+    hoy.setHours(0,0,0,0);
+
+    // Calcular si hoy está dentro de la semana visible
+    const weekEnd = new Date(currentWeekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    const isThisWeek = now >= currentWeekStart && now < weekEnd;
+    
+    if (!isThisWeek) {
+        indicator.style.display = 'none';
+        return;
+    }
+
+    // Calcular dayIdx relativo a currentWeekStart
+    const startObj = new Date(currentWeekStart);
+    startObj.setHours(0,0,0,0);
+    const todayObj = new Date(now);
+    todayObj.setHours(0,0,0,0);
+    const dayIdx = Math.round((todayObj - startObj) / (24 * 60 * 60 * 1000));
+    
+    const hour = now.getHours();
+    const minutes = now.getMinutes();
+
+    if (hour < 7 || hour > 22) {
+        indicator.style.display = 'none';
+        return;
+    }
+
+    indicator.style.display = 'block';
+    
+    // Calcular posiciones
+    const grid = document.getElementById('agenda-grid');
+    if (!grid) return;
+    const gridWidth = grid.offsetWidth;
+    const dayWidth = (gridWidth - 80) / 7;
+    
+    const top = 50 + (hour - 7) * 80 + (minutes / 60) * 80;
+    const left = 80 + dayIdx * dayWidth;
+    
+    indicator.style.top = `${top}px`;
+    indicator.style.left = `${left}px`;
+    indicator.style.width = `${dayWidth}px`;
+}
+
+/**
  * Obtiene las notas de localStorage
  */
 function getAgendaNotes(cellId) {
-    const allNotes = JSON.parse(localStorage.getItem('inka_agenda_notes') || '{}');
-    return allNotes[cellId] || [];
+    return getAgendaNotesCombined(cellId);
 }
 
 /**
@@ -425,9 +738,24 @@ function saveAgendaNotes(cellId, notes) {
 document.addEventListener('DOMContentLoaded', () => {
     const prevBtn = document.getElementById('prev-week');
     const nextBtn = document.getElementById('next-week');
+    const datePickerBtn = document.getElementById('agenda-datepicker-btn');
+    const dateInput = document.getElementById('agenda-date-input');
     
     if (prevBtn) prevBtn.onclick = prevWeek;
     if (nextBtn) nextBtn.onclick = nextWeek;
+
+    if (datePickerBtn && dateInput) {
+        datePickerBtn.onclick = () => dateInput.showPicker();
+        dateInput.onchange = (e) => {
+            if (e.target.value) {
+                const selectedDate = new Date(e.target.value + 'T00:00:00');
+                currentWeekStart = selectedDate;
+                renderAgenda();
+                // Limpiar el valor para permitir seleccionar la misma fecha nuevamente
+                e.target.value = '';
+            }
+        };
+    }
 
     // Cerrar modal al hacer click fuera del card
     const modal = document.getElementById('agenda-modal');
@@ -436,8 +764,31 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target === modal) closeAgendaModal();
         };
     }
+    
+    // Listener para filtros de categoría
+    const filterContainer = document.querySelector('.category-filters');
+    if (filterContainer) {
+        filterContainer.addEventListener('change', (e) => {
+            if (e.target.tagName === 'INPUT') {
+                const category = e.target.dataset.category;
+                if (e.target.checked) {
+                    if (!activeCategories.includes(category)) activeCategories.push(category);
+                } else {
+                    activeCategories = activeCategories.filter(c => c !== category);
+                }
+                renderAgenda();
+            }
+        });
+    }
+
+    window.addEventListener('resize', updateTimeIndicator);
 });
 
 // Exponer funciones globalmente
 window.openAgendaModal = openAgendaModal;
 window.closeAgendaModal = closeAgendaModal;
+window.handleAgendaSearch = handleAgendaSearch;
+window.goToToday = goToToday;
+window.addQuickNote = addQuickNote;
+window.editQuickNote = editQuickNote;
+window.deleteQuickNote = deleteQuickNote;

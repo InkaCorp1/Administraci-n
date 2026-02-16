@@ -220,7 +220,7 @@ async function verDetalleMes(key, mesLabel) {
                         <tbody>
                             ${detalles.map(d => `
                                 <tr>
-                                    <td>${new Date(d.fecha_pago).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                                    <td>${window.formatDate(d.fecha_pago)}</td>
                                     <td>
                                         <div class="socio-info-cell">
                                             <span class="socio-name">${d.ic_creditos?.socio?.nombre || 'N/A'}</span>
@@ -240,12 +240,13 @@ async function verDetalleMes(key, mesLabel) {
             title: `<div class="resumen-modal-title"><span>Recaudación</span> <small>${mesLabel}</small></div>`,
             html: html,
             width: '1000px', // Más ancho para aprovechar la pantalla
-            confirmButtonText: 'Cerrar ventana',
-            confirmButtonColor: '#0B4E32',
+            showConfirmButton: false, // Ocultamos el botón inferior
+            showCloseButton: true, // Mostramos la "X" en la parte superior derecha
             customClass: {
                 container: 'resumen-detalle-modal',
                 popup: 'resumen-modal-popup',
-                header: 'resumen-modal-header'
+                header: 'resumen-modal-header',
+                closeButton: 'resumen-modal-close-btn'
             }
         });
 
@@ -490,12 +491,13 @@ function procesarHistoricoMensual(pagos, mesesAMostrar = 3) {
     }
 
     pagos.forEach(p => {
-        const fecha = new Date(p.fecha_pago);
-        if (isNaN(fecha)) return;
+        if (!p.fecha_pago) return;
+        
+        // Extraer partes de la fecha de forma segura sin problemas de zona horaria
+        const [year, month, day] = p.fecha_pago.split('-').map(Number);
+        if (!year || !month) return;
 
-        const year = fecha.getFullYear();
-        const monthNum = fecha.getMonth();
-        const key = `${year}-${String(monthNum + 1).padStart(2, '0')}`;
+        const key = `${year}-${String(month).padStart(2, '0')}`;
 
         if (meses[key]) {
             meses[key].monto += parseFloat(p.monto_pagado || 0);

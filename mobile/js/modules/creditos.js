@@ -1536,7 +1536,7 @@ async function processMobCobrosExport(filters) {
             list = list.filter(p => p.fecha_pago && meses.includes(p.fecha_pago.substring(0, 7)));
         }
 
-        list.sort((a, b) => new Date(a.fecha_pago) - new Date(b.fecha_pago));
+        list.sort((a, b) => window.parseDate(a.fecha_pago) - window.parseDate(b.fecha_pago));
         
         if (list.length === 0) {
             Swal.fire('Sin resultados', 'No se encontraron cobros con estos filtros.', 'info');
@@ -1681,7 +1681,7 @@ function generateMobCobrosPDF(data, filters) {
         didParseCell: (d) => {
             if (d.section === 'body') {
                 const raw = d.row.raw._raw;
-                if (raw?.fecha_pago && raw?.detalle?.fecha_vencimiento && new Date(raw.fecha_pago) > new Date(raw.detalle.fecha_vencimiento)) {
+                if (raw?.fecha_pago && raw?.detalle?.fecha_vencimiento && window.parseDate(raw.fecha_pago) > window.parseDate(raw.detalle.fecha_vencimiento)) {
                     d.cell.styles.fillColor = [254, 226, 226];
                     d.cell.styles.textColor = [153, 27, 27];
                 }

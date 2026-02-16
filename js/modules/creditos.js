@@ -804,16 +804,12 @@ function getPaisCode(pais) {
  */
 function formatDateMedium(date) {
     if (!date) return '-';
-    // Asegurarnos de tener un objeto Date válido
-    const d = typeof date === 'string' ? parseDate(date) : new Date(date);
-    if (!d || isNaN(d.getTime())) return '-';
-    
-    const day = d.getDate();
-    const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-    const month = months[d.getMonth()];
-    const year = d.getFullYear();
-    
-    return `${day} ${month} ${year}`;
+    // Usar el formateador centralizado para consistencia de zona horaria
+    return window.formatDate(date, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+    }).replace('.', '');
 }
 
 function getProximoPago(credito) {
@@ -908,7 +904,7 @@ async function viewCredito(creditoId, btn = null) {
                 const count = cuotasVencidas.length;
                 
                 // Calcular días desde la cuota más antigua vencida
-                const oldestDate = new Date(cuotasVencidas[0].fecha_vencimiento);
+                const oldestDate = window.parseDate(cuotasVencidas[0].fecha_vencimiento);
                 const today = new Date();
                 const diffTime = Math.max(0, today - oldestDate);
                 const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -3289,7 +3285,7 @@ async function processCobrosExport(filters) {
         }
 
         // 5. Ordenamiento por FECHA DE COBRO (Más antiguo a más reciente)
-        listToExport.sort((a, b) => new Date(a.fecha_pago) - new Date(b.fecha_pago));
+        listToExport.sort((a, b) => window.parseDate(a.fecha_pago) - window.parseDate(b.fecha_pago));
 
         if (listToExport.length === 0) {
             Swal.fire('Sin resultados', 'No se encontraron registros de cobro para estos filtros.', 'info');

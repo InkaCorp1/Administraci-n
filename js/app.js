@@ -96,7 +96,8 @@ const CACHE_TYPES = [
     'pagos',
     'amortizaciones',
     'administrativos',
-    'bancos'
+    'bancos',
+    'contratos'
 ];
 
 // Listeners para notificar a vistas cuando el caché se actualiza
@@ -438,6 +439,9 @@ async function initApp() {
 
     // Cachear elementos del DOM
     sidebar = document.getElementById('sidebar');
+    if (sidebar && sidebar.classList.contains('collapsed')) {
+        document.body.classList.add('sidebar-collapsed');
+    }
     mainContent = document.getElementById('main-content');
     logoutBtn = document.getElementById('logout-btn');
     userNameDisplay = document.getElementById('user-name');
@@ -493,7 +497,7 @@ function getViewFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
     const viewParam = urlParams.get('view');
     const hash = window.location.hash.replace('#', '');
-    const validViews = ['dashboard', 'socios', 'socios_edit', 'solicitud_credito', 'creditos', 'creditos_preferenciales', 'precancelaciones', 'resumen_general', 'ahorros', 'polizas', 'simulador', 'aportes', 'bancos', 'administrativos'];
+    const validViews = ['dashboard', 'socios', 'socios_edit', 'solicitud_credito', 'creditos', 'creditos_preferenciales', 'precancelaciones', 'resumen_general', 'ahorros', 'polizas', 'simulador', 'aportes', 'bancos', 'administrativos', 'caja', 'agenda', 'contratos'];
 
     // 1. Prioridad: Parámetro URL (?view=creditos) - SOPORTA HARD REFRESH
     if (viewParam && validViews.includes(viewParam)) return viewParam;
@@ -672,6 +676,7 @@ function toggleSidebar() {
     if (sidebar.classList.contains('collapsed')) {
         // Abrir sidebar
         sidebar.classList.remove('collapsed');
+        document.body.classList.remove('sidebar-collapsed');
         overlay?.classList.add('active');
         toggle?.classList.add('hidden');
         homeBtn?.classList.add('hidden');
@@ -687,6 +692,7 @@ function closeSidebar() {
     const homeBtn = document.getElementById('home-shortcut');
 
     sidebar?.classList.add('collapsed');
+    document.body.classList.add('sidebar-collapsed');
     overlay?.classList.remove('active');
     toggle?.classList.remove('hidden');
     homeBtn?.classList.remove('hidden');
@@ -1031,7 +1037,39 @@ async function loadView(viewName, shouldPushState = true) {
 
     // Si ya estamos cargando ESTA misma vista, no hacer nada
     if (isViewLoading && pendingViewName === viewName) return;
-    // Si ya es la vista actual, no hacer nada
+
+    // Caso especial para la Agenda (es un modal)
+    if (viewName === 'agenda') {
+        // Si el contenido principal está vacío (ej. carga inicial), cargamos dashboard de fondo
+        if (mainContent && (mainContent.innerHTML === '' || currentViewName === null)) {
+            fetch('views/dashboard.html')
+                .then(response => response.ok ? response.text() : '')
+                .then(html => {
+                    if (html && mainContent) {
+                        mainContent.innerHTML = html;
+                        if (typeof initDashboardView === 'function') initDashboardView();
+                    }
+                })
+                .catch(err => console.warn('No se pudo cargar el fondo para la agenda:', err));
+        }
+
+        if (typeof openAgendaModal === 'function') {
+            openAgendaModal();
+        }
+
+        currentViewName = 'agenda';
+        pendingViewName = null;
+        isViewLoading = false;
+        hideAppLoader();
+        
+        // Sincronizar URL si es necesario
+        if (window.location.search !== `?view=agenda`) {
+            history.replaceState({ view: 'agenda' }, '', url);
+        }
+        return;
+    }
+
+    // Para el resto de vistas, si ya es la actual, no re-cargar
     if (currentViewName === viewName) return;
 
     isViewLoading = true;
@@ -1045,6 +1083,9 @@ async function loadView(viewName, shouldPushState = true) {
         if (typeof cleanupStickyHeaders === 'function') cleanupStickyHeaders();
         if (typeof cleanupAhorrosStickyHeaders === 'function') cleanupAhorrosStickyHeaders();
         if (typeof cleanupPolizasModule === 'function') cleanupPolizasModule();
+        
+        // Cerrar modal de agenda si estuviéramos navegando a otra vista
+        if (typeof closeAgendaModal === 'function') closeAgendaModal();
 
         // 2. Cargar HTML de la vista
         const response = await fetch(`views/${viewName}.html`);
@@ -1108,6 +1149,12 @@ async function loadView(viewName, shouldPushState = true) {
                 break;
             case 'administrativos':
                 if (typeof initAdministrativosModule === 'function') await initAdministrativosModule();
+                break;
+            case 'contratos':
+                if (typeof initContratosModule === 'function') await initContratosModule();
+                break;
+            case 'caja':
+                if (typeof initCajaModule === 'function') await initCajaModule();
                 break;
         }
 
@@ -1927,12 +1974,22 @@ function parseDate(dateInput) {
     try {
         let dateStr = String(dateInput).trim();
 
-        // Formato ISO extendido de base de datos (YYYY-MM-DD ...)
+        // Formato de fecha de base de datos (YYYY-MM-DD)
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            const parts = dateStr.split('-');
+            // Medianoche local evita problemas de zona horaria con fechas "lógicas"
+            return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        }
+
+        // Formato ISO extendido de base de datos o con hora (YYYY-MM-DD ...)
         if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
-            // Extraer solo la parte de la fecha YYYY-MM-DD
-            const onlyDate = dateStr.substring(0, 10);
-            // Forzamos medianoche en Ecuador (UTC-5) para fechas lógicas
-            return new Date(onlyDate + 'T00:00:00-05:00');
+            // Si tiene hora, intentamos parsear como ISO para preservar la precisión
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) return d;
+            
+            // Si falla, caemos a medianoche local de la parte de la fecha
+            const parts = dateStr.substring(0, 10).split('-');
+            return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
         }
 
         const d = new Date(dateStr);
@@ -1955,14 +2012,24 @@ function formatDate(dateString, options = {}) {
         const date = parseDate(dateString);
         if (!date) return '-';
 
+        // Si es una fecha lógica (solo YYYY-MM-DD), no forzamos zona horaria 
+        // para evitar que se mueva de día dependiendo de la ubicación del usuario.
+        // Si es un timestamp completo, sí forzamos Ecuador.
+        const isOnlyDate = /^\d{4}-\d{2}-\d{2}$/.test(String(dateString).trim());
+
         const defaultOptions = {
             year: 'numeric',
             month: 'short',
-            day: 'numeric',
-            timeZone: 'America/Guayaquil'
+            day: 'numeric'
         };
+
+        if (!isOnlyDate) {
+            defaultOptions.timeZone = 'America/Guayaquil';
+        }
+
         return date.toLocaleDateString('es-EC', { ...defaultOptions, ...options });
     } catch (e) {
+        console.error('Error formatting date:', e);
         return '-';
     }
 }

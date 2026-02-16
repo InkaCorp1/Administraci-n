@@ -54,6 +54,14 @@ function setupAdmEventListeners() {
         });
     }
 
+    // Botón Reporte PDF
+    const btnReporte = document.getElementById('btn-adm-reporte-pdf');
+    if (btnReporte) {
+        btnReporte.addEventListener('click', () => {
+            generateAdmReportPDF();
+        });
+    }
+
     // Modal Close
     const closeButtons = document.querySelectorAll('#modal-gasto-adm [data-close-modal], #modal-evidencia-adm [data-close-modal]');
     closeButtons.forEach(btn => {
@@ -486,3 +494,286 @@ function formatAdmDate(dateStr) {
 window.viewAdmEvidencia = viewAdmEvidencia;
 window.deleteAdmGasto = deleteAdmGasto;
 window.initAdministrativosModule = initAdministrativosModule;
+window.generateAdmReportPDF = generateAdmReportPDF;
+
+/**
+ * GENERACIÓN DE REPORTES PDF (ESTILO SITUACIÓN BANCARIA)
+ */
+
+async function generateAdmReportPDF() {
+    try {
+        const { value: formValues } = await Swal.fire({
+            title: 'Reporte de Gastos Administrativos',
+            html: `
+                <div class="swal-export-container">
+                    <p id="export-mode-desc" class="export-desc">Seleccione el mes para el reporte consolidado.</p>
+                    
+                    <div class="export-mode-selector">
+                        <button type="button" id="btn-mode-month" class="mode-btn active">POR MES</button>
+                        <button type="button" id="btn-mode-range" class="mode-btn">RANGO FECHAS</button>
+                    </div>
+
+                    <div id="container-month" class="mode-container">
+                        <label class="premium-label">Seleccionar Mes</label>
+                        <input type="month" id="swal-month" class="premium-input-swal" value="${new Date().toISOString().substring(0, 7)}">
+                    </div>
+
+                    <div id="container-range" class="mode-container hidden">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label class="premium-label">Desde</label>
+                                <input type="date" id="swal-start" class="premium-input-swal">
+                            </div>
+                            <div>
+                                <label class="premium-label">Hasta</label>
+                                <input type="date" id="swal-end" class="premium-input-swal">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <style>
+                    .swal-export-container { text-align: left; padding: 10px 5px; }
+                    .export-desc { font-size: 0.9rem; color: #64748B; margin-bottom: 20px; line-height: 1.4; border-left: 3px solid #0E5936; padding-left: 10px; }
+                    .export-mode-selector { display: flex; background: #F1F5F9; border-radius: 12px; padding: 5px; margin-bottom: 20px; }
+                    .mode-btn { flex: 1; border: none; background: transparent; padding: 8px; font-size: 0.85rem; font-weight: 700; color: #64748B; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
+                    .mode-btn.active { background: white; color: #0E5936; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+                    .mode-container { animation: fadeIn 0.3s ease; }
+                    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+                    .premium-label { display: block; font-size: 0.8rem; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.025em; }
+                    .premium-input-swal { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #CBD5E1; font-family: inherit; font-size: 0.95rem; color: #1E293B; outline: none; transition: border-color 0.2s; }
+                    .premium-input-swal:focus { border-color: #0E5936; box-shadow: 0 0 0 3px rgba(14, 89, 54, 0.1); }
+                    .hidden { display: none; }
+                </style>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-file-pdf"></i> Generar PDF',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#0E5936',
+            cancelButtonColor: '#64748B',
+            focusConfirm: false,
+            didOpen: () => {
+                Swal.getPopup().style.borderRadius = '1.25rem';
+                const btnMonth = Swal.getHtmlContainer().querySelector('#btn-mode-month');
+                const btnRange = Swal.getHtmlContainer().querySelector('#btn-mode-range');
+                const containerMonth = Swal.getHtmlContainer().querySelector('#container-month');
+                const containerRange = Swal.getHtmlContainer().querySelector('#container-range');
+                const desc = Swal.getHtmlContainer().querySelector('#export-mode-desc');
+
+                btnMonth.addEventListener('click', () => {
+                    btnMonth.classList.add('active');
+                    btnRange.classList.remove('active');
+                    containerMonth.classList.remove('hidden');
+                    containerRange.classList.add('hidden');
+                    desc.textContent = 'Seleccione el mes para el reporte consolidado.';
+                });
+
+                btnRange.addEventListener('click', () => {
+                    btnRange.classList.add('active');
+                    btnMonth.classList.remove('active');
+                    containerRange.classList.remove('hidden');
+                    containerMonth.classList.add('hidden');
+                    desc.textContent = 'Defina un rango de fechas personalizado.';
+                });
+            },
+            preConfirm: () => {
+                const isRange = Swal.getHtmlContainer().querySelector('#btn-mode-range').classList.contains('active');
+                if (isRange) {
+                    const start = document.getElementById('swal-start').value;
+                    const end = document.getElementById('swal-end').value;
+                    if (!start || !end) {
+                        Swal.showValidationMessage('Por favor seleccione ambas fechas');
+                        return false;
+                    }
+                    return { type: 'range', start, end };
+                } else {
+                    const month = document.getElementById('swal-month').value;
+                    if (!month) {
+                        Swal.showValidationMessage('Por favor seleccione el mes');
+                        return false;
+                    }
+                    return { type: 'month', month };
+                }
+            }
+        });
+
+        if (!formValues) return;
+
+        let startDate, endDate, titlePeriod;
+
+        if (formValues.type === 'month') {
+            const [year, month] = formValues.month.split('-');
+            startDate = `${year}-${month}-01`;
+            endDate = `${year}-${month}-${new Date(year, month, 0).getDate()}`;
+            const monthNames = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
+            titlePeriod = `REPORTE DE GASTOS: ${monthNames[parseInt(month) - 1]} ${year}`;
+        } else {
+            startDate = formValues.start;
+            endDate = formValues.end;
+            titlePeriod = `DESDE ${startDate} HASTA ${endDate}`;
+        }
+
+        if (typeof window.showLoader === 'function') window.showLoader(`Generando reporte PDF...`);
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const supabase = window.getSupabaseClient();
+
+        // Fetch gastos for the period
+        const { data: gastos, error: errorGastos } = await supabase
+            .from('ic_gastos_administrativos')
+            .select('*')
+            .gte('fecha', startDate)
+            .lte('fecha', endDate)
+            .order('fecha', { ascending: true });
+
+        if (errorGastos) throw errorGastos;
+        if (!gastos || gastos.length === 0) throw new Error(`No hay gastos registrados entre ${startDate} y ${endDate} para generar el reporte.`);
+
+        // Generate PDF content
+        let yPos = 20;
+        const pageHeight = 297;
+        const marginBottom = 20;
+        const logoUrl = 'https://i.ibb.co/3mC22Hc4/inka-corp.png';
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('es-EC');
+        const timeStr = now.toLocaleTimeString('es-EC');
+
+        // Logo
+        try {
+            doc.addImage(logoUrl, 'PNG', 15, 12, 18, 18);
+        } catch (e) { console.warn('Logo no disponible'); }
+
+        // Header
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(11, 78, 50);
+        doc.text("INKA CORP", 38, 18);
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 116, 139);
+        doc.text("REPORTE DE GASTOS ADMINISTRATIVOS", 38, 24);
+
+        doc.setFontSize(8);
+        doc.setTextColor(148, 163, 184);
+        doc.text(`Generado: ${dateStr} | ${timeStr}`, 148, 18);
+        doc.text(`Total registros: ${gastos.length}`, 148, 23);
+
+        yPos = 34;
+        doc.setFontSize(9);
+        doc.setTextColor(11, 78, 50);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`PERIODO: ${titlePeriod}`, 15, yPos);
+
+        yPos += 2;
+        doc.setDrawColor(242, 187, 58);
+        doc.setLineWidth(0.5);
+        doc.line(15, yPos, 195, yPos);
+
+        yPos += 10;
+
+        let count = 0;
+        const total = gastos.length;
+
+        for (const gasto of gastos) {
+            count++;
+            if (typeof window.showLoader === 'function') window.showLoader(`Procesando gasto ${count} de ${total}...`);
+
+            const boxHeight = 90;
+
+            if (yPos + boxHeight > (pageHeight - marginBottom)) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            doc.setDrawColor(220, 220, 220);
+            doc.setLineWidth(0.4);
+            doc.roundedRect(15, yPos, 180, boxHeight, 3, 3);
+
+            let textY = yPos + 10;
+            const leftMargin = 20;
+            const maxTextWidth = 80;
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(11, 78, 50);
+
+            doc.text(`MOTIVO:`, leftMargin, textY);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(30, 41, 59);
+            const motivoLines = doc.splitTextToSize(gasto.motivo || 'N/A', maxTextWidth);
+            doc.text(motivoLines, leftMargin + 25, textY);
+            textY += (motivoLines.length * 5) + 3;
+
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(11, 78, 50);
+            doc.text(`MONTO:`, leftMargin, textY);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(185, 28, 28); // Rojo
+            doc.text(`$${parseFloat(gasto.monto || 0).toFixed(2)}`, leftMargin + 25, textY);
+            textY += 8;
+
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(11, 78, 50);
+            doc.text(`FECHA:`, leftMargin, textY);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(30, 41, 59);
+            doc.text(`${gasto.fecha}`, leftMargin + 25, textY);
+            textY += 8;
+
+            // Evidence Image
+            if (gasto.fotografia) {
+                try {
+                    const imgData = await fetchImageAsBase64(gasto.fotografia);
+                    if (imgData) {
+                        doc.addImage(imgData, 'JPEG', 110, yPos + 5, 80, 80, undefined, 'FAST');
+                    }
+                } catch (imgErr) {
+                    doc.setFontSize(8);
+                    doc.setTextColor(150);
+                    doc.text("[Error al cargar evidencia]", 130, yPos + 40);
+                }
+            } else {
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.text("[Sin Evidencias]", 130, yPos + 40);
+            }
+
+            yPos += boxHeight + 8;
+        }
+
+        doc.save(`Reporte_Gastos_Adm_${titlePeriod.replace(/ /g, '_')}.pdf`);
+        if (typeof window.hideLoader === 'function') window.hideLoader();
+        await window.showAlert('El reporte de gastos se ha generado correctamente.', 'Reporte Listo', 'success');
+
+    } catch (error) {
+        console.error('Error PDF:', error);
+        if (typeof window.hideLoader === 'function') window.hideLoader();
+        window.showAlert(error.message, 'Error', 'error');
+    }
+}
+
+async function fetchImageAsBase64(url) {
+    if (!url) return null;
+    let cleanUrl = url.replace('/d/$', '/d/');
+    const driveRegex = /file\/d\/([a-zA-Z0-9_-]+)|id=([a-zA-Z0-9_-]+)/;
+    const match = cleanUrl.match(driveRegex);
+    if (match) {
+        const fileId = match[1] || match[2];
+        if (fileId) cleanUrl = `https://lh3.googleusercontent.com/d/${fileId}=w1000`;
+    }
+    try {
+        const response = await fetch(cleanUrl);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const blob = await response.blob();
+        if (blob.type.includes('html')) return null;
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+        });
+    } catch (e) {
+        return null;
+    }
+}

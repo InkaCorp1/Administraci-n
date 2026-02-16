@@ -100,6 +100,22 @@
     margin-top: 0.25rem;
 }
 
+.btn-pdf {
+    background: #0b4e32 !important;
+    color: white !important;
+    font-weight: 700 !important;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-pdf:hover {
+    background: #083d26 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(11, 78, 50, 0.2);
+}
+
 .administrativos-toolbar {
     display: flex;
     gap: 1rem;
