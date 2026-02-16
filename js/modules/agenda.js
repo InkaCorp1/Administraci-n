@@ -16,11 +16,37 @@ resetToMonday(currentWeekStart);
 
 let searchQuery = '';
 let activeCategories = ['trabajo', 'personal', 'importante', 'finanzas'];
+let allAgendaData = []; // Cache global de Supabase
+
+/**
+ * Sincroniza los datos con Supabase
+ */
+async function syncAgendaFromSupabase() {
+    const sb = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    if (!sb) return;
+
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) return;
+
+        const { data, error } = await sb
+            .from('ic_agenda')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        allAgendaData = data || [];
+        console.log('Agenda sincronizada:', allAgendaData.length, 'registros');
+    } catch (err) {
+        console.error('Error al sincronizar agenda:', err);
+    }
+}
 
 /**
  * Abre el modal de agenda
  */
-function openAgendaModal(e) {
+async function openAgendaModal(e) {
     if (e) e.preventDefault();
     const modal = document.getElementById('agenda-modal');
     modal.classList.add('active');
@@ -29,6 +55,9 @@ function openAgendaModal(e) {
     searchQuery = '';
     const searchInput = document.getElementById('agenda-search-input');
     if (searchInput) searchInput.value = '';
+    
+    // Cargar datos de la DB antes de mostrar
+    await syncAgendaFromSupabase();
     
     renderAgenda();
     renderQuickNotes();
@@ -110,18 +139,10 @@ function renderGlobalSearchResults() {
         return;
     }
 
-    const allNotes = JSON.parse(localStorage.getItem('inka_agenda_notes') || '{}');
-    const matches = [];
-
-    Object.keys(allNotes).forEach(cellId => {
-        const notes = allNotes[cellId];
-        notes.forEach(note => {
-            const title = (note.title || '').toLowerCase();
-            const text = (note.text || '').toLowerCase();
-            if (title.includes(searchQuery) || text.includes(searchQuery)) {
-                matches.push({ ...note, cellId });
-            }
-        });
+    const matches = allAgendaData.filter(note => {
+        const title = (note.title || '').toLowerCase();
+        const text = (note.text || '').toLowerCase();
+        return title.includes(searchQuery) || text.includes(searchQuery);
     });
 
     if (matches.length > 0) {
@@ -129,8 +150,12 @@ function renderGlobalSearchResults() {
         container.innerHTML = '';
         
         matches.forEach(match => {
-            const datePart = match.cellId.split('-').slice(0, 3).join('-');
-            const hourPart = match.cellId.split('-')[3];
+            // Solo procesar si tiene cell_id (notas de calendario)
+            if (!match.cell_id) return;
+
+            const parts = match.cell_id.split('-');
+            const datePart = parts.slice(0, 3).join('-');
+            const hourPart = parts[3];
             
             const resultEl = document.createElement('div');
             resultEl.className = `quick-note-item cat-${match.category || 'trabajo'}`;
@@ -143,7 +168,6 @@ function renderGlobalSearchResults() {
                 const targetDate = new Date(datePart + 'T12:00:00');
                 currentWeekStart = resetToMonday(targetDate);
                 renderAgenda();
-                // Opcional: scroll al elemento o resaltado temporal
             };
             container.appendChild(resultEl);
         });
@@ -273,7 +297,7 @@ function renderNotesInCell(cell, cellId) {
         noteEl.title = (note.title ? note.title + "\n" : "") + note.text;
         noteEl.onclick = (e) => {
             e.stopPropagation();
-            editOrDeleteNote(cellId, index);
+            editOrDeleteNote(note.id);
         };
         cell.appendChild(noteEl);
     });
@@ -359,19 +383,16 @@ async function addNoteToCell(cellId, date, hour) {
     });
 
     if (formValues && formValues.text) {
-        const notes = getAgendaNotes(cellId);
-        notes.push({ 
+        await saveAgendaNoteToDB({
+            cell_id: cellId,
             type: formValues.type,
             title: formValues.title,
             text: formValues.text, 
             category: formValues.category,
             freq: formValues.freq,
             date: date,
-            hour: hour,
-            createdAt: new Date().getTime() 
+            hour: hour
         });
-        saveAgendaNotes(cellId, notes);
-        renderAgenda();
     }
 }
 
@@ -379,67 +400,57 @@ async function addNoteToCell(cellId, date, hour) {
  * Procesa recordatorios recurrentes para que aparezcan en las fechas futuras
  */
 function processRecurrentReminders() {
-    const allData = JSON.parse(localStorage.getItem('inka_agenda_notes') || '{}');
     const newEntries = {};
     const hoy = new Date();
     hoy.setHours(0,0,0,0);
 
-    // Iterar sobre todas las celdas guardadas
-    Object.keys(allData).forEach(cellId => {
-        const notes = allData[cellId];
-        notes.forEach(note => {
-            if (note.type === 'reminder' && note.freq !== 'once') {
-                const startDate = new Date(note.date + 'T12:00:00'); // Evitar problemas de TZ
-                
-                // Solo propagamos hacia adelante si estamos visualizando la semana actual o futura
-                // Para simplificar, calculamos si este recordatorio debería estar en la semana que estamos viendo
-                const viewStart = new Date(currentWeekStart);
-                const viewEnd = new Date(currentWeekStart);
-                viewEnd.setDate(viewEnd.getDate() + 7);
+    // Filtrar solo los recordatorios recurrentes de la cache global
+    const recurrentNotes = allAgendaData.filter(n => n.type === 'reminder' && n.freq !== 'once' && !n.is_quick_note);
 
-                if (startDate < viewEnd) {
-                    for (let i = 0; i < 7; i++) {
-                        const checkDate = new Date(currentWeekStart);
-                        checkDate.setDate(checkDate.getDate() + i);
-                        checkDate.setHours(12,0,0,0);
+    recurrentNotes.forEach(note => {
+        const startDate = new Date(note.date + 'T12:00:00'); 
+        
+        const viewEnd = new Date(currentWeekStart);
+        viewEnd.setDate(viewEnd.getDate() + 7);
 
-                        if (checkDate >= startDate) {
-                            let shouldShow = false;
-                            if (note.freq === 'daily') shouldShow = true;
-                            if (note.freq === 'weekly' && checkDate.getDay() === startDate.getDay()) shouldShow = true;
-                            if (note.freq === 'monthly' && checkDate.getDate() === startDate.getDate()) shouldShow = true;
+        if (startDate < viewEnd) {
+            for (let i = 0; i < 7; i++) {
+                const checkDate = new Date(currentWeekStart);
+                checkDate.setDate(checkDate.getDate() + i);
+                checkDate.setHours(12,0,0,0);
 
-                            if (shouldShow) {
-                                const targetDateStr = checkDate.toISOString().split('T')[0];
-                                const targetCellId = `${targetDateStr}-${note.hour}`;
-                                
-                                // Si no es la celda original, la agregamos al render temporal
-                                if (targetCellId !== cellId) {
-                                    if (!window.tempReminders) window.tempReminders = {};
-                                    if (!window.tempReminders[targetCellId]) window.tempReminders[targetCellId] = [];
-                                    
-                                    // Verificar que no esté ya agregada para evitar duplicados en el render
-                                    const exists = window.tempReminders[targetCellId].some(r => r.text === note.text && r.hour === note.hour);
-                                    if (!exists) {
-                                        window.tempReminders[targetCellId].push({...note, isRecurrentInstance: true});
-                                    }
-                                }
+                if (checkDate >= startDate) {
+                    let shouldShow = false;
+                    if (note.freq === 'daily') shouldShow = true;
+                    if (note.freq === 'weekly' && checkDate.getDay() === startDate.getDay()) shouldShow = true;
+                    if (note.freq === 'monthly' && checkDate.getDate() === startDate.getDate()) shouldShow = true;
+
+                    if (shouldShow) {
+                        const targetDateStr = checkDate.toISOString().split('T')[0];
+                        const targetCellId = `${targetDateStr}-${note.hour}`;
+                        
+                        if (targetCellId !== note.cell_id) {
+                            if (!window.tempReminders) window.tempReminders = {};
+                            if (!window.tempReminders[targetCellId]) window.tempReminders[targetCellId] = [];
+                            
+                            const exists = window.tempReminders[targetCellId].some(r => r.text === note.text && r.hour === note.hour);
+                            if (!exists) {
+                                window.tempReminders[targetCellId].push({...note, isRecurrentInstance: true});
                             }
                         }
                     }
                 }
             }
-        });
+        }
     });
 }
 
 function getAgendaNotesCombined(cellId) {
-    const allNotes = JSON.parse(localStorage.getItem('inka_agenda_notes') || '{}');
-    let cellNotes = allNotes[cellId] || [];
+    // Buscar en la cache global por cell_id
+    let cellNotes = allAgendaData.filter(n => n.cell_id === cellId && !n.is_quick_note);
     
     // Combinar con recurrentes temporales
     if (window.tempReminders && window.tempReminders[cellId]) {
-        // Filtrar para no duplicar si el usuario ya guardó algo manualmente en esa celda exacta
         const manualTexts = cellNotes.map(n => n.text);
         const recurrentToAdd = window.tempReminders[cellId].filter(r => !manualTexts.includes(r.text));
         return [...cellNotes, ...recurrentToAdd];
@@ -451,9 +462,9 @@ function getAgendaNotesCombined(cellId) {
 /**
  * Edita o elimina una nota existente
  */
-async function editOrDeleteNote(cellId, index) {
-    const notes = getAgendaNotes(cellId);
-    const note = notes[index];
+async function editOrDeleteNote(id) {
+    const note = allAgendaData.find(n => n.id === id);
+    if (!note) return;
 
     if (note.isRecurrentInstance) {
         Swal.fire({
@@ -515,16 +526,10 @@ async function editOrDeleteNote(cellId, index) {
 
     if (result.isConfirmed) {
         if (result.value) {
-            notes[index].title = result.value.title;
-            notes[index].text = result.value.text;
-            notes[index].category = result.value.category;
-            saveAgendaNotes(cellId, notes);
-            renderAgenda();
+            await saveAgendaNoteToDB({ ...note, ...result.value });
         }
     } else if (result.isDenied) {
-        notes.splice(index, 1);
-        saveAgendaNotes(cellId, notes);
-        renderAgenda();
+        await saveAgendaNoteToDB(note, true);
     }
 }
 
@@ -532,11 +537,36 @@ async function editOrDeleteNote(cellId, index) {
  * Lógica de Notas Rápidas
  */
 function getQuickNotes() {
-    return JSON.parse(localStorage.getItem('inka_quick_notes') || '[]');
+    return allAgendaData.filter(n => n.is_quick_note === true);
 }
 
-function saveQuickNotes(notes) {
-    localStorage.setItem('inka_quick_notes', JSON.stringify(notes));
+async function saveQuickNoteToDB(note, isDelete = false) {
+    const sb = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    if (!sb) return;
+
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) return;
+
+        if (isDelete) {
+            await sb.from('ic_agenda').delete().eq('id', note.id);
+        } else {
+            const noteData = {
+                ...note,
+                user_id: session.user.id,
+                is_quick_note: true
+            };
+            if (note.id) {
+                await sb.from('ic_agenda').update(noteData).eq('id', note.id);
+            } else {
+                await sb.from('ic_agenda').insert([noteData]);
+            }
+        }
+        await syncAgendaFromSupabase();
+        renderQuickNotes();
+    } catch (err) {
+        console.error('Error al guardar nota rápida:', err);
+    }
 }
 
 function renderQuickNotes() {
@@ -567,14 +597,14 @@ function renderQuickNotes() {
         return;
     }
 
-    filteredNotes.forEach((note, index) => {
+    filteredNotes.forEach((note) => {
         const noteEl = document.createElement('div');
         noteEl.className = `quick-note-item cat-${note.category || 'trabajo'}`;
         noteEl.innerHTML = `
             <p>${note.text}</p>
             <div class="quick-note-actions">
-                <button onclick="editQuickNote(${index})"><i class="fas fa-edit"></i></button>
-                <button onclick="deleteQuickNote(${index})"><i class="fas fa-trash"></i></button>
+                <button onclick="editQuickNote('${note.id}')"><i class="fas fa-edit"></i></button>
+                <button onclick="deleteQuickNote('${note.id}')"><i class="fas fa-trash"></i></button>
             </div>
         `;
         container.appendChild(noteEl);
@@ -602,20 +632,16 @@ async function addQuickNote() {
     });
 
     if (formValues && formValues.text) {
-        const notes = getQuickNotes();
-        notes.unshift({
+        await saveQuickNoteToDB({
             text: formValues.text,
-            category: formValues.category,
-            createdAt: new Date().getTime()
+            category: formValues.category
         });
-        saveQuickNotes(notes);
-        renderQuickNotes();
     }
 }
 
-async function editQuickNote(index) {
-    const notes = getQuickNotes();
-    const note = notes[index];
+async function editQuickNote(id) {
+    const note = allAgendaData.find(n => n.id === id);
+    if (!note) return;
 
     const { value: formValues } = await Swal.fire({
         title: 'Editar Nota Rápida',
@@ -637,17 +663,27 @@ async function editQuickNote(index) {
     });
 
     if (formValues && formValues.text) {
-        notes[index] = { ...notes[index], ...formValues };
-        saveQuickNotes(notes);
-        renderQuickNotes();
+        await saveQuickNoteToDB({ ...note, ...formValues });
     }
 }
 
-function deleteQuickNote(index) {
-    const notes = getQuickNotes();
-    notes.splice(index, 1);
-    saveQuickNotes(notes);
-    renderQuickNotes();
+async function deleteQuickNote(id) {
+    const note = allAgendaData.find(n => n.id === id);
+    if (!note) return;
+    
+    const result = await Swal.fire({
+        title: '¿Eliminar nota?',
+        text: "Esta acción no se puede deshacer",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, eliminar'
+    });
+
+    if (result.isConfirmed) {
+        await saveQuickNoteToDB(note, true);
+    }
 }
 
 /**
@@ -715,23 +751,58 @@ function updateTimeIndicator() {
 }
 
 /**
- * Obtiene las notas de localStorage
+ * Obtiene las notas de la cache global
  */
 function getAgendaNotes(cellId) {
     return getAgendaNotesCombined(cellId);
 }
 
 /**
- * Guarda las notas en localStorage
+ * Guarda o elimina una nota en Supabase
  */
-function saveAgendaNotes(cellId, notes) {
-    const allNotes = JSON.parse(localStorage.getItem('inka_agenda_notes') || '{}');
-    if (notes.length === 0) {
-        delete allNotes[cellId];
-    } else {
-        allNotes[cellId] = notes;
+async function saveAgendaNoteToDB(note, isDelete = false) {
+    const sb = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    if (!sb) return;
+
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) return;
+
+        if (isDelete) {
+            if (note.id) {
+                const { error } = await sb.from('ic_agenda').delete().eq('id', note.id);
+                if (error) throw error;
+            }
+        } else {
+            const noteData = {
+                cell_id: note.cell_id,
+                type: note.type,
+                title: note.title,
+                text: note.text,
+                category: note.category,
+                freq: note.freq,
+                date: note.date,
+                hour: note.hour,
+                is_quick_note: note.is_quick_note || false,
+                user_id: session.user.id
+            };
+
+            if (note.id) {
+                const { error } = await sb.from('ic_agenda').update(noteData).eq('id', note.id);
+                if (error) throw error;
+            } else {
+                const { error } = await sb.from('ic_agenda').insert([noteData]);
+                if (error) throw error;
+            }
+        }
+        
+        await syncAgendaFromSupabase();
+        renderAgenda();
+        if (searchQuery) renderGlobalSearchResults();
+    } catch (err) {
+        console.error('Error en operación de DB:', err);
+        Swal.fire('Error', 'No se pudo guardar en la base de datos', 'error');
     }
-    localStorage.setItem('inka_agenda_notes', JSON.stringify(allNotes));
 }
 
 // Inicializar listeners de navegación
