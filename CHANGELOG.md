@@ -1,5 +1,9 @@
 # CHANGELOG - INKA CORP
 
+## [27.5.1] - 2026-02-20
+### Corregido
+- **Scroll en Modal de Documentos (Móvil):** Se corrigió un problema de visualización donde el botón de "Descargar Todos" era inaccesible en pantallas pequeñas. El modal ahora se expande a pantalla completa y permite scroll vertical suave en dispositivos táctiles.
+
 ## [27.5.0] - 2026-02-20
 ### Añadido
 - **Transferencias Inter-Cajas (PC y Móvil):** Sistema de envío de dinero en tiempo real entre compañeros con confirmación segura.
