@@ -162,8 +162,8 @@ function renderLiteCreditos(creditos) {
                             <i class="fas fa-calendar-alt"></i>
                             <span>${c.fecha_desembolso ? window.formatDate(c.fecha_desembolso) : 'N/A'}</span>
                         </div>
-                        <div style="margin-left: auto; font-weight: 700; color: var(--primary);">
-                            <i class="fas fa-layer-group" style="font-size: 0.7rem; opacity: 0.6;"></i>
+                        <div style="margin-left: auto; font-weight: 700; color: #10B981;">
+                            <i class="fas fa-layer-group" style="font-size: 0.7rem; opacity: 0.8;"></i>
                             ${c.cuotas_pagadas || 0}/${c.plazo || 0}
                         </div>
                     </div>

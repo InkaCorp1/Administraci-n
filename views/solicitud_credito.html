@@ -276,9 +276,22 @@
             <div class="form-group">
                 <label for="select-socio">Seleccionar Socio</label>
                 <div class="select-socio-container">
-                    <select id="select-socio" class="form-control select-socio">
-                        <option value="">-- Seleccione un socio --</option>
-                    </select>
+                    <div id="select-socio-custom" class="select-socio-custom">
+                        <button type="button" id="select-socio-trigger" class="select-socio-trigger" aria-haspopup="listbox" aria-expanded="false">
+                            <span id="select-socio-label">-- Seleccione un socio --</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div id="select-socio-dropdown" class="select-socio-dropdown hidden">
+                            <div class="select-socio-search-wrap">
+                                <i class="fas fa-search"></i>
+                                <input id="select-socio-search" type="text" placeholder="Buscar socio por nombre o cédula..." autocomplete="off">
+                            </div>
+                            <div id="select-socio-options" class="select-socio-options" role="listbox"></div>
+                        </div>
+                        <select id="select-socio" class="form-control select-socio-native" tabindex="-1" aria-hidden="true">
+                            <option value="">-- Seleccione un socio --</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -321,15 +334,24 @@
                 </div>
                 <div class="form-group">
                     <label for="input-plazo">Plazo (meses)</label>
-                    <select id="input-plazo" class="form-control">
-                        <option value="">Seleccione</option>
-                        <option value="3">3 meses</option>
-                        <option value="6">6 meses</option>
-                        <option value="9">9 meses</option>
-                        <option value="12">12 meses</option>
-                        <option value="18">18 meses</option>
-                        <option value="24">24 meses</option>
-                    </select>
+                    <div id="select-plazo-custom" class="select-plazo-custom">
+                        <button type="button" id="select-plazo-trigger" class="select-socio-trigger" aria-haspopup="listbox" aria-expanded="false">
+                            <span id="select-plazo-label">Seleccione</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div id="select-plazo-dropdown" class="select-socio-dropdown hidden">
+                            <div id="select-plazo-options" class="select-socio-options" role="listbox"></div>
+                        </div>
+                        <select id="input-plazo" class="form-control select-plazo-native" tabindex="-1" aria-hidden="true">
+                            <option value="">Seleccione</option>
+                            <option value="3">3 meses</option>
+                            <option value="6">6 meses</option>
+                            <option value="9">9 meses</option>
+                            <option value="12">12 meses</option>
+                            <option value="18">18 meses</option>
+                            <option value="24">24 meses</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -520,11 +542,6 @@
                 </div>
             </div>
 
-            <div class="alerta-informativa">
-                <i class="fas fa-shield-alt"></i>
-                <p>Al confirmar, se activará el crédito y se notificará al socio. La tabla de amortización se generará
-                    bajo la <strong>Regla de Suma de Dígitos</strong>.</p>
-            </div>
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" data-close-modal>

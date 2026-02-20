@@ -163,7 +163,7 @@
     display: flex;
     gap: 0.5rem;
     margin-bottom: 2rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border-color);
     padding-bottom: 0.5rem;
 }
 
@@ -171,7 +171,7 @@
     padding: 0.75rem 1.25rem;
     border: none;
     background: none;
-    color: #64748b;
+    color: var(--gray-500);
     font-weight: 600;
     cursor: pointer;
     border-radius: 0.5rem;
@@ -182,7 +182,7 @@
 }
 
 .tab-btn:hover {
-    background: #f1f5f9;
+    background: var(--gray-900);
 }
 
 .tab-btn.active {
@@ -198,10 +198,10 @@
 }
 
 .stat-card {
-    background: white;
+    background: var(--gray-800);
     padding: 1.5rem;
     border-radius: 1rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 16px -8px rgba(0, 0, 0, 0.45);
     display: flex;
     align-items: center;
     gap: 1.25rem;
@@ -224,16 +224,16 @@
 }
 
 .resumen-card {
-    background: white;
+    background: var(--gray-800);
     border-radius: 1rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 16px -8px rgba(0, 0, 0, 0.45);
     overflow: hidden;
 }
 
 .card-header {
     padding: 1.25rem;
-    border-bottom: 1px solid #f1f5f9;
-    background: #fafafa;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--gray-900);
 }
 
 .card-body {
@@ -246,7 +246,7 @@
     align-items: center;
     padding: 1rem;
     border-radius: 0.75rem;
-    background: #f8fafc;
+    background: #242c36;
     margin-bottom: 0.75rem;
 }
 
@@ -266,7 +266,19 @@
 .empty-placeholder {
     text-align: center;
     padding: 5rem 2rem;
-    color: #94a3b8;
+    color: var(--gray-500);
+}
+
+.page-title,
+.stat-value,
+.card-header h3 {
+    color: var(--white);
+}
+
+.page-subtitle,
+.stat-label,
+.stat-trend {
+    color: var(--gray-500);
 }
 
 .empty-placeholder i {

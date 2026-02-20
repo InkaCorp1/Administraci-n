@@ -45,8 +45,8 @@
 
 .lite-credit-amount {
     font-weight: 800;
-    font-size: 1.05rem;
-    color: var(--primary);
+    font-size: 1.15rem; /* Un poco más grande para destacar */
+    color: #10B981; /* Verde Success de alto contraste sobre fondo oscuro */
 }
 
 .lite-credit-status {

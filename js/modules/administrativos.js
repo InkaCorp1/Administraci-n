@@ -322,6 +322,11 @@ function filterAdmByDateRange() {
  * Abre el modal
  */
 function openAdmModal() {
+    // Validar estado de caja
+    if (typeof window.validateCajaBeforeAction === 'function') {
+        if (!window.validateCajaBeforeAction('MOVIMIENTO ADMINISTRATIVO')) return;
+    }
+
     document.getElementById('modal-gasto-adm').classList.remove('hidden');
 }
 
@@ -504,6 +509,8 @@ async function generateAdmReportPDF() {
     try {
         const { value: formValues } = await Swal.fire({
             title: 'Reporte de Gastos Administrativos',
+            background: '#1a1f26',
+            color: '#ffffff',
             html: `
                 <div class="swal-export-container">
                     <p id="export-mode-desc" class="export-desc">Seleccione el mes para el reporte consolidado.</p>
@@ -519,7 +526,7 @@ async function generateAdmReportPDF() {
                     </div>
 
                     <div id="container-range" class="mode-container hidden">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                             <div>
                                 <label class="premium-label">Desde</label>
                                 <input type="date" id="swal-start" class="premium-input-swal">
@@ -534,23 +541,25 @@ async function generateAdmReportPDF() {
 
                 <style>
                     .swal-export-container { text-align: left; padding: 10px 5px; }
-                    .export-desc { font-size: 0.9rem; color: #64748B; margin-bottom: 20px; line-height: 1.4; border-left: 3px solid #0E5936; padding-left: 10px; }
-                    .export-mode-selector { display: flex; background: #F1F5F9; border-radius: 12px; padding: 5px; margin-bottom: 20px; }
-                    .mode-btn { flex: 1; border: none; background: transparent; padding: 8px; font-size: 0.85rem; font-weight: 700; color: #64748B; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
-                    .mode-btn.active { background: white; color: #0E5936; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+                    .export-desc { font-size: 0.9rem; color: #94a3b8; margin-bottom: 25px; line-height: 1.5; border-left: 3px solid #10B981; padding-left: 15px; }
+                    .export-mode-selector { display: flex; background: #0f172a; border-radius: 12px; padding: 5px; margin-bottom: 25px; border: 1px solid rgba(255, 255, 255, 0.05); }
+                    .mode-btn { flex: 1; border: none; background: transparent; padding: 10px; font-size: 0.85rem; font-weight: 800; color: #64748B; cursor: pointer; border-radius: 10px; transition: all 0.3s ease; }
+                    .mode-btn.active { background: #10B981; color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); }
+                    .mode-btn:not(.active):hover { color: #ffffff; background: rgba(255,255,255,0.05); }
                     .mode-container { animation: fadeIn 0.3s ease; }
                     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-                    .premium-label { display: block; font-size: 0.8rem; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.025em; }
-                    .premium-input-swal { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #CBD5E1; font-family: inherit; font-size: 0.95rem; color: #1E293B; outline: none; transition: border-color 0.2s; }
-                    .premium-input-swal:focus { border-color: #0E5936; box-shadow: 0 0 0 3px rgba(14, 89, 54, 0.1); }
+                    .premium-label { display: block; font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.05em; }
+                    .premium-input-swal { width: 100%; padding: 12px; border-radius: 10px; border: 1.5px solid #2f3946; background: #242c36; font-family: inherit; font-size: 0.95rem; color: #ffffff; outline: none; transition: all 0.2s; }
+                    .premium-input-swal:focus { border-color: #10B981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1); background: #1a1f26; }
                     .hidden { display: none; }
+                    .swal2-popup { border-radius: 1.5rem !important; border: 1px solid rgba(255,255,255,0.1) !important; }
                 </style>
             `,
             showCancelButton: true,
             confirmButtonText: '<i class="fas fa-file-pdf"></i> Generar PDF',
             cancelButtonText: 'Cancelar',
             confirmButtonColor: '#0E5936',
-            cancelButtonColor: '#64748B',
+            cancelButtonColor: '#334155',
             focusConfirm: false,
             didOpen: () => {
                 Swal.getPopup().style.borderRadius = '1.25rem';

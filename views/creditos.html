@@ -377,7 +377,7 @@
                         <div class="summary-total-box">
                             <div style="display: flex; flex-direction: column;">
                                 <span class="total-label">TOTAL A PAGAR</span>
-                                <label class="convenio-checkbox-container" style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: #a0aec0; cursor: pointer; margin-top: 4px;">
+                                <label class="convenio-checkbox-container" style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--gray-400); cursor: pointer; margin-top: 4px;">
                                     <input type="checkbox" id="pago-convenio-toggle" style="width: 14px; height: 14px; accent-color: var(--primary);">
                                     CONVENIO DE PAGO
                                 </label>
@@ -432,7 +432,7 @@
                                 <span class="prefix">$</span>
                                 <input type="number" id="pago-monto" class="input-light highlight-text" step="0.01">
                             </div>
-                            <div id="pago-monto-min-hint" style="display: none; font-size: 0.75rem; color: var(--primary); margin-top: 4px; font-weight: 600;">
+                            <div id="pago-monto-min-hint" style="display: none; font-size: 0.75rem; color: var(--gold); margin-top: 4px; font-weight: 600;">
                                 <i class="fas fa-info-circle"></i> Mínimo permitido (Base): <span id="pago-monto-min-valor">$0.00</span>
                             </div>
                         </div>
@@ -840,7 +840,7 @@
     .stat-value {
         font-size: 1.5rem;
         font-weight: 700;
-        color: var(--text-primary);
+        color: #FFFFFF;
     }
 
     .stat-label {
@@ -1065,7 +1065,7 @@
     .detail-item span {
         font-size: 1rem;
         font-weight: 600;
-        color: var(--text-primary);
+        color: #FFFFFF;
     }
 
     .resumen-grid-detail {
@@ -1099,7 +1099,7 @@
         display: block;
         font-size: 1rem;
         font-weight: 700;
-        color: var(--text-primary);
+        color: #FFFFFF;
     }
 
     .resumen-item.highlight .resumen-value {
@@ -1117,6 +1117,10 @@
         margin-bottom: 0.5rem;
         font-size: 0.875rem;
         color: var(--gray-400);
+    }
+
+    .progress-header strong {
+        color: #FFFFFF;
     }
 
     .progress-bar {
@@ -1215,7 +1219,7 @@
         display: block;
         font-size: 1.25rem;
         font-weight: 700;
-        color: var(--text-primary);
+        color: #FFFFFF;
     }
 
     .ahorro-value.success {
@@ -1653,9 +1657,9 @@
         /* Socio name */
         .socio-nombre {
             display: block;
-            font-weight: 600;
-            font-size: 0.8rem;
-            color: var(--text-primary);
+            font-weight: 700; /* Increased weight for better visibility */
+            font-size: 0.85rem; /* Slightly larger */
+            color: var(--white); /* Brighter than text-primary */
             word-wrap: break-word;
             overflow-wrap: break-word;
             white-space: normal;
@@ -2100,17 +2104,18 @@
     .modal-pago-redesign {
         max-width: 900px !important;
         width: 95%;
-        background: #ffffff;
+        background: var(--gray-800);
         border-radius: 20px;
         overflow: hidden;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         margin: auto;
+        border: 1px solid var(--border-color);
     }
 
     /* Header con Estilo */
     .modal-pago-redesign .modal-header {
-        background: #ffffff;
-        border-bottom: 1px solid #f1f5f9;
+        background: var(--gray-800);
+        border-bottom: 1px solid var(--border-color);
         padding: 1.25rem 2rem;
         display: flex;
         justify-content: space-between;
@@ -2126,7 +2131,7 @@
     .header-icon-green {
         width: 40px;
         height: 40px;
-        background: #ecfdf5;
+        background: rgba(16, 185, 129, 0.1);
         color: #10b981;
         display: flex;
         align-items: center;
@@ -2138,7 +2143,7 @@
     .modal-header-title h2 {
         font-size: 1.5rem;
         font-weight: 700;
-        color: #1e293b;
+        color: var(--white);
         margin: 0;
     }
 
@@ -2148,7 +2153,7 @@
         grid-template-columns: 380px 1fr;
         gap: 2.5rem;
         padding: 2rem;
-        background: #fdfdfd;
+        background: var(--bg-secondary);
     }
 
     /* Panel Izquierdo */
@@ -2163,7 +2168,7 @@
         background: #1e2a3b;
         border-radius: 18px;
         padding: 1.5rem;
-        color: #ffffff;
+        color: var(--white);
         position: relative;
         overflow: hidden;
         box-shadow: 0 10px 15px -3px rgba(30, 42, 59, 0.3);
@@ -2185,7 +2190,7 @@
     }
 
     .card-chip {
-        color: #94a3b8;
+        color: var(--gray-400);
         font-size: 1.8rem;
         margin-bottom: 1rem;
     }
@@ -2196,7 +2201,7 @@
         font-size: 0.65rem;
         font-weight: 700;
         letter-spacing: 1.5px;
-        color: #94a3b8;
+        color: var(--gray-400);
         margin-bottom: 0.25rem;
     }
 
@@ -2214,13 +2219,13 @@
     .user-icon-circle {
         width: 32px;
         height: 32px;
-        background: #334155;
+        background: var(--gray-700);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 0.9rem;
-        color: #cbd5e1;
+        color: var(--gray-300);
     }
 
     .card-type-icon {
@@ -2236,7 +2241,7 @@
         display: block;
         font-size: 0.75rem;
         font-weight: 700;
-        color: #64748b;
+        color: #FFFFFF !important;
         letter-spacing: 0.5px;
         margin-bottom: 0.75rem;
     }
@@ -2246,26 +2251,26 @@
         padding: 0.85rem 1rem;
         font-size: 1rem;
         font-weight: 600;
-        color: #1e293b;
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
+        color: #FFFFFF !important;
+        background: #1b212a !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 12px;
         cursor: pointer;
         transition: all 0.2s ease;
     }
 
     .custom-select-light:hover {
-        border-color: #cbd5e1;
-        background: #f8fafc;
+        border-color: var(--gold) !important;
+        background: var(--gray-800) !important;
     }
 
     /* Resumen de Pago */
     .summary-card-light {
-        background: #ffffff;
+        background: var(--gray-800);
         border-radius: 16px;
         padding: 1.25rem;
-        border: 1px solid #f1f5f9;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     }
 
     .summary-item {
@@ -2273,7 +2278,7 @@
         justify-content: space-between;
         align-items: center;
         padding: 0.75rem 0;
-        border-bottom: 1px solid #f8fafc;
+        border-bottom: 1px solid var(--border-color);
     }
 
     .summary-item:last-of-type {
@@ -2285,25 +2290,25 @@
         align-items: center;
         gap: 0.75rem;
         font-size: 0.9rem;
-        color: #64748b;
+        color: var(--gray-300);
     }
 
     .summary-label i {
         width: 20px;
         text-align: center;
-        color: #94a3b8;
+        color: var(--gray-500);
     }
 
     .summary-value {
         font-size: 1rem;
         font-weight: 600;
-        color: #1e293b;
+        color: var(--white);
     }
 
     /* Alerta de Mora */
     .mora-alert-box {
-        background: #fff1f2;
-        border: 1px solid #ffe4e6;
+        background: rgba(225, 29, 72, 0.1);
+        border: 1px solid rgba(225, 29, 72, 0.3);
         border-radius: 12px;
         padding: 1rem;
         margin: 1rem 0;
@@ -2316,13 +2321,13 @@
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        color: #e11d48;
+        color: var(--error);
         font-size: 0.85rem;
         font-weight: 700;
     }
 
     .mora-amount {
-        color: #e11d48;
+        color: var(--error);
         font-size: 1.1rem;
         font-weight: 800;
     }
@@ -2334,7 +2339,7 @@
         align-items: center;
         padding-top: 1rem;
         margin-top: 0.5rem;
-        border-top: 2px dashed #f1f5f9;
+        border-top: 2px dashed var(--border-color);
     }
 
     .total-label {
@@ -2365,13 +2370,15 @@
     .form-label-light {
         display: block;
         font-size: 0.85rem;
-        font-weight: 600;
-        color: #475569;
+        font-weight: 700;
+        color: #FFFFFF !important; /* Force white labels */
         margin-bottom: 0.6rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .form-label-light i {
-        color: #f2bb3a;
+        color: #f2bb3a !important; /* Gold icons */
         margin-right: 0.5rem;
         width: 18px;
         text-align: center;
@@ -2383,19 +2390,30 @@
         width: 100%;
         padding: 0.85rem 1rem;
         font-size: 1rem;
-        color: #1e293b;
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
+        color: #FFFFFF !important; /* Force white text in input */
+        background: #1b212a !important; /* Force dark background */
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 10px;
         transition: all 0.2s ease;
+    }
+
+    /* Custom styles for type="date" and "number" and placeholders */
+    .input-light::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+    }
+    
+    .input-light::placeholder,
+    .textarea-light::placeholder {
+        color: var(--gray-400);
+        opacity: 0.7;
     }
 
     .input-light:focus,
     .select-light:focus,
     .textarea-light:focus {
         outline: none;
-        border-color: #f2bb3a;
-        box-shadow: 0 0 0 3px rgba(242, 187, 58, 0.1);
+        border-color: var(--gold) !important;
+        box-shadow: 0 0 0 3px rgba(242, 187, 58, 0.1) !important;
     }
 
     .input-with-symbol {
@@ -2407,7 +2425,7 @@
     .prefix {
         position: absolute;
         left: 1rem;
-        color: #94a3b8;
+        color: var(--gray-400);
         font-weight: 600;
     }
 
@@ -2427,8 +2445,8 @@
     }
 
     .comprobante-drop-zone {
-        background: #f8fafc;
-        border: 2px dashed #e2e8f0;
+        background: var(--gray-800);
+        border: 2px dashed var(--border-color);
         border-radius: 12px;
         padding: 1rem;
         text-align: center;
@@ -2458,13 +2476,13 @@
     }
 
     .upload-btn.camera {
-        background: #fef9c3;
-        color: #ca8a04;
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--gold);
     }
 
     .upload-btn.gallery {
-        background: #dcfce7;
-        color: #16a34a;
+        background: rgba(16, 185, 129, 0.15);
+        color: #10B981;
     }
 
     .upload-btn:hover {
@@ -2479,7 +2497,7 @@
         height: 100%;
         padding: 5px;
         border-radius: 12px;
-        background: white;
+        background: var(--gray-800);
         z-index: 5;
     }
 
@@ -2508,14 +2526,14 @@
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
 
-    /* Footer del Modal (Light) */
+    /* Footer del Modal (Dark) */
     .footer-light {
-        background: #f8fafc;
+        background: var(--gray-900); /* Darken footer */
         padding: 1.5rem 2rem;
         display: flex;
         justify-content: center;
         gap: 1.5rem;
-        border-top: 1px solid #f1f5f9;
+        border-top: 1px solid var(--border-color);
     }
 
     .btn-light-secondary,
@@ -2534,23 +2552,24 @@
     }
 
     .btn-light-secondary {
-        background: #f1f5f9;
-        color: #64748b;
+        background: var(--gray-700); /* Darken button */
+        color: var(--gray-300); /* Lighten text */
     }
 
     .btn-light-warning {
-        background: #f2bb3a;
-        color: #ffffff;
+        background: var(--gold);
+        color: var(--black); /* Dark text for gold */
     }
 
     .btn-light-success {
         background: #10b981;
         color: #ffffff;
-        box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
     }
 
     .btn-light-secondary:hover {
-        background: #e2e8f0;
+        background: var(--gray-600);
+        color: var(--white);
     }
 
     .btn-light-warning:hover {

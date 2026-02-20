@@ -592,12 +592,22 @@ function setupPolizasEventListeners() {
 
     // Botones de Liquidación y Renovación
     document.getElementById('btn-pagar-poliza')?.addEventListener('click', () => {
+        // Validar caja antes de acción financiera
+        if (typeof window.validateCajaBeforeAction === 'function') {
+            if (!window.validateCajaBeforeAction('LIQUIDACIÓN DE PÓLIZA')) return;
+        }
+
         const id = document.getElementById('poliza-id').value;
         const poliza = allPolizas.find(p => p.id_poliza === id);
         if (poliza) handlePagarPoliza(poliza);
     });
 
     document.getElementById('btn-renovar-poliza')?.addEventListener('click', () => {
+        // Validar caja antes de acción financiera
+        if (typeof window.validateCajaBeforeAction === 'function') {
+            if (!window.validateCajaBeforeAction('RENOVACIÓN DE PÓLIZA')) return;
+        }
+
         const id = document.getElementById('poliza-id').value;
         const poliza = allPolizas.find(p => p.id_poliza === id);
         if (poliza) handleRenovarPoliza(poliza);
@@ -1107,6 +1117,12 @@ async function savePoliza() {
     }
 
     const id = document.getElementById('poliza-id').value;
+
+    // Solo validar caja si es una creación de póliza (implica flujo de dinero)
+    if (!id && typeof window.validateCajaBeforeAction === 'function') {
+        if (!window.validateCajaBeforeAction('NUEVA PÓLIZA')) return;
+    }
+
     const data = {
         id_socio: document.getElementById('poliza-socio').value,
         fecha: document.getElementById('poliza-fecha').value,

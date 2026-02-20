@@ -1151,87 +1151,87 @@ async function showReceiptDetail(detalleId) {
         const numCuota = pago.amortizacion?.numero_cuota || '-';
 
         content.innerHTML = `
-            <div class="receipt-luxury" style="font-family: 'Inter', sans-serif; color: #1e293b; background: #fff; padding: 10px;">
+            <div class="receipt-luxury" style="font-family: 'Inter', sans-serif; color: var(--white); background: var(--gray-900); padding: 10px;">
                 <div style="text-align: center; margin-bottom: 20px; position: relative;">
-                    <div style="width: 50px; height: 2px; background: #d4af37; margin: 0 auto 10px;"></div>
-                    <div style="font-size: 0.75rem; color: #8a6d3b; letter-spacing: 2px; font-weight: 700; text-transform: uppercase;">Certificado de Pago</div>
-                    <div style="font-size: 1.4rem; font-weight: 800; color: #0f172a; margin: 5px 0;">${infoCredito}</div>
-                    <div style="display: inline-block; background: #fefce8; color: #854d0e; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; border: 1px solid #fde047;">
+                    <div style="width: 50px; height: 2px; background: var(--gold); margin: 0 auto 10px;"></div>
+                    <div style="font-size: 0.75rem; color: var(--gold); letter-spacing: 2px; font-weight: 700; text-transform: uppercase;">Certificado de Pago</div>
+                    <div style="font-size: 1.4rem; font-weight: 800; color: var(--white); margin: 5px 0;">${infoCredito}</div>
+                    <div style="display: inline-block; background: var(--gray-800); color: var(--gold); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border-color);">
                         Cuota #${numCuota}
                     </div>
                 </div>
 
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                <div style="background: var(--gray-800); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);">
                     <div style="display: flex; flex-direction: column; gap: 12px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="color: #64748b; font-size: 0.9rem;"><i class="fas fa-user-circle" style="width: 20px;"></i> Socio</span>
-                            <span style="font-weight: 700; color: #0f172a;">${infoSocio}</span>
+                            <span style="color: var(--gray-400); font-size: 0.9rem;"><i class="fas fa-user-circle" style="width: 20px;"></i> Socio</span>
+                            <span style="font-weight: 700; color: var(--white);">${infoSocio}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="color: #64748b; font-size: 0.9rem;"><i class="fas fa-user-shield" style="width: 20px;"></i> Recibido por</span>
-                            <span style="font-weight: 600; color: #475569; font-size: 0.9rem;">${infoCobrador}</span>
+                            <span style="color: var(--gray-400); font-size: 0.9rem;"><i class="fas fa-user-shield" style="width: 20px;"></i> Recibido por</span>
+                            <span style="font-weight: 600; color: var(--gray-300); font-size: 0.9rem;">${infoCobrador}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="color: #64748b; font-size: 0.9rem;"><i class="fas fa-calendar-check" style="width: 20px;"></i> Fecha de Pago</span>
-                            <span style="font-weight: 600; color: #334155;">${formatDateShort(pago.fecha_pago)}</span>
+                            <span style="color: var(--gray-400); font-size: 0.9rem;"><i class="fas fa-calendar-check" style="width: 20px;"></i> Fecha de Pago</span>
+                            <span style="font-weight: 600; color: var(--gray-200);">${formatDateShort(pago.fecha_pago)}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="color: #64748b; font-size: 0.9rem;"><i class="fas fa-wallet" style="width: 20px;"></i> Método</span>
-                            <span style="display: flex; align-items: center; gap: 5px; font-weight: 600; color: #334155;">
+                            <span style="color: var(--gray-400); font-size: 0.9rem;"><i class="fas fa-wallet" style="width: 20px;"></i> Método</span>
+                            <span style="display: flex; align-items: center; gap: 5px; font-weight: 600; color: var(--gray-200);">
                                 <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span>
                                 ${pago.metodo_pago}
                             </span>
                         </div>
                         
-                        <div style="margin: 10px 0; border-top: 1px dashed #cbd5e1;"></div>
+                        <div style="margin: 10px 0; border-top: 1px dashed var(--border-color);"></div>
                         
                         <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 5px;">
-                            <span style="font-weight: 800; color: #0f172a; font-size: 1rem;">Monto Total</span>
-                            <span style="font-size: 1.6rem; font-weight: 900; color: #059669; letter-spacing: -0.5px;">$${pago.monto_pagado.toFixed(2)}</span>
+                            <span style="font-weight: 800; color: var(--white); font-size: 1rem;">Monto Total</span>
+                            <span style="font-size: 1.6rem; font-weight: 900; color: #10b981; letter-spacing: -0.5px;">$${pago.monto_pagado.toFixed(2)}</span>
                         </div>
                     </div>
                 </div>
 
                 ${pago.referencia_pago ? `
-                    <div style="background: #fff; border: 1px solid #f1f5f9; border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px;">
-                        <div style="background: #f1f5f9; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #64748b;">
+                    <div style="background: var(--gray-800); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px;">
+                        <div style="background: var(--gray-700); width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--gray-400);">
                             <i class="fas fa-hashtag"></i>
                         </div>
                         <div>
-                            <div style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Referencia</div>
-                            <div style="font-size: 0.9rem; font-weight: 600; color: #334155;">${pago.referencia_pago}</div>
+                            <div style="font-size: 0.7rem; color: var(--gray-500); text-transform: uppercase; font-weight: 600;">Referencia</div>
+                            <div style="font-size: 0.9rem; font-weight: 600; color: var(--gray-200);">${pago.referencia_pago}</div>
                         </div>
                     </div>
                 ` : ''}
 
                 ${pago.observaciones ? `
-                    <div style="background: #fdf2f8; border: 1px solid #fce7f3; border-radius: 12px; padding: 12px 16px; margin-bottom: 20px;">
-                        <div style="font-size: 0.7rem; color: #be185d; text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">Observaciones</div>
-                        <div style="font-size: 0.85rem; line-height: 1.5; color: #9d174d; font-style: italic;">"${pago.observaciones}"</div>
+                    <div style="background: var(--gray-800); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px 16px; margin-bottom: 20px;">
+                        <div style="font-size: 0.7rem; color: var(--gold); text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">Observaciones</div>
+                        <div style="font-size: 0.85rem; line-height: 1.5; color: var(--gray-300); font-style: italic;">"${pago.observaciones}"</div>
                     </div>
                 ` : ''}
 
                 ${pago.comprobante_url ? `
                     <div style="margin-top: 20px;">
-                        <div style="font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="font-size: 0.75rem; color: var(--gray-400); font-weight: 600; text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
                             <span>Archivo Adjunto</span>
-                            <a href="${pago.comprobante_url}" target="_blank" style="color: #3b82f6; text-decoration: none; font-size: 0.7rem;">Ver original <i class="fas fa-external-link-alt"></i></a>
+                            <a href="${pago.comprobante_url}" target="_blank" style="color: var(--gold); text-decoration: none; font-size: 0.7rem;">Ver original <i class="fas fa-external-link-alt"></i></a>
                         </div>
-                        <div style="border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+                        <div style="border-radius: 16px; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4);">
                             <img src="${pago.comprobante_url}" style="width: 100%; height: auto; display: block;" 
-                                 onerror="this.src='https://placehold.co/600x400?text=Error+al+cargar+imagen'; this.style.opacity='0.5';" alt="Recibo">
+                                 onerror="this.src='https://placehold.co/600x400?text=Error+al+cargar+imagen&bg=1f2937&fg=ffffff'; this.style.opacity='0.5';" alt="Recibo">
                         </div>
                     </div>
                 ` : `
-                    <div style="text-align: center; padding: 20px; border: 2px dashed #e2e8f0; border-radius: 16px; color: #94a3b8;">
+                    <div style="text-align: center; padding: 20px; border: 2px dashed var(--border-color); border-radius: 16px; color: var(--gray-500);">
                         <i class="fas fa-image" style="font-size: 1.5rem; margin-bottom: 8px; opacity: 0.5;"></i>
                         <p style="font-size: 0.8rem; margin: 0;">No se adjuntó comprobante digital</p>
                     </div>
                 `}
                 
-                <div style="text-align: center; margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
-                    <p style="font-size: 0.7rem; color: #cbd5e1;">ID Pago: ${pago.id_pago}</p>
-                    <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <div style="text-align: center; margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                    <p style="font-size: 0.7rem; color: var(--gray-600);">ID Pago: ${pago.id_pago}</p>
+                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--gray-500); display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <img src="img/icon-192.png" style="height: 14px; opacity: 0.3;" onerror="this.style.display='none'">
                         INKA CORP SISTEMAS
                     </div>
@@ -1301,6 +1301,11 @@ async function getConsecutiveUnpaidInstallments(creditoId, startDetalleId) {
 }
 
 async function openPaymentModal(detalleId, btn = null) {
+    // Validar estado de caja antes de abrir el modal
+    if (typeof window.validateCajaBeforeAction === 'function') {
+        if (!window.validateCajaBeforeAction('PAGO DE CUOTA')) return;
+    }
+
     let originalContent = '';
     if (btn) {
         originalContent = btn.innerHTML;
@@ -2989,6 +2994,8 @@ window.openExportCreditosModal = async function() {
     Swal.fire({
         title: 'Reportes de Créditos',
         width: '600px',
+        background: 'var(--gray-800)',
+        color: 'var(--white)',
         html: `
             <div class="export-options-container" style="text-align: left; padding: 5px;">
                 <!-- Selector de Modo de Reporte (Slider) -->
@@ -3001,7 +3008,7 @@ window.openExportCreditosModal = async function() {
                     </button>
                 </div>
 
-                <p id="export-mode-desc" style="margin-bottom: 20px; color: #94a3b8; font-size: 0.9rem;">
+                <p id="export-mode-desc" style="margin-bottom: 20px; color: var(--gray-400); font-size: 0.9rem;">
                     Visualice el inventario actual de la cartera con saldos y estados.
                 </p>
                 

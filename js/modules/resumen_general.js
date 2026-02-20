@@ -144,6 +144,10 @@ async function verDetalleMes(key, mesLabel) {
         Swal.fire({
             title: `Cargando detalles de ${mesLabel}...`,
             allowOutsideClick: false,
+            customClass: {
+                container: 'resumen-detalle-modal',
+                popup: 'resumen-modal-popup'
+            },
             didOpen: () => { Swal.showLoading(); }
         });
 
@@ -277,17 +281,17 @@ function renderResumenCreditos() {
     const topList = document.getElementById('top-socios-list');
     if (topList) {
         topList.innerHTML = d.topSocios.map((s, index) => `
-            <div class="top-socio-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.7rem; background: #ffffff; border: 1px solid #f1f5f9; border-radius: 0.75rem; margin-bottom: 0.5rem; border-left: 4px solid #10b981; transition: transform 0.2s;">
+            <div class="top-socio-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.7rem; background: #242c36; border: 1px solid rgba(148,163,184,0.2); border-radius: 0.75rem; margin-bottom: 0.5rem; border-left: 4px solid #10b981; transition: transform 0.2s;">
                 <div style="display: flex; align-items: center; gap: 0.8rem;">
                     <div style="width: 24px; height: 24px; background: #10b981; color: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800;">${index + 1}</div>
                     <div>
-                        <div style="font-weight: 700; font-size: 0.85rem; color: #0f172a; text-transform: uppercase;">${s.nombre.length > 25 ? s.nombre.substring(0, 25) + '...' : s.nombre}</div>
-                        <div style="font-size: 0.65rem; color: #64748b;">Aportó ${formatMoney(s.montoTotalPagado)} en 6 meses</div>
+                        <div style="font-weight: 700; font-size: 0.85rem; color: #eef2f7; text-transform: uppercase;">${s.nombre.length > 25 ? s.nombre.substring(0, 25) + '...' : s.nombre}</div>
+                        <div style="font-size: 0.65rem; color: #93a1b3;">Aportó ${formatMoney(s.montoTotalPagado)} en 6 meses</div>
                     </div>
                 </div>
                 <div style="text-align: right;">
                     <div style="font-weight: 800; color: #10b981; font-size: 0.95rem;">${formatMoney(s.cuotaActual)}</div>
-                    <div style="font-size: 0.6rem; color: #94a3b8;">Cuota base</div>
+                    <div style="font-size: 0.6rem; color: #93a1b3;">Cuota base</div>
                 </div>
             </div>
         `).join('') || '<p class="text-center text-muted">No hay socios con pagos activos en este rango</p>';
@@ -298,16 +302,16 @@ function renderResumenCreditos() {
     if (histList) {
         histList.style = 'max-height: 400px; overflow-y: auto;'; // Restablecer a lista con scroll si es necesario
         histList.innerHTML = d.historicoMensual.map(h => `
-            <div class="recaudacion-mes-item" onclick="verDetalleMes('${h.key}', '${h.mes}')" style="cursor: pointer; padding: 0.75rem; border-radius: 0.75rem; transition: all 0.2s; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid #f1f5f9; background: white;">
+            <div class="recaudacion-mes-item" onclick="verDetalleMes('${h.key}', '${h.mes}')" style="cursor: pointer; padding: 0.75rem; border-radius: 0.75rem; transition: all 0.2s; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(148,163,184,0.2); background: #242c36;">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <div style="width: 30px; height: 30px; background: #eff6ff; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-calendar-alt" style="color: #3b82f6; font-size: 0.8rem;"></i>
+                    <div style="width: 30px; height: 30px; background: rgba(59,130,246,0.16); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-calendar-alt" style="color: #60a5fa; font-size: 0.8rem;"></i>
                     </div>
-                    <span style="font-weight: 600; color: #1e293b; font-size: 0.9rem;">${h.mes}</span>
+                    <span style="font-weight: 600; color: #e2e8f0; font-size: 0.9rem;">${h.mes}</span>
                 </div>
                 <div style="text-align: right;">
-                    <span style="color: #3b82f6; font-weight: 700; display: block;">${formatMoney(h.monto)}</span>
-                    <span style="font-size: 0.6rem; color: #94a3b8;">Clic para detalles</span>
+                    <span style="color: #60a5fa; font-weight: 700; display: block;">${formatMoney(h.monto)}</span>
+                    <span style="font-size: 0.6rem; color: #93a1b3;">Clic para detalles</span>
                 </div>
             </div>
         `).join('') || '<p class="text-center text-muted">Sin datos recientes</p>';

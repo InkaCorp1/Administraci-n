@@ -19,6 +19,11 @@ async function initMobileApp() {
 
     console.log(`%c INKA CORP MOBILE - VERSION: ${window.APP_VERSION || 'v1.0'} `, 'background: #047857; color: #fff; font-weight: bold;');
 
+    const appVersion = window.APP_VERSION || 'v1.0';
+    document.querySelectorAll('[data-app-version]').forEach((el) => {
+        el.textContent = appVersion;
+    });
+
     // 1. Inicializar Supabase y SesiÃ³n
     initSupabase();
     const { isAuthenticated, user } = await checkSession();
@@ -330,3 +335,56 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+/**
+ * Muestra el changelog de la versión actual si es la primera vez que se carga
+ */
+function checkAndShowChangelog() {
+    const lastVersion = localStorage.getItem('last_seen_version');
+    const currentVersion = window.APP_VERSION || '27.0.0';
+
+    if (lastVersion !== currentVersion) {
+        showChangelog(currentVersion);
+        localStorage.setItem('last_seen_version', currentVersion);
+    }
+}
+
+function showChangelog(version) {
+    if (!window.Swal) return;
+
+    Swal.fire({
+        title: `¡Bienvenido a INKA CORP Mobile v${version}!`,
+        html: `
+            <div style="text-align: left; font-size: 14px; line-height: 1.6;">
+                <p>Hemos actualizado el sistema a la versión mayor <b>v27.0.0</b>. Estos son los cambios principales:</p>
+                
+                <h4 style="color: #10b981; margin-top: 15px;">💰 Control de Caja</h4>
+                <ul style="padding-left: 20px;">
+                    <li><b>Sistema de Auditoría:</b> Se requiere una caja abierta para realizar operaciones financieras.</li>
+                    <li><b>Banners de Alerta:</b> Mantente informado sobre el estado de la caja desde cualquier módulo.</li>
+                </ul>
+
+                <h4 style="color: #10b981; margin-top: 15px;">⚙️ Mejoras de Sistema</h4>
+                <ul style="padding-left: 20px;">
+                    <li><b>Versión Mayor:</b> Optimizaciones globales de rendimiento y seguridad.</li>
+                    <li><b>Botón Dashboard:</b> Nuevo acceso rápido para apertura de caja desde el panel principal.</li>
+                </ul>
+                <p style="margin-top: 15px; font-style: italic; color: #888;">Gracias por confiar en INKA CORP y LP Solutions.</p>
+            </div>
+        `,
+        icon: 'success',
+        confirmButtonText: '¡AHORA TODO ESTÁ CLARO!',
+        confirmButtonColor: '#10b981',
+        width: '90%'
+    });
+}
+
+// Llamar al cargar la app para verificar versión
+if (typeof initMobileApp !== 'undefined') {
+    const originalInit = initMobileApp;
+    initMobileApp = async function() {
+        await originalInit();
+        setTimeout(checkAndShowChangelog, 3000);
+    };
+}
+

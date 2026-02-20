@@ -156,7 +156,8 @@
                     pointer-events: auto !important;
                     cursor: text !important;
                     user-select: text !important;
-                    background-color: #ffffff !important;
+                    background-color: var(--bg-main) !important;
+                    color: var(--text-primary) !important;
                     opacity: 1 !important;
                 }
             </style>
@@ -166,16 +167,15 @@
 
 <!-- Modal Detalle de Pago Móvil (Bancos) -->
 <div id="modal-comprobante-lite" class="modal-overlay">
-    <div class="modal-content lite-modal">
-        <div class="modal-header lite-header" style="background: #10b981; color: white;">
+    <div class="modal-content lite-modal-fullscreen">
+        <div class="modal-header lite-header-nav">
             <h3><i class="fas fa-receipt"></i> Detalle de Pago</h3>
-            <button class="modal-close" onclick="closeLiteComprobante()"
-                style="background: white; color: black; width: 30px; height: 30px; border-radius: 50%; opacity: 1; display: flex; align-items: center; justify-content: center; border: none; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+            <button class="btn-back" onclick="closeLiteComprobante()">
                 <i class="fas fa-times"></i>
             </button>
         </div>
         <div class="modal-body lite-body" id="lite-pago-detalle-container-bancos"
-            style="background: white; padding: 1.5rem;">
+            style="padding: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 1rem;">
             <!-- Se llena dinámicamente -->
             <div style="text-align: center; padding: 2rem;">
                 <i class="fas fa-spinner fa-spin"></i>

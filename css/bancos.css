@@ -228,11 +228,17 @@
     height: 45px;
     padding: 0;
     border-radius: 12px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-sync:hover {
     background: var(--primary);
     color: var(--gold);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(11, 78, 50, 0.6), 
+                0 0 15px rgba(242, 187, 58, 0.2);
+    border-color: var(--primary-light);
 }
 
 /* Grid de Tarjetas */
@@ -244,24 +250,46 @@
 
 /* Tarjeta de Banco - Estilo Premium */
 .bank-card {
-    background: var(--bank-bg, linear-gradient(145deg, #f0fdf4 0%, #dcfce7 100%));
+    background: var(--bank-bg, var(--card-bg)); /* Usar color de tarjeta global por defecto */
     border-radius: 24px;
     padding: 1.5rem;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-    border: 1px solid var(--bank-border, rgba(11, 78, 50, 0.1));
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--bank-border, rgba(255, 255, 255, 0.1));
     position: relative;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
     overflow: hidden;
+    backdrop-filter: blur(5px);
 }
 
 .bank-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 40px rgba(11, 78, 50, 0.12);
-    border-color: var(--primary);
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 
+                0 0 20px var(--bank-glow, rgba(255, 255, 255, 0.1));
+    border-color: var(--bank-primary, var(--primary));
+}
+
+.bank-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.bank-card-header, 
+.bank-card-progress, 
+.bank-card-amounts, 
+.bank-card-footer {
+    position: relative;
+    z-index: 1;
 }
 
 .bank-card-header {
@@ -313,10 +341,11 @@
 }
 
 .progress-bar-container {
-    height: 8px;
-    background: rgba(0, 0, 0, 0.05);
+    height: 10px;
+    background: rgba(0, 0, 0, 0.3);
     border-radius: 10px;
     overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .progress-bar-fill {
@@ -324,15 +353,16 @@
     background: linear-gradient(90deg, var(--bank-primary, var(--primary)) 0%, var(--bank-light, var(--primary-light)) 100%);
     border-radius: 10px;
     transition: width 1s ease-out;
+    box-shadow: 0 0 10px var(--bank-glow, var(--primary-glow));
 }
 
 .bank-card-amounts {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
-    padding: 1rem 0;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1.2rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .amount-item {
@@ -488,27 +518,28 @@
 }
 
 .btn-history-toggle {
-    background: linear-gradient(145deg, #ffffff, #f1f5f9);
+    background: var(--gray-900);
     border: 1px solid var(--border-color);
-    color: var(--primary);
+    color: var(--white);
     width: 45px;
-    /* Match screen sync btn height */
     height: 45px;
     border-radius: 12px;
-    /* Match layout */
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.1rem;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-history-toggle:hover {
     background: var(--primary);
     color: white;
-    border-color: var(--primary);
+    border-color: var(--primary-light);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7),
+                0 0 10px rgba(11, 78, 50, 0.4);
 }
 
 .btn-history-toggle.active {
@@ -568,7 +599,7 @@
 }
 
 .modal-card-premium {
-    background: #ffffff;
+    background: var(--bg-secondary); /* Cambiado a fondo oscuro */
     width: 100%;
     max-width: 1000px;
     max-height: 90vh;
@@ -578,7 +609,8 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-xl);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .modal-card-premium.small {
@@ -681,13 +713,14 @@
 .modal-body-premium {
     flex: 1;
     overflow-y: auto;
-    padding: 2rem;
+    padding: 2.5rem;
+    background-color: var(--bg-secondary);
 }
 
 .split-view {
     display: grid;
-    grid-template-columns: 1fr 400px;
-    gap: 2.5rem;
+    grid-template-columns: 1fr 380px;
+    gap: 3rem;
 }
 
 .form-column {
@@ -705,14 +738,14 @@
     top: 100%;
     left: 0;
     right: 0;
-    background: white;
+    background: #1a1f26;
     border: 1px solid var(--border-color);
     border-radius: 12px;
     margin-top: 5px;
     max-height: 250px;
     overflow-y: auto;
     z-index: 100;
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
 }
 
 .options-list.hidden {
@@ -726,7 +759,8 @@
     gap: 12px;
     cursor: pointer;
     transition: background 0.2s;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: #ffffff;
 }
 
 .option-item:last-child {
@@ -750,7 +784,24 @@
     background: white;
     border-radius: 6px;
     padding: 2px;
-    border: 1px solid var(--gray-900);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.options-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.options-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.options-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.options-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .option-logo-placeholder {
@@ -779,12 +830,12 @@
 .section-title {
     font-size: 1.1rem;
     font-weight: 750;
-    color: var(--primary);
+    color: var(--gold); /* Cambiado a dorado para mejor contraste en fondo oscuro */
     margin-bottom: 1.25rem;
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    border-bottom: 2px solid var(--primary-glow);
+    border-bottom: 2px solid rgba(242, 187, 58, 0.2);
     padding-bottom: 0.5rem;
 }
 
@@ -807,9 +858,10 @@
 .detail-item label,
 .detail-item .detail-label-static {
     font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--gray-500);
+    font-weight: 700;
+    color: var(--gray-400); /* Más claro para mejor lectura */
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .detail-item span {
@@ -835,10 +887,20 @@
 }
 
 .progress-bar-premium {
-    height: 12px;
-    background: rgba(0, 0, 0, 0.1);
+    height: 10px;
+    background: rgba(255, 255, 255, 0.05); /* Fondo más visible en dark mode */
     border-radius: 10px;
     margin-bottom: 1.5rem;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.progress-bar-premium .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 100%);
+    border-radius: 10px;
+    transition: width 1s ease-out;
+    box-shadow: 0 0 10px var(--gold-glow);
 }
 
 .values-grid {
@@ -884,53 +946,62 @@
 }
 
 .premium-table th {
-    background: var(--gray-900);
-    padding: 1rem;
+    background: var(--gray-800); /* Un poco más claro que el fondo pero oscuro */
+    padding: 1.25rem 1rem;
     font-size: 0.75rem;
     text-transform: uppercase;
-    color: var(--gray-500);
+    color: var(--white); /* Texto blanco para máxima legibilidad */
     text-align: left;
     border-bottom: 2px solid var(--border-color);
+    letter-spacing: 1px;
 }
 
 .premium-table td {
-    padding: 1rem;
-    font-size: 0.9rem;
+    padding: 1.1rem 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     border-bottom: 1px solid var(--border-color);
-    background: white;
-}
-
-.premium-table tr {
-    cursor: pointer;
-    transition: background 0.2s;
+    background: var(--bg-secondary);
+    color: #ffffff !important; /* Forzado a blanco puro para visibilidad */
 }
 
 .premium-table tr:hover td {
-    background: var(--black-soft);
+    background: #1e293b !important;
+    cursor: pointer;
 }
 
 .premium-table tr.paid td {
-    opacity: 0.8;
+    opacity: 0.45; /* Mayor transparencia para indicar que es pasado, pero el color base es blanco */
+    color: #ffffff !important;
+}
+
+.premium-table tr.paid:hover td {
+    opacity: 1;
 }
 
 /* Badge de Estado en Tabla */
 .status-pill {
-    padding: 0.35rem 0.75rem;
-    border-radius: 999px;
-    font-size: 0.7rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: 12px;
+    font-size: 0.65rem;
     font-weight: 800;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .status-pill.pagado {
-    background: rgba(20, 110, 58, 0.1);
-    color: #146E3A;
+    background: rgba(16, 185, 129, 0.2);
+    color: #10B981; /* Verde esmeralda brillante */
+    border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .status-pill.pendiente {
-    background: rgba(204, 84, 34, 0.1);
-    color: #CC5422;
+    background: rgba(204, 84, 34, 0.2);
+    color: #ff7e4d; /* Naranja/Coral brillante */
+    border: 1px solid rgba(204, 84, 34, 0.3);
 }
 
 /* Formulario de Pago Bancario */
@@ -1074,8 +1145,31 @@
     transform: translateY(-1px);
 }
 
+/* Sombras y elevación para botones del módulo y modales al hacer hover */
+.bancos-wrapper .btn:hover,
+.modal-footer-premium .btn:hover,
+.modal-header-premium .modal-close-premium:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.75), 
+                0 4px 10px rgba(0, 0, 0, 0.3);
+    filter: brightness(1.15);
+}
 
-/* Sticky Preview Column */
+.bancos-wrapper .btn-primary:hover,
+.modal-footer-premium .btn-primary:hover {
+    box-shadow: 0 10px 25px rgba(11, 78, 50, 0.6),
+                0 0 12px var(--primary-glow);
+}
+
+.modal-footer-premium .btn-warning:hover {
+    box-shadow: 0 10px 25px rgba(211, 144, 13, 0.5),
+                0 0 12px var(--gold-glow);
+}
+
+.modal-header-premium .modal-close-premium:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--error);
+}
 .preview-column {
     position: sticky;
     top: 0;

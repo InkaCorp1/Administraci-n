@@ -28,9 +28,29 @@
 
         /* UI Refinements */
         .form-input::placeholder {
-            color: #556070 !important;
+            color: #a5b2c3 !important;
             /* Higher contrast gray */
             font-weight: 500;
+        }
+
+        .login-card {
+            background: #1f2833 !important;
+            border: 1px solid rgba(148, 163, 184, 0.22) !important;
+            box-shadow: 0 18px 42px rgba(0, 0, 0, 0.45) !important;
+        }
+
+        .form-label {
+            color: #dbe3ee !important;
+        }
+
+        .form-input {
+            background: #25303d !important;
+            border: 1px solid rgba(148, 163, 184, 0.28) !important;
+            color: #edf2f8 !important;
+        }
+
+        .sidebar-subtitle {
+            color: #d1d9e6 !important;
         }
 
         .form-input:focus {
@@ -50,7 +70,7 @@
 </head>
 
 <body
-    style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(to top, rgba(11, 78, 50, 0.10) 0%, rgba(255, 255, 255, 1) 50%); background-attachment: fixed;">
+    style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(to top, rgba(11, 78, 50, 0.2) 0%, #151b23 55%, #10151d 100%); background-attachment: fixed;">
 
     <div class="login-card" style="width: 100%; max-width: 400px; padding: 1.5rem;">
         <div style="text-align: center; margin-bottom: 2rem;">
@@ -81,6 +101,14 @@
                 Iniciar Sesión
             </button>
         </form>
+
+        <div class="login-powered-by" style="margin-top: 1.25rem; text-align: center; opacity: 0.78;">
+            <span style="font-size: 0.65rem; letter-spacing: 1.4px; color: #97a8bc; display: block; margin-bottom: 0.35rem;">POWERED BY</span>
+            <picture>
+                <source srcset="img/LPwebp/lpsolutionswithe.webp" type="image/webp">
+                <img src="img/LPpng/lpsolutionswithe.png" alt="LP SOLUTIONS" style="height: 16px; width: auto;">
+            </picture>
+        </div>
     </div>
 
     <script src="js/config.js"></script>

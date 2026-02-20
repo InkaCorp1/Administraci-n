@@ -395,6 +395,12 @@ function getEstadoAhorroBadge(estado) {
 // DEVOLUCIÓN DE AHORRO
 // ==========================================
 function openDevolucionModal() {
+    if (typeof window.validateCajaBeforeAction === 'function') {
+        if (!window.validateCajaBeforeAction('DEVOLUCIÓN DE AHORRO')) {
+            return;
+        }
+    }
+
     if (!currentViewingAhorro) return;
 
     document.getElementById('devolucion-monto').textContent = formatMoney(currentViewingAhorro.ahorro_acumulado);

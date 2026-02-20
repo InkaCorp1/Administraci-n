@@ -184,10 +184,11 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
-    background: white;
+    background: var(--bg-card, #1e2631);
     padding: 20px;
     border-radius: 12px;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
+    border: 1px solid var(--border-color, rgba(148, 163, 184, 0.22));
 }
 
 .edit-header-left {
@@ -197,7 +198,7 @@
 }
 
 .btn-back {
-    background: #f3f4f6;
+    background: #202a36;
     border: none;
     padding: 10px 15px;
     border-radius: 8px;
@@ -206,19 +207,19 @@
     align-items: center;
     gap: 8px;
     font-weight: 600;
-    color: #4b5563;
+    color: var(--text-secondary, #aab6c7);
     transition: all 0.2s;
 }
 
 .btn-back:hover {
-    background: #e5e7eb;
-    color: #111827;
+    background: #273343;
+    color: var(--text-primary, #e8edf5);
 }
 
 .edit-title {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #0E5936;
+    color: var(--text-primary, #e8edf5);
     margin: 0;
 }
 
@@ -230,13 +231,13 @@
 
 .save-status {
     font-size: 0.85rem;
-    color: #059669;
+    color: #34d399;
     font-weight: 500;
 }
 
 .btn-save {
     background: #0E5936;
-    color: white;
+    color: var(--on-primary-title, #f3f7ff);
     border: none;
     padding: 12px 25px;
     border-radius: 8px;
@@ -256,7 +257,7 @@
 }
 
 .btn-save:disabled {
-    background: #9ca3af;
+    background: #475569;
     cursor: not-allowed;
     transform: none;
 }
@@ -268,10 +269,11 @@
 }
 
 .edit-section {
-    background: white;
+    background: var(--bg-card, #1e2631);
     border-radius: 12px;
     padding: 25px;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
+    border: 1px solid var(--border-color, rgba(148, 163, 184, 0.22));
 }
 
 .section-title {
@@ -279,10 +281,10 @@
     align-items: center;
     gap: 10px;
     font-weight: 700;
-    color: #0E5936;
+    color: var(--text-primary, #e8edf5);
     margin-bottom: 20px;
     padding-bottom: 10px;
-    border-bottom: 2px solid #f3f4f6;
+    border-bottom: 2px solid var(--border-color, rgba(148, 163, 184, 0.22));
 }
 
 .input-grid {
@@ -299,7 +301,7 @@
     display: block;
     font-size: 0.85rem;
     font-weight: 600;
-    color: #4b5563;
+    color: var(--text-secondary, #aab6c7);
     margin-bottom: 5px;
 }
 
@@ -308,16 +310,20 @@
 .input-group textarea {
     width: 100%;
     padding: 10px 12px;
-    border: 1.5px solid #e5e7eb;
+    border: 1.5px solid var(--border-color, rgba(148, 163, 184, 0.25));
     border-radius: 8px;
     font-size: 0.95rem;
     transition: border-color 0.2s;
+    background: #151c25;
+    color: var(--text-primary, #e8edf5);
 }
 
 .input-group input:focus, 
-.input-group select:focus {
+.input-group select:focus,
+.input-group textarea:focus {
     outline: none;
-    border-color: #0E5936;
+    border-color: var(--gold, #F2BB3A);
+    box-shadow: 0 0 0 2px rgba(242, 187, 58, 0.12);
 }
 
 .image-upload-grid {
@@ -327,8 +333,8 @@
 }
 
 .image-upload-card {
-    background: #f9fafb;
-    border: 1.5px dashed #d1d5db;
+    background: #151c25;
+    border: 1.5px dashed var(--border-color, rgba(148, 163, 184, 0.3));
     border-radius: 10px;
     padding: 15px;
     text-align: center;
@@ -337,8 +343,8 @@
 }
 
 .image-upload-card:hover {
-    border-color: #0E5936;
-    background: #f0fdf4;
+    border-color: var(--gold, #F2BB3A);
+    background: #1c2632;
 }
 
 .image-upload-card label {
@@ -346,7 +352,7 @@
     font-size: 0.8rem;
     font-weight: 700;
     margin-bottom: 10px;
-    color: #374151;
+    color: var(--text-secondary, #aab6c7);
 }
 
 .image-preview {
@@ -356,7 +362,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    color: #9ca3af;
+    color: var(--text-muted, #8391a4);
     background-size: cover;
     background-position: center;
     border-radius: 6px;
@@ -392,12 +398,13 @@
 .edit-info-box {
     margin-top: 25px;
     padding: 15px;
-    background: #eff6ff;
+    background: rgba(11, 78, 50, 0.16);
     border-radius: 8px;
     display: flex;
     gap: 12px;
-    color: #1e40af;
+    color: var(--text-secondary, #c7d2e0);
     font-size: 0.85rem;
+    border: 1px solid rgba(11, 78, 50, 0.35);
 }
 
 .mt-20 { margin-top: 20px; }

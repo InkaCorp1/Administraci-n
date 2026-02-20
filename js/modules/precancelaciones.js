@@ -809,6 +809,11 @@ function mostrarResultadosCalculo(calculo) {
 // MODAL CONFIRMACIÓN
 // ==========================================
 function abrirModalConfirmacion() {
+    // Validar estado de caja
+    if (typeof window.validateCajaBeforeAction === 'function') {
+        if (!window.validateCajaBeforeAction('PRECANCELACIÓN')) return;
+    }
+
     if (!calculoPrecancelacion || !creditoActual) return;
 
     const resumen = `

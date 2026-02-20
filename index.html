@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="css/simulador.css">
     <link rel="stylesheet" href="css/aportes.css">
     <link rel="stylesheet" href="css/bancos.css">
+    <link rel="stylesheet" href="css/caja.css">
     <link rel="stylesheet" href="css/ahorros.css">
     <link rel="stylesheet" href="css/administrativos.css">
     <link rel="stylesheet" href="css/agenda.css">
@@ -50,9 +51,18 @@
          * Evita en un 100% que cargue el Layout de PC en dispositivos pequeños.
          */
         function forceMobileRedirect() {
-            // Limpiar forzado de escritorio
-            sessionStorage.removeItem('forceDesktop');
-            localStorage.removeItem('forceDesktop');
+            const urlParams = new URLSearchParams(window.location.search);
+            const allowDesktopByParam = urlParams.get('forceDesktop') === '1';
+            const allowDesktopBySession = sessionStorage.getItem('forceDesktop') === 'true' || localStorage.getItem('forceDesktop') === 'true';
+
+            // Permitir abrir escritorio desde móvil para flujo puntual (generación de documentos)
+            if (allowDesktopByParam || allowDesktopBySession) {
+                if (allowDesktopBySession) {
+                    sessionStorage.removeItem('forceDesktop');
+                    localStorage.removeItem('forceDesktop');
+                }
+                return false;
+            }
 
             const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             const isSmallScreen = window.innerWidth <= 850;
@@ -61,7 +71,6 @@
                 // Si ya estamos en la carpeta mobile, no hacer nada
                 if (window.location.pathname.includes('/mobile/')) return false;
 
-                const urlParams = new URLSearchParams(window.location.search);
                 const view = urlParams.get('view');
                 
                 // Módulos que existen en versión móvil
@@ -100,6 +109,13 @@
             <div class="screen-locker-title">INKA CORP</div>
             <div class="screen-locker-spinner"></div>
             <div class="screen-locker-text">Cargando aplicación...</div>
+            <div class="powered-by-chip powered-by-chip-dark">
+                <span>POWERED BY</span>
+                <picture>
+                    <source srcset="img/LPwebp/lpsolutionswithe.webp" type="image/webp">
+                    <img src="img/LPpng/lpsolutionswithe.png" alt="LP SOLUTIONS" class="powered-by-logo">
+                </picture>
+            </div>
         </div>
     </div>
 
@@ -128,6 +144,7 @@
                     <div class="sidebar-title">INKA CORP</div>
                     <div class="sidebar-subtitle">Sistema de Gestión</div>
                 </div>
+                <span class="sidebar-version-pill" data-app-version></span>
             </div>
 
             <nav class="nav-menu">
@@ -194,6 +211,11 @@
                 <a href="bancos.html" class="nav-item" data-view="bancos" data-module="bancos">
                     <i class="fas fa-university"></i>
                     <span>Situación Bancaria</span>
+                </a>
+
+                <a href="caja.html" class="nav-item" data-view="caja" data-module="caja">
+                    <i class="fas fa-cash-register"></i>
+                    <span>Control de Caja</span>
                 </a>
 
                 <a href="administrativos.html" class="nav-item" data-view="administrativos"
@@ -309,8 +331,17 @@
     <!-- Loader Global -->
     <div id="app-loader" class="app-loader hidden">
         <div class="app-loader-card">
-            <div class="app-loader-spinner"></div>
-            <div id="app-loader-text" class="app-loader-text">Cargando...</div>
+            <div class="app-loader-main">
+                <div class="app-loader-spinner"></div>
+                <div id="app-loader-text" class="app-loader-text">Cargando...</div>
+            </div>
+            <div class="powered-by-chip powered-by-chip-dark">
+                <span>POWERED BY</span>
+                <picture>
+                    <source srcset="img/LPwebp/lpsolutionswithe.webp" type="image/webp">
+                    <img src="img/LPpng/lpsolutionswithe.png" alt="LP SOLUTIONS" class="powered-by-logo">
+                </picture>
+            </div>
         </div>
     </div>
 
@@ -344,34 +375,51 @@
                     .then((registration) => {
                         console.log('[PWA] Service Worker registrado');
 
-                        // Detectar actualizaciones
+                        // Recarga cuando el nuevo SW tome el control
+                        let refreshing = false;
+                        navigator.serviceWorker.addEventListener('controllerchange', () => {
+                            if (!refreshing) {
+                                refreshing = true;
+                                window.location.reload();
+                            }
+                        });
+
+                        // Detectar si hay una actualización esperando
+                        const showUpdatePrompt = (worker) => {
+                            if (window.Swal) {
+                                Swal.fire({
+                                    title: 'Nueva versión detectada',
+                                    text: 'Actualiza la app para continuar y disfrutar de las últimas mejoras.',
+                                    icon: 'info',
+                                    confirmButtonText: 'ACTUALIZAR AHORA',
+                                    confirmButtonColor: '#0B4E32',
+                                    allowOutsideClick: false,
+                                    allowEscapeKey: false
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        worker.postMessage({ type: 'SKIP_WAITING' });
+                                    }
+                                });
+                            } else if (confirm('Nueva versión detectada. ¿Actualizar ahora?')) {
+                                worker.postMessage({ type: 'SKIP_WAITING' });
+                            }
+                        };
+
+                        if (registration.waiting) {
+                            showUpdatePrompt(registration.waiting);
+                        }
+
                         registration.onupdatefound = () => {
                             const installingWorker = registration.installing;
                             installingWorker.onstatechange = () => {
                                 if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    // Nueva versión disponible en el servidor (GitHub)
-                                    if (window.Swal) {
-                                        Swal.fire({
-                                            title: 'Actualización Requerida',
-                                            text: 'Hay una nueva versión disponible. La aplicación se reiniciará para garantizar que uses la última versión del repositorio.',
-                                            icon: 'info',
-                                            confirmButtonText: 'ACTUALIZAR AHORA',
-                                            confirmButtonColor: '#0B4E32',
-                                            allowOutsideClick: false,
-                                            allowEscapeKey: false
-                                        }).then((result) => {
-                                            if (result.isConfirmed) {
-                                                forceAppUpdate();
-                                            }
-                                        });
-                                    } else {
-                                        if (confirm('Nueva versión disponible. ¿Actualizar ahora?')) {
-                                            forceAppUpdate();
-                                        }
-                                    }
+                                    showUpdatePrompt(installingWorker);
                                 }
                             };
                         };
+
+                        // Verificar actualizaciones periódicamente
+                        setInterval(() => registration.update(), 60 * 60 * 1000); // Cada hora
                     })
                     .catch((error) => console.error('[PWA] Error en registro:', error));
             });

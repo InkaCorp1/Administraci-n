@@ -53,7 +53,7 @@
     z-index: 2;
     font-size: 2rem;
     font-weight: 700;
-    color: var(--black);
+    color: var(--on-primary-title);
     margin: 0 0 0.25rem;
 }
 
@@ -118,7 +118,7 @@
     display: block;
     font-size: 1.6rem;
     font-weight: 700;
-    color: var(--black);
+    color: var(--on-primary-title);
     margin-bottom: 0.25rem;
 }
 
@@ -643,12 +643,14 @@
    MODAL NUEVA SOLICITUD - Estilo Elegante Modo Claro
    ========================================== */
 .modal-card.modal-nueva-solicitud {
-    max-width: 720px;
-    width: 90%;
+    max-width: 980px;
+    width: min(96vw, 980px);
     background: #ffffff;
     border-radius: 1.25rem;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15), 0 10px 30px rgba(0, 0, 0, 0.1);
     border: 1px solid #e2e8f0;
+    max-height: 92vh;
+    overflow: visible;
 }
 
 .modal-card.modal-nueva-solicitud .modal-header {
@@ -690,6 +692,7 @@
 .modal-card.modal-nueva-solicitud .modal-body {
     padding: 1.5rem;
     background: #ffffff;
+    overflow: visible;
 }
 
 .modal-card.modal-nueva-solicitud .form-group {
@@ -750,6 +753,163 @@
 
 .modal-card.modal-nueva-solicitud .select-socio:focus {
     background-color: #ffffff;
+}
+
+.select-socio-custom {
+    position: relative;
+}
+
+.select-plazo-custom {
+    position: relative;
+    z-index: 32;
+}
+
+.select-plazo-custom .select-socio-dropdown {
+    top: auto;
+    bottom: calc(100% + 8px);
+    z-index: 60;
+}
+
+.select-socio-native {
+    display: none;
+}
+
+.select-plazo-native {
+    display: none;
+}
+
+.select-socio-trigger {
+    width: 100%;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background: #202b39;
+    color: #e7eef8;
+    border-radius: 0.75rem;
+    min-height: 52px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.select-socio-trigger:hover {
+    border-color: rgba(242, 187, 58, 0.45);
+    background: #243142;
+}
+
+.select-socio-trigger[aria-expanded="true"] {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(242, 187, 58, 0.14);
+}
+
+.select-socio-trigger i {
+    color: #b5c3d6;
+    font-size: 0.9rem;
+}
+
+.select-socio-dropdown {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 8px);
+    background: #17212d;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.75rem;
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.42);
+    z-index: 35;
+    overflow: hidden;
+}
+
+.select-socio-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 0.85rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    background: #1b2734;
+}
+
+.select-socio-search-wrap i {
+    color: #9fb0c6;
+    font-size: 0.85rem;
+}
+
+.select-socio-search-wrap input {
+    flex: 1;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 0.7rem;
+    padding: 0.62rem 0.75rem;
+    outline: none;
+    background: #0f1722;
+    color: #ebf2fb;
+    font-size: 0.9rem;
+}
+
+.select-socio-search-wrap input::placeholder {
+    color: #8fa1b9;
+}
+
+.select-socio-search-wrap input:hover {
+    border-color: rgba(242, 187, 58, 0.4);
+    background: #121c28;
+}
+
+.select-socio-search-wrap input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(242, 187, 58, 0.14);
+    background: #121c28;
+}
+
+.select-socio-options {
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 0.35rem;
+}
+
+.select-socio-option {
+    width: 100%;
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: 0.55rem;
+    text-align: left;
+    padding: 0.55rem 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    cursor: pointer;
+}
+
+.select-socio-option:hover {
+    background: #243142;
+    border-color: rgba(148, 163, 184, 0.24);
+}
+
+.select-socio-option.is-active {
+    background: rgba(11, 78, 50, 0.3);
+    border-color: rgba(242, 187, 58, 0.42);
+}
+
+.select-socio-option .option-name {
+    color: #f1f6fd;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.select-socio-option .option-id {
+    color: #9db0c9;
+    font-size: 0.76rem;
+    font-weight: 500;
+}
+
+.select-socio-empty {
+    color: #9fb2ca;
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 1rem 0.75rem;
 }
 
 .modal-card.modal-nueva-solicitud .form-row {
@@ -1303,7 +1463,7 @@
     margin-top: 1rem;
     padding-top: 1rem;
     border-top: 2px dashed #e2e8f0;
-    color: var(--primary) !important;
+    color: var(--primary);
 }
 
 .total-row span:first-child {
@@ -3044,4 +3204,437 @@
 
 .btn-generar-todos i {
     font-size: 1.1rem;
+}
+
+/* ==========================================
+   SOLICITUD CRÉDITO - FUENTE ÚNICA MODALES (DARK)
+   Reglas finales para evitar contradicciones previas
+   ========================================== */
+
+.modal-card.modal-ver-solicitud,
+.modal-card.modal-nueva-solicitud,
+.modal-card.modal-colocar-credito {
+    background: #1a2430;
+    border: 1px solid rgba(148, 163, 184, 0.26);
+    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.46);
+}
+
+.modal-card.modal-ver-solicitud .modal-header,
+.modal-card.modal-nueva-solicitud .modal-header,
+.modal-card.modal-colocar-credito .modal-header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.26);
+}
+
+.modal-card.modal-ver-solicitud .modal-header h3,
+.modal-card.modal-nueva-solicitud .modal-header h3,
+.modal-card.modal-colocar-credito .modal-header h3 {
+    color: var(--on-primary-title);
+}
+
+.modal-card.modal-ver-solicitud .modal-header h3 i,
+.modal-card.modal-nueva-solicitud .modal-header h3 i,
+.modal-card.modal-colocar-credito .modal-header h3 i {
+    color: var(--gold);
+}
+
+.modal-card.modal-ver-solicitud .modal-close,
+.modal-card.modal-nueva-solicitud .modal-close,
+.modal-card.modal-colocar-credito .modal-close {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: var(--on-primary-title);
+}
+
+.modal-card.modal-ver-solicitud .modal-close:hover,
+.modal-card.modal-nueva-solicitud .modal-close:hover,
+.modal-card.modal-colocar-credito .modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+.modal-card.modal-ver-solicitud .modal-body,
+.modal-card.modal-nueva-solicitud .modal-body,
+.modal-card.modal-colocar-credito .modal-body {
+    background: #151d28;
+    color: #ecf2f9;
+}
+
+.modal-ver-solicitud .solicitud-header-info,
+.modal-ver-solicitud .monto-destacado,
+.modal-ver-solicitud .plazo-destacado,
+.modal-ver-solicitud .seccion-datos {
+    background: #202b39;
+    border: 1px solid rgba(148, 163, 184, 0.26);
+    box-shadow: none;
+}
+
+.modal-ver-solicitud .solicitud-fecha .label,
+.modal-ver-solicitud .solicitud-estado .label,
+.modal-ver-solicitud .dato-label,
+.modal-ver-solicitud .monto-label,
+.modal-ver-solicitud .plazo-label {
+    color: #b9c7d8;
+}
+
+.modal-ver-solicitud .fecha-value,
+.modal-ver-solicitud .dato-valor,
+.modal-ver-solicitud .monto-valor,
+.modal-ver-solicitud .plazo-valor {
+    color: #f5f8fd;
+}
+
+.modal-ver-solicitud .fecha-value,
+.modal-ver-solicitud .monto-label,
+.modal-ver-solicitud .plazo-label,
+.modal-ver-solicitud .seccion-titulo,
+.modal-ver-solicitud .seccion-titulo i {
+    color: var(--gold);
+}
+
+.modal-footer-solicitud,
+.modal-card.modal-nueva-solicitud .modal-footer,
+.modal-card.modal-colocar-credito .modal-footer {
+    background: #1b2633;
+    border-top: 1px solid rgba(148, 163, 184, 0.26);
+}
+
+.modal-footer-solicitud .btn-info {
+    background: #273446;
+    color: #d9e3f0;
+}
+
+.modal-footer-solicitud .btn-info:hover {
+    background: #314156;
+    color: #f4f8ff;
+}
+
+.modal-card.modal-nueva-solicitud .form-group label,
+.modal-card.modal-colocar-credito .config-label,
+.modal-card.modal-colocar-credito .f-label,
+.modal-card.modal-colocar-credito .q-label,
+.modal-card.modal-colocar-credito .toggle-label,
+.modal-card.modal-colocar-credito .toggle-status,
+.modal-card.modal-colocar-credito .garante-label {
+    color: #d2deec;
+}
+
+.modal-card.modal-nueva-solicitud .form-control,
+.modal-card.modal-colocar-credito .garante-input,
+.modal-card.modal-colocar-credito .tasa-display,
+.modal-card.modal-colocar-credito .fecha-item,
+.modal-card.modal-colocar-credito .cuota-card,
+.modal-card.modal-colocar-credito .config-pago,
+.modal-card.modal-colocar-credito .config-tasa,
+.modal-card.modal-colocar-credito .calculos-detalle,
+.modal-card.modal-colocar-credito .info-socio-top,
+.modal-card.modal-colocar-credito .garante-section {
+    background: #202b39;
+    border-color: rgba(148, 163, 184, 0.28);
+    color: #eaf1fa;
+}
+
+.modal-card.modal-nueva-solicitud .info-socio-card {
+    background: linear-gradient(135deg, rgba(11, 78, 50, 0.18) 0%, rgba(11, 78, 50, 0.1) 100%);
+    border: 1px solid rgba(74, 222, 128, 0.28);
+    box-shadow: none;
+}
+
+.modal-card.modal-nueva-solicitud .info-socio-header {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+}
+
+.modal-card.modal-nueva-solicitud .info-socio-header i {
+    background: rgba(11, 78, 50, 0.35);
+    color: #a7f3d0;
+}
+
+.modal-card.modal-nueva-solicitud .info-socio-header span {
+    color: #f1f6fc;
+}
+
+.modal-card.modal-nueva-solicitud .info-socio-details .detail-label {
+    color: #adc0d8;
+}
+
+.modal-card.modal-nueva-solicitud .info-socio-details .detail-value {
+    color: #ecf3fb;
+    font-weight: 650;
+}
+
+.modal-card.modal-nueva-solicitud .form-control:focus,
+.modal-card.modal-colocar-credito .garante-input:focus,
+.modal-card.modal-colocar-credito .tasa-display:focus-within {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(242, 187, 58, 0.14);
+}
+
+.modal-card.modal-nueva-solicitud .form-control:hover {
+    border-color: rgba(148, 163, 184, 0.42);
+    background: #243142;
+}
+
+.modal-card.modal-nueva-solicitud .form-control,
+.modal-card.modal-nueva-solicitud .form-control:focus,
+.modal-card.modal-nueva-solicitud .form-control:hover {
+    color: #e7eef9;
+}
+
+.modal-card.modal-nueva-solicitud input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+.modal-card.modal-nueva-solicitud input[type="number"]::-webkit-outer-spin-button,
+.modal-card.modal-nueva-solicitud input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.modal-card.modal-colocar-credito .f-value,
+.modal-card.modal-colocar-credito .c-val,
+.modal-card.modal-colocar-credito .q-value,
+.modal-card.modal-colocar-credito .info-socio-top .value,
+.modal-card.modal-colocar-credito .tasa-input,
+.modal-card.modal-colocar-credito .toggle-label {
+    color: #f4f8ff;
+}
+
+.modal-card.modal-colocar-credito .config-help,
+.modal-card.modal-colocar-credito .garante-docs-note,
+.modal-card.modal-colocar-credito .alerta-informativa p,
+.modal-card.modal-colocar-credito .docs-fecha-firma-container .help-text {
+    color: #b5c2d5;
+}
+
+.modal-card.modal-documentos {
+    background: #1a2430;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.48);
+}
+
+.modal-card.modal-documentos .modal-header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+}
+
+.modal-card.modal-documentos .modal-header h3 {
+    color: var(--on-primary-title);
+}
+
+.modal-card.modal-documentos .modal-header h3 i {
+    color: var(--gold);
+}
+
+.modal-card.modal-documentos .modal-body {
+    background: #1f2a38;
+}
+
+.modal-card.modal-documentos .docs-credito-info,
+.modal-card.modal-documentos .docs-fecha-firma-container,
+.modal-card.modal-documentos .doc-item {
+    background: #202d3d;
+    border-color: rgba(148, 163, 184, 0.28);
+}
+
+.modal-card.modal-documentos .docs-info-header h4,
+.modal-card.modal-documentos .doc-info h5 {
+    color: #f3f8ff;
+}
+
+.modal-card.modal-documentos .docs-info-header span,
+.modal-card.modal-documentos .docs-monto .label,
+.modal-card.modal-documentos .doc-info p,
+.modal-card.modal-documentos .docs-fecha-firma-container .help-text {
+    color: #c1d0e2;
+}
+
+.modal-card.modal-documentos .docs-fecha-firma-container label {
+    color: #d8e4f2;
+}
+
+.modal-card.modal-documentos .docs-fecha-firma-container select {
+    background-color: #172230;
+    border-color: rgba(148, 163, 184, 0.34);
+    color: #f1f6fd;
+}
+
+.modal-card.modal-documentos .docs-fecha-firma-container select:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(242, 187, 58, 0.15);
+}
+
+.modal-card.modal-documentos .doc-item.generado {
+    background: linear-gradient(135deg, rgba(11, 78, 50, 0.18) 0%, rgba(11, 78, 50, 0.12) 100%);
+    border-color: rgba(74, 222, 128, 0.28);
+}
+
+.modal-card.modal-documentos .doc-item:hover {
+    border-color: rgba(148, 163, 184, 0.46);
+    box-shadow: 0 10px 22px rgba(4, 10, 18, 0.38);
+}
+
+/* SweetAlert dark para flujo de documentos */
+.swal2-popup.solicitud-dark-swal {
+    background: linear-gradient(145deg, #1b2633 0%, #202f40 100%);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    box-shadow: 0 24px 48px rgba(2, 6, 12, 0.58);
+}
+
+.swal2-popup.solicitud-dark-swal .swal2-icon.swal2-success [class^='swal2-success-circular-line'],
+.swal2-popup.solicitud-dark-swal .swal2-icon.swal2-success .swal2-success-fix {
+    background: transparent;
+}
+
+.solicitud-dark-swal-title {
+    color: #f3f8ff !important;
+}
+
+.solicitud-dark-swal-html {
+    color: #d2dfef !important;
+}
+
+.solicitud-dark-swal-html p,
+.solicitud-dark-swal-html li,
+.solicitud-dark-swal-html ul,
+.solicitud-dark-swal-html div,
+.solicitud-dark-swal-html b,
+.solicitud-dark-swal-html strong,
+.solicitud-dark-swal-html em {
+    color: inherit;
+}
+
+.solicitud-dark-swal-confirm {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%) !important;
+    border: 1px solid rgba(74, 222, 128, 0.2) !important;
+    color: #ffffff !important;
+    box-shadow: 0 6px 16px rgba(11, 78, 50, 0.3) !important;
+}
+
+.swal2-popup.solicitud-dark-swal .swal2-loader {
+    border-color: rgba(148, 163, 184, 0.28) transparent rgba(148, 163, 184, 0.28) transparent;
+}
+
+.modal-card.modal-colocar-credito .c-row {
+    color: #cdd9e8;
+}
+
+.modal-card.modal-colocar-credito .c-row.total-row {
+    color: var(--primary-light);
+    border-top-color: rgba(233, 239, 248, 0.7);
+}
+
+.modal-card.modal-colocar-credito .c-row.total-row span:first-child {
+    color: var(--primary-light);
+    letter-spacing: 1.2px;
+}
+
+.modal-card.modal-colocar-credito .c-val-total {
+    color: var(--primary-light);
+    text-shadow: 0 0 18px rgba(58, 193, 127, 0.22);
+}
+
+/* Ajuste visual final - tarjetas pendientes de desembolso */
+.seccion-desembolso-pendiente {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.07) 0%, rgba(148, 86, 10, 0.03) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.34);
+    box-shadow: 0 10px 26px rgba(7, 12, 21, 0.32);
+    animation: none;
+}
+
+.card-desembolso-pendiente {
+    background: linear-gradient(160deg, #233041 0%, #1f2b3a 100%);
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    box-shadow: 0 12px 24px rgba(4, 10, 18, 0.28);
+}
+
+.card-desembolso-pendiente:hover {
+    transform: translateY(-2px);
+    border-color: rgba(242, 187, 58, 0.58);
+    box-shadow: 0 14px 28px rgba(4, 10, 18, 0.38);
+}
+
+.card-desembolso-socio h4 {
+    color: #f3f8ff;
+    line-height: 1.2;
+}
+
+.card-desembolso-socio span {
+    color: #b9c9dc;
+}
+
+.card-desembolso-monto .monto-valor {
+    color: var(--gold);
+}
+
+.card-desembolso-monto .monto-label {
+    color: #d2dbe8;
+}
+
+.card-desembolso-info {
+    background: #182332;
+    border-color: rgba(148, 163, 184, 0.2);
+}
+
+.info-item .label {
+    color: #b9c9dc;
+}
+
+.info-item .value {
+    color: #f3f8ff;
+}
+
+.doc-status {
+    background: #182332;
+    border-color: rgba(148, 163, 184, 0.24);
+    color: #b6c5d9;
+}
+
+.doc-status.ready {
+    background: linear-gradient(135deg, rgba(11, 78, 50, 0.24) 0%, rgba(11, 78, 50, 0.14) 100%);
+    color: #7fe3ae;
+    border-color: rgba(74, 222, 128, 0.32);
+}
+
+.doc-status.ready i {
+    color: #6ee7b7;
+}
+
+.doc-status.pending {
+    color: #d6e0ee;
+    border-color: rgba(148, 163, 184, 0.3);
+}
+
+.doc-status.pending i {
+    color: var(--gold);
+}
+
+.card-desembolso-actions {
+    gap: 0.65rem;
+}
+
+.btn-generar-docs {
+    background: #2a3b54;
+    border-color: rgba(96, 165, 250, 0.48);
+    color: #71a7ff;
+}
+
+.btn-generar-docs:hover {
+    background: #314766;
+    border-color: #60a5fa;
+}
+
+.btn-completar-desembolso {
+    background: linear-gradient(135deg, var(--primary) 0%, #0f7f4f 100%);
+    box-shadow: 0 8px 16px rgba(11, 78, 50, 0.28);
+}
+
+.btn-completar-desembolso:hover {
+    box-shadow: 0 10px 18px rgba(11, 78, 50, 0.38);
+}
+
+.btn-anular-credito {
+    width: 60px;
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.32);
+    color: #ff5a5a;
 }

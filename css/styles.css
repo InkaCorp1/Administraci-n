@@ -7,23 +7,28 @@
    VARIABLES CSS
    ========================================== */
 :root {
-    /* Colores base (Claro) */
-    --black: #FFFFFF;
-    --black-soft: #F5F7FA;
-    --gray-900: #EEF1F5;
-    --gray-800: #E2E8F0;
-    --gray-700: #CBD5E1;
-    --gray-600: #94A3B8;
-    --gray-500: #64748B;
-    --gray-400: #475569;
-    --gray-300: #334155;
-    --white: #0F172A;
+    /* Colores base (Dark Only) */
+    --black: #111318;
+    --black-soft: #171b22;
+    --gray-900: #1b212a;
+    --gray-800: #242c36;
+    --gray-700: #2f3946;
+    --gray-600: #5e6b7c;
+    --gray-500: #93a1b3;
+    --gray-400: #b2bcc9;
+    --gray-300: #d8dee7;
+    --white: #eef2f7;
 
     /* Colores principales - Basados en el logo INKA CORP */
     --primary: #0B4E32;
     --primary-light: #146E3A;
     --primary-dark: #073D27;
     --primary-glow: rgba(11, 78, 50, 0.3);
+    --on-primary-title: #F3F7FF;
+    --on-primary-body: rgba(243, 247, 255, 0.9);
+    --on-primary-muted: rgba(229, 237, 249, 0.76);
+    --on-primary-border: rgba(255, 255, 255, 0.22);
+    --on-primary-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 
     /* Colores de acento (amarillo/dorado del logo) */
     --gold: #F2BB3A;
@@ -45,17 +50,17 @@
     --info: #0E4353;
     --info-light: #5BA3B8;
 
-    /* Sombras (Claro) */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 20px -5px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
-    --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    /* Sombras (Dark) */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.38), 0 1px 2px rgba(0, 0, 0, 0.22);
+    --shadow-md: 0 6px 14px -4px rgba(0, 0, 0, 0.45), 0 3px 8px -3px rgba(0, 0, 0, 0.28);
+    --shadow-lg: 0 14px 30px -10px rgba(0, 0, 0, 0.48), 0 6px 14px -6px rgba(0, 0, 0, 0.28);
+    --shadow-xl: 0 28px 58px -14px rgba(0, 0, 0, 0.58);
     --shadow-primary: 0 4px 20px rgba(11, 78, 50, 0.25);
     --shadow-gold: 0 4px 15px rgba(211, 144, 13, 0.25);
 
     /* Bordes */
-    --border-color: rgba(11, 78, 50, 0.15);
-    --border-color-hover: rgba(11, 78, 50, 0.35);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --border-color-hover: rgba(255, 255, 255, 0.15);
 
     /* Dimensiones */
     --sidebar-width: 260px;
@@ -67,9 +72,9 @@
     --transition-slow: 0.5s ease;
 
     /* Superficies/Texto */
-    --bg-primary: #EEF1F5;
-    --bg-secondary: #F5F7FA;
-    --card-bg: #FFFFFF;
+    --bg-primary: #1b212a;
+    --bg-secondary: #171b22;
+    --card-bg: #242c36;
     --text-primary: var(--white);
 }
 
@@ -83,6 +88,7 @@
 }
 
 html {
+    color-scheme: dark;
     scroll-behavior: smooth;
 }
 
@@ -249,6 +255,7 @@ button {
     padding: 1.5rem;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 1rem;
     border-bottom: 1px solid var(--border-color);
 }
@@ -281,6 +288,23 @@ button {
     color: var(--gold);
     text-transform: uppercase;
     letter-spacing: 2px;
+}
+
+.sidebar-version-pill {
+    margin-left: auto;
+    align-self: flex-end;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.35px;
+    color: var(--white);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    line-height: 1;
+    white-space: nowrap;
 }
 
 /* Navegación */
@@ -491,17 +515,19 @@ button {
 .standard-hero .hero-title {
     font-size: 2rem;
     font-weight: 800;
-    color: #FFFFFF;
+    color: var(--on-primary-title);
     margin-bottom: 0.25rem;
     letter-spacing: -0.5px;
+    text-shadow: var(--on-primary-shadow);
 }
 
 .standard-hero .hero-subtitle {
     font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--on-primary-body);
     text-transform: uppercase;
     letter-spacing: 2px;
     font-weight: 600;
+    text-shadow: var(--on-primary-shadow);
 }
 
 .standard-hero .hero-stats {
@@ -547,8 +573,9 @@ button {
     display: block;
     font-size: 1.35rem;
     font-weight: 800;
-    color: #FFFFFF;
+    color: var(--on-primary-title);
     margin-bottom: 0.2rem;
+    text-shadow: var(--on-primary-shadow);
 }
 
 .standard-hero .hero-stat.warning .hero-value {
@@ -557,7 +584,7 @@ button {
 
 .standard-hero .hero-label {
     font-size: 0.65rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--on-primary-muted);
     text-transform: uppercase;
     letter-spacing: 1px;
 }
@@ -1101,11 +1128,18 @@ tbody tr:last-child td {
     background: var(--gray-800);
     border: 1px solid var(--border-color);
     border-radius: 1rem;
-    padding: 1.5rem 2rem;
+    padding: 1.1rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    box-shadow: var(--shadow-xl);
+}
+
+.app-loader-main {
     display: flex;
     align-items: center;
     gap: 1rem;
-    box-shadow: var(--shadow-xl);
 }
 
 .app-loader-spinner {
@@ -1149,7 +1183,66 @@ tbody tr:last-child td {
 
 /* Fix for SweetAlert containers to always be above any modals */
 .swal2-container {
-    z-index: 100000 !important;
+    z-index: 1000000 !important;
+}
+
+/* Global Bootstrap Modal Dark Overrides */
+.modal-content {
+    background-color: var(--gray-800) !important;
+    color: var(--white) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px !important;
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-color) !important;
+    background-color: var(--gray-900) !important;
+    padding: 1.25rem 1.5rem !important;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border-color) !important;
+    background-color: var(--gray-900) !important;
+    padding: 1.25rem 1.5rem !important;
+}
+
+.swal2-popup {
+    background: var(--gray-800) !important;
+    color: var(--white) !important;
+    border-radius: 20px !important;
+}
+
+.swal2-title, .swal2-html-container {
+    color: var(--white) !important;
+}
+
+.swal2-actions button {
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    padding: 10px 25px !important;
+}
+
+.swal2-confirm {
+    background: var(--primary) !important;
+    box-shadow: 0 4px 12px rgba(11, 78, 50, 0.2) !important;
+}
+
+.swal2-cancel {
+    background: var(--gray-700) !important;
+    color: var(--gray-400) !important;
+}
+
+.swal2-input, .swal2-select, .swal2-textarea {
+    background: var(--gray-700) !important;
+    border-color: var(--border-color) !important;
+    color: var(--white) !important;
+    border-radius: 10px !important;
+}
+
+.swal2-input:focus, .swal2-select:focus, .swal2-textarea:focus {
+    border-color: var(--gold) !important;
+    box-shadow: 0 0 0 3px rgba(242, 187, 58, 0.1) !important;
+    outline: none !important;
 }
 
 .modal-backdrop {
@@ -1428,9 +1521,9 @@ tbody tr:last-child td {
 
 /* Quick stats cards */
 .quick-stats>div>div {
-    background: #FFFFFF !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
-    border: 1px solid rgba(11, 78, 50, 0.1) !important;
+    background: var(--gray-800) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25) !important;
+    border: 1px solid var(--border-color) !important;
 }
 
 /* Inline messages */
@@ -1561,7 +1654,7 @@ table {
 }
 
 .custom-cancel-btn:hover {
-    background: #e2e8f0 !important;
+    background: #2f3946 !important;
     transition: all 0.2s ease;
 }
 
@@ -1626,6 +1719,37 @@ table {
     letter-spacing: 1px;
 }
 
+.powered-by-chip {
+    margin-top: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border-radius: 999px;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid transparent;
+}
+
+.powered-by-chip span {
+    font-size: 0.58rem;
+    font-weight: 600;
+    letter-spacing: 1.15px;
+}
+
+.powered-by-logo {
+    height: 14px;
+    width: auto;
+    display: block;
+}
+
+.powered-by-chip-dark {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.powered-by-chip-dark span {
+    color: rgba(255, 255, 255, 0.74);
+}
+
 @keyframes logoFloat {
 
     0%,
@@ -1658,4 +1782,138 @@ table {
     100% {
         transform: rotate(360deg);
     }
+}
+
+/* Caja Warning Banner */
+.caja-warning-banner {
+    background: linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%);
+    border: 2px solid #ef4444;
+    border-radius: 1rem;
+    padding: 1.25rem 2rem;
+    margin: 1.5rem auto;
+    display: flex;
+    justify-content: center;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+    animation: slideDown 0.5s ease-out, pulseRed 2s infinite;
+    width: calc(100% - 3rem);
+    max-width: 1540px;
+    z-index: 10;
+    position: relative;
+}
+
+@keyframes pulseRed {
+    0% {
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.4), inset 0 0 5px rgba(239, 68, 68, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 25px rgba(239, 68, 68, 0.6), inset 0 0 15px rgba(239, 68, 68, 0.4);
+        border-color: #f87171;
+    }
+    100% {
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.4), inset 0 0 5px rgba(239, 68, 68, 0.2);
+    }
+}
+
+.caja-warning-banner .banner-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 2rem;
+}
+
+.caja-warning-banner .banner-text {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    color: #fecaca;
+}
+
+.caja-warning-banner .banner-text i {
+    font-size: 1.8rem;
+    color: #ef4444;
+    filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.4));
+}
+
+.caja-warning-banner .banner-text strong {
+    display: block;
+    font-size: 1rem;
+    color: #fff;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.caja-warning-banner .banner-text p {
+    margin: 0;
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.caja-warning-banner .banner-btn {
+    background: var(--gold);
+    color: var(--black);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 800;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    box-shadow: 0 4px 15px rgba(242, 187, 58, 0.3);
+}
+
+.caja-warning-banner .banner-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(242, 187, 58, 0.4);
+    filter: brightness(1.1);
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Dashboard Subtle Warning */
+.dashboard-caja-badge-warning {
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    padding: 0.4rem 0.5rem 0.4rem 1rem;
+    border-radius: 2rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-top: 0.5rem;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    animation: fadeIn 0.5s ease-out;
+}
+
+.dashboard-caja-badge-warning i {
+    font-size: 0.8rem;
+}
+
+.btn-caja-dashboard {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 0.3rem 0.8rem;
+    border-radius: 1rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: all 0.2s ease;
+}
+
+.btn-caja-dashboard:hover {
+    background: #dc2626;
+    transform: scale(1.05);
 }

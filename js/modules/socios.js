@@ -575,6 +575,7 @@ function createSocioCard(socio) {
                             ? '1 crédito vigente' 
                             : `${socio.creditosVigentes} créditos vigentes`)}
                 </span>
+                <span class="socio-vigentes-pill" title="Créditos vigentes">${socio.creditosVigentes || 0}</span>
             </div>
         </div>
     `;

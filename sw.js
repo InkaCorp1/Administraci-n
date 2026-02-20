@@ -3,8 +3,8 @@
  * PWA Offline Support
  */
 
-const CACHE_NAME = 'inkacorp-v25';
-const STATIC_CACHE = 'inkacorp-static-v25';
+const CACHE_NAME = 'inkacorp-v27.0.0';
+const STATIC_CACHE = 'inkacorp-static-v27.0.0';
 
 // Archivos esenciales para cachear (Shell de la app)
 const ESSENTIAL_FILES = [
@@ -45,13 +45,13 @@ const MODULE_FILES = [
 
 // Instalación del Service Worker
 self.addEventListener('install', (event) => {
-    console.log('[SW] Installing v25...');
-    self.skipWaiting(); // Forzar activación
+    console.log('[SW] Installing v27.0.0...');
+    // self.skipWaiting(); // No forzar activación automática para mostrar changelog
     const allFiles = [...ESSENTIAL_FILES, ...MODULE_FILES];
     event.waitUntil(
         caches.open(STATIC_CACHE)
             .then((cache) => {
-                const fetchOptions = { cache: 'reload' }; // Forzar fetch desde red al cachear
+                const fetchOptions = { cache: 'no-store' }; // Forzar fetch desde red al cachear
                 return Promise.all(
                     allFiles.map(url => {
                         return fetch(url, fetchOptions).then(response => {
@@ -64,9 +64,16 @@ self.addEventListener('install', (event) => {
     );
 });
 
+// Mensajes del Cliente
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
+});
+
 // Activación - limpiar caches antiguos
 self.addEventListener('activate', (event) => {
-    console.log('[SW] Activating v25...');
+    console.log('[SW] Activating v27.0.0...');
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
@@ -76,13 +83,6 @@ self.addEventListener('activate', (event) => {
             );
         }).then(() => self.clients.claim())
     );
-});
-
-// Mensaje para forzar actualización desde el cliente
-self.addEventListener('message', (event) => {
-    if (event.data === 'SKIP_WAITING') {
-        self.skipWaiting();
-    }
 });
 
 // Estrategia: Network First con Fallback SPA Robustecido
@@ -102,8 +102,11 @@ self.addEventListener('fetch', (event) => {
     const isNavigation = event.request.mode === 'navigate' ||
         (event.request.method === 'GET' && event.request.headers.get('accept')?.includes('text/html'));
 
+    const isSameOrigin = url.origin === self.location.origin;
+    const networkRequest = isSameOrigin ? new Request(event.request, { cache: 'no-store' }) : event.request;
+
     event.respondWith(
-        fetch(event.request)
+        fetch(networkRequest)
             .then((response) => {
                 // Manejo de 404 para soporte SPA (Virtual URLs como /bancos.html)
                 if (response.status === 404 && isNavigation) {
@@ -133,7 +136,9 @@ self.addEventListener('fetch', (event) => {
                     if (isNavigation) {
                         const isMobileRoute = url.pathname.includes('/mobile/') || url.pathname.includes('/m-');
                         const fallbackFile = isMobileRoute ? 'mobile/index.html' : 'index.html';
-                        return caches.match(fallbackFile);
+                        return fetch(fallbackFile, { cache: 'no-store' })
+                            .then((fallbackResponse) => fallbackResponse)
+                            .catch(() => caches.match(fallbackFile));
                     }
                 });
             })
@@ -142,7 +147,7 @@ self.addEventListener('fetch', (event) => {
 
 // Escuchar mensajes del cliente
 self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SKIP_WAITING') {
+    if (event.data === 'SKIP_WAITING' || (event.data && event.data.type === 'SKIP_WAITING')) {
         self.skipWaiting();
     }
 });

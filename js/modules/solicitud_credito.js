@@ -10,6 +10,16 @@ let allSolicitudes = [];
 let filteredSolicitudes = [];
 let currentFilterSolicitud = 'PENDIENTE'; // Por defecto muestra pendientes
 let searchTermSolicitud = '';
+let sociosForSelector = [];
+
+function getSolicitudDarkSwalClass() {
+    return {
+        popup: 'solicitud-dark-swal',
+        title: 'solicitud-dark-swal-title',
+        htmlContainer: 'solicitud-dark-swal-html',
+        confirmButton: 'solicitud-dark-swal-confirm'
+    };
+}
 
 // ==========================================
 // SCREEN BLOCKER (Pantalla de bloqueo con progreso)
@@ -143,6 +153,9 @@ function setupSolicitudesEventListeners() {
     if (selectSocio) {
         selectSocio.addEventListener('change', mostrarInfoSocioSeleccionado);
     }
+
+    setupCustomSocioSelector();
+    setupCustomPlazoSelector();
 
     // Exponer funciones globalmente
     window.viewSolicitud = viewSolicitud;
@@ -670,6 +683,12 @@ function getEstadoInfo(estado) {
 // MODAL: NUEVA SOLICITUD
 // ==========================================
 function abrirModalNuevaSolicitud() {
+    if (typeof window.validateCajaBeforeAction === 'function') {
+        if (!window.validateCajaBeforeAction('NUEVA SOLICITUD')) {
+            return;
+        }
+    }
+
     // Poblar select de socios desde caché
     poblarSelectSocios();
 
@@ -684,6 +703,20 @@ function abrirModalNuevaSolicitud() {
     if (inputPlazo) inputPlazo.value = '';
     if (infoSocio) infoSocio.classList.add('hidden');
 
+    const label = document.getElementById('select-socio-label');
+    if (label) label.textContent = '-- Seleccione un socio --';
+
+    const plazoLabel = document.getElementById('select-plazo-label');
+    if (plazoLabel) plazoLabel.textContent = 'Seleccione';
+
+    const customSearch = document.getElementById('select-socio-search');
+    if (customSearch) customSearch.value = '';
+
+    renderCustomSocioOptions('');
+    closeCustomSocioDropdown();
+    renderCustomPlazoOptions();
+    closeCustomPlazoDropdown();
+
     openSolicitudModal('modal-nueva-solicitud');
 }
 
@@ -697,6 +730,7 @@ function poblarSelectSocios() {
 
     // Obtener socios del caché
     const socios = window.dataCache?.socios || [];
+    sociosForSelector = [...socios];
 
     select.innerHTML = '<option value="">-- Seleccione un socio --</option>';
 
@@ -707,19 +741,231 @@ function poblarSelectSocios() {
         option.dataset.socioData = JSON.stringify(socio);
         select.appendChild(option);
     });
+
+    renderCustomSocioOptions('');
+}
+
+function setupCustomSocioSelector() {
+    const root = document.getElementById('select-socio-custom');
+    const trigger = document.getElementById('select-socio-trigger');
+    const dropdown = document.getElementById('select-socio-dropdown');
+    const searchInput = document.getElementById('select-socio-search');
+    const optionsContainer = document.getElementById('select-socio-options');
+
+    if (!root || !trigger || !dropdown || !searchInput || !optionsContainer) return;
+    if (root.dataset.bound === '1') return;
+    root.dataset.bound = '1';
+
+    trigger.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const isOpen = !dropdown.classList.contains('hidden');
+        if (isOpen) {
+            closeCustomSocioDropdown();
+        } else {
+            openCustomSocioDropdown();
+        }
+    });
+
+    searchInput.addEventListener('input', (event) => {
+        renderCustomSocioOptions(event.target.value || '');
+    });
+
+    optionsContainer.addEventListener('click', (event) => {
+        const optionBtn = event.target.closest('[data-socio-cedula]');
+        if (!optionBtn) return;
+        selectSocioFromCustom(optionBtn.dataset.socioCedula || '');
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!root.contains(event.target)) {
+            closeCustomSocioDropdown();
+        }
+    });
+}
+
+function openCustomSocioDropdown() {
+    const trigger = document.getElementById('select-socio-trigger');
+    const dropdown = document.getElementById('select-socio-dropdown');
+    const searchInput = document.getElementById('select-socio-search');
+    if (!trigger || !dropdown) return;
+
+    dropdown.classList.remove('hidden');
+    trigger.setAttribute('aria-expanded', 'true');
+    setTimeout(() => {
+        if (searchInput) searchInput.focus();
+    }, 10);
+}
+
+function closeCustomSocioDropdown() {
+    const trigger = document.getElementById('select-socio-trigger');
+    const dropdown = document.getElementById('select-socio-dropdown');
+    if (!trigger || !dropdown) return;
+
+    dropdown.classList.add('hidden');
+    trigger.setAttribute('aria-expanded', 'false');
+}
+
+function renderCustomSocioOptions(term) {
+    const optionsContainer = document.getElementById('select-socio-options');
+    if (!optionsContainer) return;
+
+    const normalizedTerm = String(term || '').toLowerCase().trim();
+    const filtered = sociosForSelector.filter((socio) => {
+        if (!normalizedTerm) return true;
+        const nombre = String(socio.nombre || '').toLowerCase();
+        const cedula = String(socio.cedula || '').toLowerCase();
+        return nombre.includes(normalizedTerm) || cedula.includes(normalizedTerm);
+    });
+
+    if (!filtered.length) {
+        optionsContainer.innerHTML = '<div class="select-socio-empty">No se encontraron socios</div>';
+        return;
+    }
+
+    optionsContainer.innerHTML = filtered.map((socio) => {
+        return (
+            '<button type="button" class="select-socio-option" data-socio-cedula="' + (socio.cedula || '') + '">' +
+                '<span class="option-name">' + escapeHtml(String(socio.nombre || 'Sin nombre')) + '</span>' +
+                '<span class="option-id">' + escapeHtml(String(socio.cedula || '')) + '</span>' +
+            '</button>'
+        );
+    }).join('');
+}
+
+function setupCustomPlazoSelector() {
+    const root = document.getElementById('select-plazo-custom');
+    const trigger = document.getElementById('select-plazo-trigger');
+    const dropdown = document.getElementById('select-plazo-dropdown');
+    const optionsContainer = document.getElementById('select-plazo-options');
+    const nativeSelect = document.getElementById('input-plazo');
+
+    if (!root || !trigger || !dropdown || !optionsContainer || !nativeSelect) return;
+    if (root.dataset.bound === '1') return;
+    root.dataset.bound = '1';
+
+    trigger.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const isOpen = !dropdown.classList.contains('hidden');
+        if (isOpen) {
+            closeCustomPlazoDropdown();
+        } else {
+            openCustomPlazoDropdown();
+        }
+    });
+
+    optionsContainer.addEventListener('click', (event) => {
+        const optionBtn = event.target.closest('[data-plazo-value]');
+        if (!optionBtn) return;
+        selectPlazoFromCustom(optionBtn.dataset.plazoValue || '');
+    });
+
+    nativeSelect.addEventListener('change', () => {
+        const label = document.getElementById('select-plazo-label');
+        const selectedOption = nativeSelect.options[nativeSelect.selectedIndex];
+        if (label) label.textContent = selectedOption ? selectedOption.textContent : 'Seleccione';
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!root.contains(event.target)) {
+            closeCustomPlazoDropdown();
+        }
+    });
+
+    renderCustomPlazoOptions();
+}
+
+function renderCustomPlazoOptions() {
+    const nativeSelect = document.getElementById('input-plazo');
+    const optionsContainer = document.getElementById('select-plazo-options');
+    if (!nativeSelect || !optionsContainer) return;
+
+    const options = Array.from(nativeSelect.options);
+    optionsContainer.innerHTML = options.map((option) => {
+        const isActive = nativeSelect.value === option.value;
+        return (
+            '<button type="button" class="select-socio-option' + (isActive ? ' is-active' : '') + '" data-plazo-value="' + escapeHtml(option.value) + '">' +
+                '<span class="option-name">' + escapeHtml(option.textContent || 'Seleccione') + '</span>' +
+            '</button>'
+        );
+    }).join('');
+}
+
+function openCustomPlazoDropdown() {
+    const trigger = document.getElementById('select-plazo-trigger');
+    const dropdown = document.getElementById('select-plazo-dropdown');
+    if (!trigger || !dropdown) return;
+
+    dropdown.classList.remove('hidden');
+    trigger.setAttribute('aria-expanded', 'true');
+    renderCustomPlazoOptions();
+}
+
+function closeCustomPlazoDropdown() {
+    const trigger = document.getElementById('select-plazo-trigger');
+    const dropdown = document.getElementById('select-plazo-dropdown');
+    if (!trigger || !dropdown) return;
+
+    dropdown.classList.add('hidden');
+    trigger.setAttribute('aria-expanded', 'false');
+}
+
+function selectPlazoFromCustom(value) {
+    const nativeSelect = document.getElementById('input-plazo');
+    const label = document.getElementById('select-plazo-label');
+    if (!nativeSelect) return;
+
+    nativeSelect.value = value;
+    const selectedOption = Array.from(nativeSelect.options).find((option) => option.value === value);
+    if (label) label.textContent = selectedOption ? selectedOption.textContent : 'Seleccione';
+
+    nativeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    renderCustomPlazoOptions();
+    closeCustomPlazoDropdown();
+}
+
+function selectSocioFromCustom(cedula) {
+    const select = document.getElementById('select-socio');
+    const label = document.getElementById('select-socio-label');
+    const searchInput = document.getElementById('select-socio-search');
+    if (!select) return;
+
+    select.value = cedula;
+
+    const selectedOption = Array.from(select.options).find((option) => option.value === cedula);
+    if (label) {
+        label.textContent = selectedOption ? selectedOption.textContent : '-- Seleccione un socio --';
+    }
+
+    if (searchInput) searchInput.value = '';
+    renderCustomSocioOptions('');
+    closeCustomSocioDropdown();
+
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 function mostrarInfoSocioSeleccionado() {
     const select = document.getElementById('select-socio');
     const infoCard = document.getElementById('info-socio-seleccionado');
+    const customLabel = document.getElementById('select-socio-label');
 
     if (!select.value) {
+        if (customLabel) customLabel.textContent = '-- Seleccione un socio --';
         infoCard.classList.add('hidden');
         return;
     }
 
     const option = select.options[select.selectedIndex];
     const socio = JSON.parse(option.dataset.socioData || '{}');
+    if (customLabel && option) customLabel.textContent = option.textContent;
 
     document.getElementById('display-nombre-socio').textContent = socio.nombre || '-';
     document.getElementById('display-cedula-socio').textContent = socio.cedula || '-';
@@ -1292,6 +1538,12 @@ async function anularSolicitud() {
 }
 
 async function colocarCredito() {
+    if (typeof window.validateCajaBeforeAction === 'function') {
+        if (!window.validateCajaBeforeAction('DESEMBOLSO DE CRÉDITO')) {
+            return;
+        }
+    }
+
     if (!currentSolicitud) return;
 
     // Llenar datos básicos en el modal
@@ -3393,11 +3645,18 @@ function mostrarModalDocumentos(credito, fechaSeleccionada = null) {
     `;
 
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
 }
 
 function cerrarModalDocumentos() {
     const modal = document.getElementById('modal-documentos-credito');
     if (modal) modal.remove();
+
+    const hasVisibleModals = Array.from(document.querySelectorAll('.modal')).some(el => !el.classList.contains('hidden'));
+    if (!hasVisibleModals) {
+        document.body.style.overflow = '';
+    }
+
     currentCreditoDocumentos = null;
 }
 
@@ -3440,7 +3699,8 @@ async function generarDocumentoPagare(idCredito, fechaFirmaManual = null) {
                 icon: 'error',
                 title: 'Perfil Incompleto',
                 text: 'Su usuario no tiene configurado el Nombre, Cédula o WhatsApp. No se puede generar documentos legales sin estos datos.',
-                confirmButtonColor: '#0E5936'
+                confirmButtonColor: '#0E5936',
+                customClass: getSolicitudDarkSwalClass()
             });
             return;
         }
@@ -3609,7 +3869,8 @@ async function generarDocumentoContrato(idCredito, fechaFirmaManual = null) {
                 icon: 'error',
                 title: 'Perfil Incompleto',
                 text: 'Su usuario no tiene configurado el Nombre, Cédula o WhatsApp. No se puede generar documentos legales sin estos datos.',
-                confirmButtonColor: '#0E5936'
+                confirmButtonColor: '#0E5936',
+                customClass: getSolicitudDarkSwalClass()
             });
             return;
         }
@@ -3724,7 +3985,7 @@ async function generarDocumentoContrato(idCredito, fechaFirmaManual = null) {
             firmas.push({ nombre: (garanteInfo.nombre_garante || 'GARANTE').toUpperCase(), cedula: garanteInfo.cedula_garante || '', label: '(GARANTE)' });
         }
 
-        firmas.push({ nombre: infoAcreedor.nombre.toUpperCase(), cedula: infoAcreedor.cedula || '', label: '(ASESOR INKA CORP)' });
+        firmas.push({ nombre: infoAcreedor.nombre.toUpperCase(), cedula: infoAcreedor.cedula || '', label: '(ACREEDOR)' });
 
         // Dibujar firmas de 2 en 2
         const firmaWidth = (contentWidth / 2) - 20;
@@ -3823,7 +4084,8 @@ async function generarDocumentoTablaAmortizacion(idCredito, fechaFirmaManual = n
                 icon: 'error',
                 title: 'Perfil Incompleto',
                 text: 'Su usuario no tiene configurado el Nombre, Cédula o WhatsApp. No se puede generar documentos legales sin estos datos.',
-                confirmButtonColor: '#0E5936'
+                confirmButtonColor: '#0E5936',
+                customClass: getSolicitudDarkSwalClass()
             });
             return;
         }
@@ -4227,7 +4489,8 @@ async function generarDocumentoGarantia(idCredito, fechaFirmaManual = null) {
                 icon: 'error',
                 title: 'Perfil Incompleto',
                 text: 'Su usuario no tiene configurado el Nombre, Cédula o WhatsApp. No se puede generar documentos legales sin estos datos.',
-                confirmButtonColor: '#0E5936'
+                confirmButtonColor: '#0E5936',
+                customClass: getSolicitudDarkSwalClass()
             });
             return;
         }
@@ -4524,6 +4787,7 @@ async function generarTodosDocumentos(idCredito) {
             title: 'Generando Documentos',
             html: 'Por favor espere mientras se preparan todos los archivos del préstamo...',
             allowOutsideClick: false,
+            customClass: getSolicitudDarkSwalClass(),
             didOpen: () => {
                 Swal.showLoading();
             }
@@ -4587,7 +4851,8 @@ async function generarTodosDocumentos(idCredito) {
             icon: 'success',
             confirmButtonText: 'Aceptar',
             confirmButtonColor: '#2e7d32',
-            allowOutsideClick: false
+            allowOutsideClick: false,
+            customClass: getSolicitudDarkSwalClass()
         });
 
         // Refrescar lista de pendientes
@@ -4599,7 +4864,8 @@ async function generarTodosDocumentos(idCredito) {
             title: 'Error',
             text: 'Hubo un problema al generar algunos documentos. Por favor, intente de nuevo.',
             icon: 'error',
-            confirmButtonText: 'Entendido'
+            confirmButtonText: 'Entendido',
+            customClass: getSolicitudDarkSwalClass()
         });
     } finally {
         // Restaurar botón principal
@@ -4959,41 +5225,41 @@ function mostrarModalDesembolsoArchivos(credito, nombreSocio, tieneGarante) {
 
     const modalHTML = `
         <div id="modal-desembolso-archivos" class="modal" style="display: flex; align-items: center; justify-content: center; z-index: 10000;">
-            <div class="modal-backdrop" onclick="cerrarModalDesembolsoArchivos()" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);"></div>
-            <div class="modal-card" style="max-width: 500px; width: 95%; background: white; border-radius: 1.25rem; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); animation: scaleIn 0.3s ease;">
-                <div class="modal-header" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+            <div class="modal-backdrop" onclick="cerrarModalDesembolsoArchivos()" style="background: rgba(3, 7, 18, 0.72); backdrop-filter: blur(6px);"></div>
+            <div class="modal-card" style="max-width: 500px; width: 95%; background: linear-gradient(155deg, #1b2735 0%, #1f2d3d 100%); border: 1px solid rgba(148, 163, 184, 0.28); border-radius: 1.25rem; overflow: hidden; box-shadow: 0 28px 56px -14px rgba(2, 6, 12, 0.62); animation: scaleIn 0.3s ease;">
+                <div class="modal-header" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; padding: 1.25rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(148, 163, 184, 0.24);">
                     <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700;"><i class="fas fa-cloud-upload-alt"></i> Carga de Documentos Firmados</h3>
-                    <button onclick="cerrarModalDesembolsoArchivos()" style="background: none; border: none; color: white; cursor: pointer; font-size: 1.25rem;"><i class="fas fa-times"></i></button>
+                    <button onclick="cerrarModalDesembolsoArchivos()" style="background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.24); color: #f8fbff; cursor: pointer; font-size: 1.25rem; width: 36px; height: 36px; border-radius: 0.7rem;"><i class="fas fa-times"></i></button>
                 </div>
-                <div class="modal-body" style="padding: 1.5rem;">
-                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 0.75rem; padding: 0.75rem; margin-bottom: 1.25rem;">
-                        <p style="color: #166534; font-size: 0.85rem; margin: 0; line-height: 1.4;">
+                <div class="modal-body" style="padding: 1.5rem; background: #1f2a38;">
+                    <div style="background: linear-gradient(135deg, rgba(11, 78, 50, 0.18) 0%, rgba(11, 78, 50, 0.12) 100%); border: 1px solid rgba(74, 222, 128, 0.3); border-radius: 0.75rem; padding: 0.75rem; margin-bottom: 1.25rem;">
+                        <p style="color: #d9fbe8; font-size: 0.85rem; margin: 0; line-height: 1.4;">
                             Suba cada documento por separado. El botón de activación se habilitará cuando todos los archivos estén listos.
                         </p>
                     </div>
                     
                     <div id="document-slots-container" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
                         ${docs.map(doc => `
-                            <div id="slot-${doc.id}" class="doc-slot" style="border: 1px solid var(--gray-800); border-radius: 0.75rem; padding: 0.75rem; transition: all 0.2s ease; background: #f9fafb;">
+                            <div id="slot-${doc.id}" class="doc-slot" style="border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 0.75rem; padding: 0.75rem; transition: all 0.2s ease; background: #202d3d; box-shadow: 0 4px 10px rgba(4, 10, 18, 0.2);">
                                 <div style="display: flex; align-items: center; justify-content: space-between;">
                                     <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                        <div style="width: 36px; height: 36px; border-radius: 0.5rem; background: var(--gray-900); display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                                        <div style="width: 36px; height: 36px; border-radius: 0.5rem; background: #1a2534; display: flex; align-items: center; justify-content: center; color: #83f0bb; border: 1px solid rgba(74, 222, 128, 0.22);">
                                             <i class="fas ${doc.icon}"></i>
                                         </div>
                                         <div>
-                                            <div style="font-weight: 700; font-size: 0.85rem; color: var(--primary);">${doc.label}</div>
-                                            <div id="status-${doc.id}" style="font-size: 0.75rem; color: var(--gray-500);">Pendiente de carga</div>
+                                            <div style="font-weight: 700; font-size: 0.85rem; color: #eef5fe;">${doc.label}</div>
+                                            <div id="status-${doc.id}" style="font-size: 0.75rem; color: #b9c8dc;">Pendiente de carga</div>
                                         </div>
                                     </div>
                                     <div id="action-${doc.id}">
-                                        <button onclick="document.getElementById('input-${doc.id}').click()" style="background: var(--primary); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer;">
+                                        <button onclick="document.getElementById('input-${doc.id}').click()" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 10px rgba(11, 78, 50, 0.28);">
                                             <i class="fas fa-upload"></i> Subir
                                         </button>
                                     </div>
                                     <input type="file" id="input-${doc.id}" accept="application/pdf,image/*" style="display: none;" onchange="handleFileSelectSlot('${doc.id}', this)">
                                 </div>
                                 <div id="progress-bar-container-${doc.id}" style="display: none; margin-top: 0.75rem;">
-                                    <div style="width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;">
+                                    <div style="width: 100%; height: 6px; background: #1a2534; border-radius: 3px; overflow: hidden; border: 1px solid rgba(148, 163, 184, 0.2);">
                                         <div id="progress-bar-${doc.id}" style="width: 0%; height: 100%; background: var(--primary); transition: width 0.3s ease;"></div>
                                     </div>
                                 </div>
@@ -5002,7 +5268,7 @@ function mostrarModalDesembolsoArchivos(credito, nombreSocio, tieneGarante) {
                     </div>
 
                     <div style="display: flex; gap: 0.75rem;">
-                        <button onclick="cerrarModalDesembolsoArchivos()" style="flex: 1; padding: 0.875rem; border-radius: 0.75rem; border: 1px solid var(--gray-700); background: white; color: var(--gray-600); font-weight: 700; cursor: pointer;">Cancelar</button>
+                        <button onclick="cerrarModalDesembolsoArchivos()" style="flex: 1; padding: 0.875rem; border-radius: 0.75rem; border: 1px solid rgba(148, 163, 184, 0.34); background: #2a3748; color: #e4ecf8; font-weight: 700; cursor: pointer;">Cancelar</button>
                         <button id="btn-confirmar-desembolso-final" onclick="ejecutarDesembolsoConArchivos('${idCredito}', '${nombreSocio}', ${tieneGarante})" disabled style="flex: 1.5; padding: 0.875rem; border-radius: 0.75rem; border: none; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; font-weight: 700; cursor: pointer; opacity: 0.5; box-shadow: 0 4px 12px rgba(11, 78, 50, 0.2);">
                             <i class="fas fa-check-circle"></i> Activar Crédito
                         </button>
@@ -5013,6 +5279,7 @@ function mostrarModalDesembolsoArchivos(credito, nombreSocio, tieneGarante) {
     `;
 
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
 }
 
 let selectedFilesForDesembolso = {};
@@ -5027,13 +5294,13 @@ function handleFileSelectSlot(slotId, input) {
         const actionEl = document.getElementById(`action-${slotId}`);
         const slotEl = document.getElementById(`slot-${slotId}`);
 
-        statusEl.innerHTML = `<span style="color: #059669; font-weight: 600;"><i class="fas fa-check"></i> ${file.name}</span>`;
+        statusEl.innerHTML = `<span style="color: #6ee7b7; font-weight: 600;"><i class="fas fa-check"></i> ${file.name}</span>`;
         actionEl.innerHTML = `
-            <button onclick="document.getElementById('input-${slotId}').click()" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 0.85rem; padding: 0.4rem;"><i class="fas fa-sync-alt"></i></button>
+            <button onclick="document.getElementById('input-${slotId}').click()" style="background: none; border: none; color: #7dd3fc; cursor: pointer; font-size: 0.85rem; padding: 0.4rem;"><i class="fas fa-sync-alt"></i></button>
             <button onclick="removeFileFromSlot('${slotId}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 0.85rem; padding: 0.4rem;"><i class="fas fa-trash-alt"></i></button>
         `;
-        slotEl.style.borderColor = '#059669';
-        slotEl.style.background = '#f0fdf4';
+        slotEl.style.borderColor = 'rgba(74, 222, 128, 0.45)';
+        slotEl.style.background = 'linear-gradient(135deg, rgba(11, 78, 50, 0.22) 0%, rgba(11, 78, 50, 0.14) 100%)';
 
         checkAllFilesReady();
     }
@@ -5047,14 +5314,14 @@ function removeFileFromSlot(slotId) {
     const slotEl = document.getElementById(`slot-${slotId}`);
 
     statusEl.innerHTML = 'Pendiente de carga';
-    statusEl.style.color = 'var(--gray-500)';
+    statusEl.style.color = '#b9c8dc';
     actionEl.innerHTML = `
-        <button onclick="document.getElementById('input-${slotId}').click()" style="background: var(--primary); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer;">
+        <button onclick="document.getElementById('input-${slotId}').click()" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 10px rgba(11, 78, 50, 0.28);">
             <i class="fas fa-upload"></i> Subir
         </button>
     `;
-    slotEl.style.borderColor = 'var(--gray-800)';
-    slotEl.style.background = '#f9fafb';
+    slotEl.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+    slotEl.style.background = '#202d3d';
 
     checkAllFilesReady();
 }
@@ -5083,7 +5350,11 @@ function checkAllFilesReady() {
 function cerrarModalDesembolsoArchivos() {
     const modal = document.getElementById('modal-desembolso-archivos');
     if (modal) modal.remove();
-    selectedFilesForDesembolso = [];
+    const hasVisibleModals = Array.from(document.querySelectorAll('.modal')).some(el => !el.classList.contains('hidden'));
+    if (!hasVisibleModals) {
+        document.body.style.overflow = '';
+    }
+    selectedFilesForDesembolso = {};
 }
 
 async function ejecutarDesembolsoConArchivos(idCredito, nombreSocio, tieneGarante) {

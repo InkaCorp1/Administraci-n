@@ -23,68 +23,68 @@ function getBankTheme(bankName) {
     const name = (bankName || '').toUpperCase();
     const themes = {
         DEFAULT: {
-            bg: 'linear-gradient(145deg, #f0fdf4 0%, #dcfce7 100%)',
-            primary: '#0B4E32',
-            light: '#146E3A',
-            glow: 'rgba(11, 78, 50, 0.1)',
-            border: 'rgba(11, 78, 50, 0.12)',
-            textOnPill: '#0B4E32'
+            bg: 'linear-gradient(145deg, rgba(11, 78, 50, 0.2) 0%, rgba(17, 19, 24, 0.7) 100%)',
+            primary: 'var(--primary-light, #146E3A)',
+            light: '#22c55e',
+            glow: 'rgba(11, 78, 50, 0.4)',
+            border: 'rgba(11, 78, 50, 0.3)',
+            textOnPill: '#ffffff'
         },
         PICHINCHA: {
-            bg: 'linear-gradient(145deg, #fffcf0 0%, #fff9db 100%)',
-            primary: '#856404',
-            light: '#f2bb3a',
-            glow: 'rgba(242, 187, 58, 0.1)',
-            border: 'rgba(242, 187, 58, 0.2)',
-            textOnPill: '#856404'
+            bg: 'linear-gradient(145deg, rgba(242, 187, 58, 0.15) 0%, rgba(17, 19, 24, 0.7) 100%)',
+            primary: '#F2BB3A',
+            light: '#F5D070',
+            glow: 'rgba(242, 187, 58, 0.3)',
+            border: 'rgba(242, 187, 58, 0.25)',
+            textOnPill: '#ffffff'
         },
         GUAYAQUIL: {
-            bg: 'linear-gradient(145deg, #fdf2f8 0%, #fce7f3 100%)',
-            primary: '#E10098',
+            bg: 'linear-gradient(145deg, rgba(225, 0, 152, 0.15) 0%, rgba(17, 19, 24, 0.7) 100%)',
+            primary: '#FF1493',
             light: '#FF69B4',
-            glow: 'rgba(225, 0, 152, 0.1)',
-            border: 'rgba(225, 0, 152, 0.15)',
-            textOnPill: '#E10098'
+            glow: 'rgba(225, 0, 152, 0.3)',
+            border: 'rgba(225, 0, 152, 0.25)',
+            textOnPill: '#ffffff'
         },
         PACIFICO: {
-            bg: 'linear-gradient(145deg, #f0f9ff 0%, #e0f2fe 100%)',
-            primary: '#0070BA',
-            light: '#00AEEF',
-            glow: 'rgba(0, 174, 239, 0.1)',
-            border: 'rgba(0, 112, 186, 0.15)',
-            textOnPill: '#0070BA'
+            bg: 'linear-gradient(145deg, rgba(0, 112, 186, 0.15) 0%, rgba(17, 19, 24, 0.7) 100%)',
+            primary: '#00AEEF',
+            light: '#5BA3B8',
+            glow: 'rgba(0, 174, 239, 0.3)',
+            border: 'rgba(0, 112, 186, 0.25)',
+            textOnPill: '#ffffff'
         },
         PRODUBANCO: {
-            bg: 'linear-gradient(145deg, #f7fee7 0%, #ecfccb 100%)',
-            primary: '#008751',
-            light: '#22c55e',
-            glow: 'rgba(0, 135, 81, 0.1)',
-            border: 'rgba(0, 135, 81, 0.15)',
-            textOnPill: '#008751'
+            bg: 'linear-gradient(145deg, rgba(0, 135, 81, 0.15) 0%, rgba(17, 19, 24, 0.7) 100%)',
+            primary: '#22c55e',
+            light: '#4ade80',
+            glow: 'rgba(34, 197, 94, 0.3)',
+            border: 'rgba(0, 135, 81, 0.25)',
+            textOnPill: '#ffffff'
         },
         MUSHUC_RUNA: {
-            bg: 'linear-gradient(145deg, #f1fcf1 0%, #e1f7e1 100%)',
-            primary: '#1a5d1a',
-            light: '#2d8a2d',
-            glow: 'rgba(26, 93, 26, 0.1)',
-            border: 'rgba(26, 93, 26, 0.15)',
-            textOnPill: '#1a5d1a'
+            bg: 'linear-gradient(145deg, rgba(26, 93, 26, 0.15) 0%, rgba(17, 19, 24, 0.7) 100%)',
+            primary: '#2d8a2d',
+            light: '#4ade80',
+            glow: 'rgba(45, 138, 45, 0.3)',
+            border: 'rgba(26, 93, 26, 0.25)',
+            textOnPill: '#ffffff'
         },
         DAQUILEMA: {
-            bg: 'linear-gradient(145deg, #fef2f2 0%, #fee2e2 100%)',
-            primary: '#dc2626',
-            light: '#ef4444',
-            glow: 'rgba(220, 38, 38, 0.1)',
-            border: 'rgba(220, 38, 38, 0.15)',
-            textOnPill: '#dc2626'
+            bg: 'linear-gradient(145deg, rgba(220, 38, 38, 0.15) 0%, rgba(17, 19, 24, 0.7) 100%)',
+            primary: '#ef4444',
+            light: '#f87171',
+            glow: 'rgba(239, 68, 68, 0.3)',
+            border: 'rgba(220, 38, 38, 0.25)',
+            textOnPill: '#ffffff'
         },
         TUPAK: {
-            bg: 'linear-gradient(145deg, #f0f9ff 0%, #dbeafe 100%)',
-            primary: '#2563eb',
-            light: '#60a5fa',
-            glow: 'rgba(37, 99, 235, 0.1)',
-            border: 'rgba(37, 99, 235, 0.15)',
-            textOnPill: '#1e40af'
+            bg: 'linear-gradient(145deg, rgba(37, 99, 235, 0.15) 0%, rgba(17, 19, 24, 0.7) 100%)',
+            primary: '#60a5fa',
+            light: '#93c5fd',
+            glow: 'rgba(96, 165, 250, 0.3)',
+            border: 'rgba(37, 99, 235, 0.25)',
+            textOnPill: '#ffffff'
         }
     };
 
@@ -385,53 +385,47 @@ function showLiteComprobante(idDetalle) {
     container.innerHTML = `
         <div class="receipt-card-mobile animate__animated animate__fadeIn">
             <div class="receipt-luxury-header">
-                <div style="font-size: 0.7rem; color: #94a3b8; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 0.5rem;">Comprobante Digital (Bancos)</div>
-                <div style="font-size: 1.1rem; font-weight: 800; color: #1e293b; margin-bottom: 0.25rem;">${bankName}</div>
-                <div style="color: #64748b; font-size: 0.85rem; font-weight: 500;">TRANSACCIÓN: ${currentBankId}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 0.6rem;">Comprobante Digital (Bancos)</div>
+                <div style="font-size: 1.3rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.3rem;">${bankName}</div>
+                <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600; opacity: 0.8;">TRANSACCIÓN: ${currentBankId}</div>
             </div>
 
             <div class="receipt-amount-section">
-                <div style="font-size: 0.8rem; color: #166534; font-weight: 600; margin-bottom: 0.25rem;">VALOR PAGADO</div>
-                <div style="font-size: 2.2rem; font-weight: 900; color: #10b981;">$${Number(monto).toFixed(2)}</div>
-                <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem; text-transform: lowercase;">registrado en sistema</div>
+                <div style="font-size: 0.75rem; color: var(--success); font-weight: 700; margin-bottom: 0.4rem; letter-spacing: 0.5px; opacity: 0.85;">VALOR PAGADO</div>
+                <div style="font-size: 2.4rem; font-weight: 900; color: #10b981; text-shadow: 0 0 15px rgba(16, 185, 129, 0.25);">$${Number(monto).toFixed(2)}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.6rem; font-weight: 500;">REGISTRADO EXITOSAMENTE</div>
             </div>
 
-            <div class="receipt-info-list" style="border-bottom: 1px solid #f1f5f9; padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+            <div class="receipt-info-list" style="border-bottom: 1px solid var(--border-color); padding-bottom: 1.25rem; margin-bottom: 1.25rem; gap: 1rem;">
                 <div class="receipt-info-item">
-                    <span style="color: #94a3b8;">Fecha de Pago</span>
-                    <span style="font-weight: 600; color: #1e293b;">${fechaP}</span>
+                    <span style="color: var(--text-muted); font-weight: 600;">Fecha de Pago</span>
+                    <span style="font-weight: 700; color: var(--text-primary);">${fechaP}</span>
                 </div>
                 <div class="receipt-info-item">
-                    <span style="color: #94a3b8;">Cuota Número</span>
-                    <span style="font-weight: 600; color: #1e293b;">#${cuotaN}</span>
+                    <span style="color: var(--text-muted); font-weight: 600;">Cuota Número</span>
+                    <span style="font-weight: 700; color: var(--text-primary);">#${cuotaN}</span>
                 </div>
             </div>
 
             ${finalUrl ? `
                 <div class="receipt-image-container">
-                    <span style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.8rem; display: block; text-align: center;">EVIDENCIA ADJUNTA</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem; display: block; text-align: center; font-weight: 700; letter-spacing: 1.5px;">EVIDENCIA ADJUNTA</span>
                     <div class="receipt-image-wrapper">
                         <img src="${finalUrl}" onclick="window.open('${finalUrl}', '_blank')" alt="Evidencia">
-                        <div class="receipt-image-overlay">Toca para ampliar</div>
+                        <div class="receipt-image-overlay">Toca para ampliar imagen</div>
                     </div>
-                    
-                    ${isGoogle ? `
-                        <a href="${finalUrl}" target="_blank" class="lite-viewer-external-btn">
-                            <i class="fas fa-external-link-alt"></i> Ver en Navegador
-                        </a>
-                    ` : ''}
                 </div>
             ` : ''}
 
-            <div style="text-align: center; margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 15px; margin-bottom: 20px;">
-                <p style="font-size: 0.7rem; color: #cbd5e1;">UUID: ${item.id_detalle}</p>
-                <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                    <img src="../img/icon-192.png" style="height: 14px; opacity: 0.3;" onerror="this.style.display='none'">
+            <div style="text-align: center; margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem; margin-bottom: 1rem;">
+                <p style="font-size: 0.65rem; color: var(--text-muted); font-family: monospace; letter-spacing: 0.5px; margin-bottom: 8px;">UUID: ${item.id_detalle}</p>
+                <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 10px; opacity: 0.6;">
+                    <img src="../img/icon-192.png" style="height: 16px; filter: grayscale(1) brightness(1.5);" onerror="this.style.display='none'">
                     INKA CORP SISTEMAS
                 </div>
             </div>
 
-            <button class="lite-btn-action success" onclick="closeLiteComprobante()" style="margin-top: 0.5rem; width: 100%; height: 50px; border-radius: 25px; font-weight: 700;">
+            <button class="lite-btn-action success" onclick="closeLiteComprobante()" style="margin-top: 0.8rem; width: 100%; height: 55px; border-radius: 28px; font-weight: 800; font-size: 0.95rem; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);">
                 <i class="fas fa-check"></i> ENTENDIDO
             </button>
         </div>
@@ -661,15 +655,16 @@ async function generateMonthlyPaymentsReport() {
     try {
         const { value: formValues } = await Swal.fire({
             title: 'Reporte de Pagos',
-            width: '90%', // Mobile width
-            background: '#ffffff',
+            width: '92%', // Un poco más ajustado para asegurar visibilidad en bordes
+            background: '#1e2631',
+            color: '#e8edf5',
             customClass: {
-                popup: 'premium-swal-popup'
+                popup: 'premium-swal-popup-dark'
             },
             html: `
-                <div class="export-options-container" style="text-align: left; padding: 10px 5px;">
+                <div class="export-options-container" style="text-align: left; padding: 10px 0; overflow-x: hidden; width: 100%; box-sizing: border-box;">
                     <!-- Selector de Modo (Slider) -->
-                    <div class="report-mode-selector">
+                    <div class="report-mode-selector" style="width: 95%; margin: 0 auto 20px auto;">
                         <button type="button" class="report-mode-btn active" data-mode="month" id="btn-mode-month">
                             <i class="fas fa-calendar-alt"></i> POR MES
                         </button>
@@ -678,12 +673,12 @@ async function generateMonthlyPaymentsReport() {
                         </button>
                     </div>
 
-                    <p id="export-mode-desc" style="margin-bottom: 20px; color: #64748B; font-size: 0.9rem; text-align: center;">
+                    <p id="export-mode-desc" style="margin-bottom: 20px; color: #aab6c7; font-size: 0.85rem; text-align: center; padding: 0 10px;">
                         Seleccione el mes para el reporte consolidado.
                     </p>
                     
                     <!-- Sección MENSUAL -->
-                    <div id="container-month" class="mode-container">
+                    <div id="container-month" class="mode-container" style="padding: 0 10px;">
                         <div class="filter-group-corporate">
                             <label class="export-label-corporate">
                                 <i class="fas fa-check-circle" style="margin-right: 8px; color: #F2BB3A;"></i>Seleccione Mes
@@ -693,102 +688,104 @@ async function generateMonthlyPaymentsReport() {
                     </div>
 
                     <!-- Sección RANGO (Oculta) -->
-                    <div id="container-range" class="mode-container hidden">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div class="filter-group-corporate">
-                                <label class="export-label-corporate">Desde</label>
-                                <input type="date" id="swal-start" class="premium-input-swal">
+                    <div id="container-range" class="mode-container hidden" style="padding: 0 10px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%; box-sizing: border-box;">
+                            <div class="filter-group-corporate" style="padding: 8px; width: 100%; box-sizing: border-box;">
+                                <label class="export-label-corporate" style="margin-bottom: 5px; font-size: 0.6rem;">Desde</label>
+                                <input type="date" id="swal-start" class="premium-input-swal" style="padding: 8px 4px; font-size: 0.8rem; width: 100%; box-sizing: border-box;">
                             </div>
-                            <div class="filter-group-corporate">
-                                <label class="export-label-corporate">Hasta</label>
-                                <input type="date" id="swal-end" class="premium-input-swal">
+                            <div class="filter-group-corporate" style="padding: 8px; width: 100%; box-sizing: border-box;">
+                                <label class="export-label-corporate" style="margin-bottom: 5px; font-size: 0.6rem;">Hasta</label>
+                                <input type="date" id="swal-end" class="premium-input-swal" style="padding: 8px 4px; font-size: 0.8rem; width: 100%; box-sizing: border-box;">
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <style>
-                    /* Estilos Corporativos (Adaptados a Móvil por si acaso) */
-                    .premium-swal-popup {
-                        border-radius: 1.25rem;
-                        padding-bottom: 1.5rem;
+                    .premium-swal-popup-dark {
+                        border-radius: 1.5rem !important;
+                        border: 1px solid rgba(255,255,255,0.1) !important;
+                        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
                     }
 
                     .report-mode-selector {
                         display: flex;
-                        background: #F1F5F9;
-                        border-radius: 12px;
-                        padding: 4px;
+                        background: #131820;
+                        border-radius: 14px;
+                        padding: 5px;
                         margin-bottom: 20px;
-                        border: 1px solid #E2E8F0;
+                        border: 1px solid rgba(255,255,255,0.05);
                     }
 
                     .report-mode-btn {
                         flex: 1;
-                        padding: 10px 5px; /* Less padding for mobile */
+                        padding: 12px 5px;
                         border: none;
                         background: transparent;
-                        color: #64748B;
-                        font-size: 0.75rem; /* Smaller font for mobile */
-                        font-weight: 700;
+                        color: #8391a4;
+                        font-size: 0.8rem;
+                        font-weight: 800;
                         cursor: pointer;
-                        border-radius: 8px;
-                        transition: all 0.3s ease;
+                        border-radius: 10px;
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        gap: 5px;
+                        gap: 8px;
                     }
 
                     .report-mode-btn.active {
                         color: #ffffff;
-                        background: #0E5936; /* Corporate Green */
-                        box-shadow: 0 4px 10px rgba(14, 89, 54, 0.2);
+                        background: #0B4E32; 
+                        box-shadow: 0 4px 12px rgba(11, 78, 50, 0.3);
                     }
 
                     .export-label-corporate {
-                        display: block; 
-                        font-weight: 700; 
-                        margin-bottom: 8px; 
-                        color: #0E5936;
-                        font-size: 0.8rem;
+                        display: flex; 
+                        align-items: center;
+                        font-weight: 800; 
+                        margin-bottom: 10px; 
+                        color: #10B981;
+                        font-size: 0.75rem;
                         text-transform: uppercase;
-                        letter-spacing: 0.5px;
+                        letter-spacing: 1px;
                     }
 
                     .filter-group-corporate {
-                        background: #F8FAFC;
-                        padding: 10px;
-                        border-radius: 10px;
-                        border: 1px solid #E2E8F0;
+                        background: rgba(255,255,255,0.03);
+                        padding: 15px;
+                        border-radius: 14px;
+                        border: 1px solid rgba(255,255,255,0.08);
                     }
 
                     .premium-input-swal {
                         width: 100%;
-                        padding: 10px;
-                        border-radius: 8px;
-                        border: 1px solid #CBD5E1;
+                        padding: 12px;
+                        border-radius: 10px;
+                        border: 1px solid rgba(255,255,255,0.1);
                         font-family: inherit;
-                        font-size: 0.9rem;
-                        color: #1E293B;
+                        font-size: 1rem;
+                        color: #ffffff;
                         outline: none;
-                        transition: border-color 0.2s;
-                        background: white;
+                        transition: all 0.2s;
+                        background: #131820;
                     }
 
                     .premium-input-swal:focus {
-                        border-color: #0E5936;
-                        box-shadow: 0 0 0 3px rgba(14, 89, 54, 0.1);
+                        border-color: #10B981;
+                        background: #1e2631;
+                        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
                     }
 
                     .hidden { display: none; }
                 </style>
             `,
             showCancelButton: true,
-            confirmButtonText: '<i class="fas fa-file-pdf"></i> Generar',
+            confirmButtonText: '<i class="fas fa-file-pdf" style="margin-right: 8px;"></i>Generar',
             cancelButtonText: 'Cancelar',
-            confirmButtonColor: '#0E5936',
-            cancelButtonColor: '#64748B',
+            confirmButtonColor: '#073D27',
+            cancelButtonColor: '#334155',
             focusConfirm: false,
             didOpen: () => {
                 Swal.getPopup().style.borderRadius = '1.25rem';

@@ -288,68 +288,68 @@ function getBankTheme(bankName) {
     // Default (INKA CORP Green)
     const themes = {
         DEFAULT: {
-            bg: 'linear-gradient(145deg, #f0fdf4 0%, #dcfce7 100%)',
-            primary: 'var(--primary)',
-            light: 'var(--primary-light)',
-            glow: 'var(--primary-glow)',
-            border: 'rgba(11, 78, 50, 0.1)',
-            textOnPill: 'var(--primary)'
+            bg: 'linear-gradient(145deg, rgba(11, 78, 50, 0.15) 0%, rgba(17, 19, 24, 0.6) 100%)',
+            primary: 'var(--primary-light)',
+            light: '#22c55e',
+            glow: 'rgba(11, 78, 50, 0.5)',
+            border: 'rgba(11, 78, 50, 0.3)',
+            textOnPill: 'var(--white)'
         },
         PICHINCHA: {
-            bg: 'linear-gradient(145deg, #fffbeb 0%, #fef3c7 100%)',
-            primary: '#B29100', // Un dorado oscuro legible
-            light: '#F2BB3A',
-            glow: 'rgba(242, 187, 58, 0.2)',
-            border: 'rgba(211, 144, 13, 0.2)',
-            textOnPill: '#856404'
+            bg: 'linear-gradient(145deg, rgba(242, 187, 58, 0.12) 0%, rgba(17, 19, 24, 0.6) 100%)',
+            primary: '#F2BB3A', // Amarillo Pichincha
+            light: '#F5D070',
+            glow: 'rgba(242, 187, 58, 0.4)',
+            border: 'rgba(242, 187, 58, 0.25)',
+            textOnPill: '#ffffff'
         },
         GUAYAQUIL: {
-            bg: 'linear-gradient(145deg, #fdf2f8 0%, #fce7f3 100%)',
-            primary: '#E10098',
+            bg: 'linear-gradient(145deg, rgba(225, 0, 152, 0.12) 0%, rgba(17, 19, 24, 0.6) 100%)',
+            primary: '#FF1493', // Rosa Guayaquil
             light: '#FF69B4',
-            glow: 'rgba(225, 0, 152, 0.1)',
-            border: 'rgba(225, 0, 152, 0.15)',
-            textOnPill: '#E10098'
+            glow: 'rgba(225, 0, 152, 0.4)',
+            border: 'rgba(225, 0, 152, 0.25)',
+            textOnPill: '#ffffff'
         },
         PACIFICO: {
-            bg: 'linear-gradient(145deg, #f0f9ff 0%, #e0f2fe 100%)',
-            primary: '#0070BA', // Azul Pacífico
-            light: '#00AEEF',
-            glow: 'rgba(0, 174, 239, 0.1)',
-            border: 'rgba(0, 112, 186, 0.15)',
-            textOnPill: '#0070BA'
+            bg: 'linear-gradient(145deg, rgba(0, 112, 186, 0.12) 0%, rgba(17, 19, 24, 0.6) 100%)',
+            primary: '#00AEEF', // Azul Pacífico
+            light: '#5BA3B8',
+            glow: 'rgba(0, 174, 239, 0.4)',
+            border: 'rgba(0, 112, 186, 0.25)',
+            textOnPill: '#ffffff'
         },
         PRODUBANCO: {
-            bg: 'linear-gradient(145deg, #f7fee7 0%, #ecfccb 100%)',
-            primary: '#008751',
-            light: '#22c55e',
-            glow: 'rgba(0, 135, 81, 0.1)',
-            border: 'rgba(0, 135, 81, 0.15)',
-            textOnPill: '#008751'
+            bg: 'linear-gradient(145deg, rgba(0, 135, 81, 0.12) 0%, rgba(17, 19, 24, 0.6) 100%)',
+            primary: '#22c55e',
+            light: '#4ade80',
+            glow: 'rgba(34, 197, 94, 0.4)',
+            border: 'rgba(0, 135, 81, 0.25)',
+            textOnPill: '#ffffff'
         },
         MUSHUC_RUNA: {
-            bg: 'linear-gradient(145deg, #f1fcf1 0%, #e1f7e1 100%)',
-            primary: '#1a5d1a', // Bosque oscuro
-            light: '#2d8a2d',
-            glow: 'rgba(26, 93, 26, 0.1)',
-            border: 'rgba(26, 93, 26, 0.15)',
-            textOnPill: '#1a5d1a'
+            bg: 'linear-gradient(145deg, rgba(26, 93, 26, 0.12) 0%, rgba(17, 19, 24, 0.6) 100%)',
+            primary: '#2d8a2d',
+            light: '#4ade80',
+            glow: 'rgba(45, 138, 45, 0.4)',
+            border: 'rgba(26, 93, 26, 0.25)',
+            textOnPill: '#ffffff'
         },
         DAQUILEMA: {
-            bg: 'linear-gradient(145deg, #fef2f2 0%, #fee2e2 100%)',
-            primary: '#dc2626', // Rojo Daquilema
-            light: '#ef4444',
-            glow: 'rgba(220, 38, 38, 0.1)',
-            border: 'rgba(220, 38, 38, 0.15)',
-            textOnPill: '#dc2626'
+            bg: 'linear-gradient(145deg, rgba(220, 38, 38, 0.12) 0%, rgba(17, 19, 24, 0.6) 100%)',
+            primary: '#ef4444',
+            light: '#f87171',
+            glow: 'rgba(239, 68, 68, 0.4)',
+            border: 'rgba(220, 38, 38, 0.25)',
+            textOnPill: '#ffffff'
         },
         TUPAK: {
-            bg: 'linear-gradient(145deg, #f0f9ff 0%, #dbeafe 100%)',
-            primary: '#2563eb', // Azul Celesto Tupak (Más azul, no turquesa)
-            light: '#60a5fa',
-            glow: 'rgba(37, 99, 235, 0.1)',
-            border: 'rgba(37, 99, 235, 0.15)',
-            textOnPill: '#1e40af'
+            bg: 'linear-gradient(145deg, rgba(37, 99, 235, 0.12) 0%, rgba(17, 19, 24, 0.6) 100%)',
+            primary: '#60a5fa',
+            light: '#93c5fd',
+            glow: 'rgba(96, 165, 250, 0.4)',
+            border: 'rgba(37, 99, 235, 0.25)',
+            textOnPill: '#ffffff'
         }
     };
 
@@ -739,9 +739,10 @@ async function generateMonthlyPaymentsReport() {
         const { value: formValues } = await Swal.fire({
             title: 'Reporte de Pagos',
             width: '500px',
-            background: '#ffffff',
+            background: '#1a1f26',
+            color: '#ffffff',
             customClass: {
-                popup: 'premium-swal-popup'
+                popup: 'premium-dark-swal'
             },
             html: `
                 <div class="export-options-container" style="text-align: left; padding: 10px 5px;">
@@ -755,7 +756,7 @@ async function generateMonthlyPaymentsReport() {
                         </button>
                     </div>
 
-                    <p id="export-mode-desc" style="margin-bottom: 20px; color: #64748B; font-size: 0.9rem; text-align: center;">
+                    <p id="export-mode-desc" style="margin-bottom: 20px; color: #94a3b8; font-size: 0.9rem; text-align: center;">
                         Seleccione el mes para el reporte consolidado.
                     </p>
                     
@@ -785,86 +786,89 @@ async function generateMonthlyPaymentsReport() {
                 </div>
 
                 <style>
-                    /* Estilos Corporativos (Inspirados en Creditos) */
-                    .premium-swal-popup {
-                        border-radius: 1.25rem;
-                        padding-bottom: 1.5rem;
+                    .premium-dark-swal {
+                        border-radius: 1.5rem !important;
+                        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                        box-shadow: 0 10px 40px rgba(0,0,0,0.5) !important;
                     }
 
                     .report-mode-selector {
                         display: flex;
-                        background: #F1F5F9;
+                        background: #0f172a;
                         border-radius: 12px;
-                        padding: 4px;
-                        margin-bottom: 20px;
-                        border: 1px solid #E2E8F0;
+                        padding: 5px;
+                        margin-bottom: 25px;
+                        border: 1px solid rgba(255, 255, 255, 0.05);
                     }
 
                     .report-mode-btn {
                         flex: 1;
-                        padding: 10px 15px;
+                        padding: 12px 15px;
                         border: none;
                         background: transparent;
-                        color: #64748B;
-                        font-size: 0.8rem;
-                        font-weight: 700;
+                        color: #94a3b8;
+                        font-size: 0.85rem;
+                        font-weight: 800;
                         cursor: pointer;
-                        border-radius: 8px;
-                        transition: all 0.3s ease;
+                        border-radius: 10px;
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        gap: 8px;
+                        gap: 10px;
                     }
 
                     .report-mode-btn.active {
                         color: #ffffff;
-                        background: #0E5936; /* Corporate Green */
-                        box-shadow: 0 4px 10px rgba(14, 89, 54, 0.2);
+                        background: #10b981; 
+                        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
                     }
 
                     .export-label-corporate {
-                        display: block; 
-                        font-weight: 700; 
-                        margin-bottom: 8px; 
-                        color: #0E5936;
-                        font-size: 0.85rem;
+                        display: flex; 
+                        align-items: center;
+                        font-weight: 800; 
+                        margin-bottom: 12px; 
+                        color: #10b981;
+                        font-size: 0.75rem;
                         text-transform: uppercase;
-                        letter-spacing: 0.5px;
+                        letter-spacing: 1px;
                     }
 
                     .filter-group-corporate {
-                        background: #F8FAFC;
-                        padding: 10px;
-                        border-radius: 10px;
-                        border: 1px solid #E2E8F0;
+                        background: rgba(255, 255, 255, 0.03);
+                        padding: 15px;
+                        border-radius: 14px;
+                        border: 1px solid rgba(255, 255, 255, 0.08);
                     }
 
                     .premium-input-swal {
                         width: 100%;
-                        padding: 10px;
-                        border-radius: 8px;
-                        border: 1px solid #CBD5E1;
+                        padding: 12px;
+                        border-radius: 10px;
+                        border: 1px solid rgba(255, 255, 255, 0.1);
                         font-family: inherit;
-                        font-size: 0.95rem;
-                        color: #1E293B;
+                        font-size: 1rem;
+                        color: #ffffff;
                         outline: none;
-                        transition: border-color 0.2s;
+                        transition: all 0.2s;
+                        background: #0f172a;
                     }
 
                     .premium-input-swal:focus {
-                        border-color: #0E5936;
-                        box-shadow: 0 0 0 3px rgba(14, 89, 54, 0.1);
+                        border-color: #10b981;
+                        background: #1e2631;
+                        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
                     }
 
                     .hidden { display: none; }
                 </style>
             `,
             showCancelButton: true,
-            confirmButtonText: '<i class="fas fa-file-pdf"></i> Generar PDF',
+            confirmButtonText: '<i class="fas fa-file-pdf" style="margin-right: 8px;"></i>Generar PDF',
             cancelButtonText: 'Cancelar',
-            confirmButtonColor: '#0E5936',
-            cancelButtonColor: '#64748B',
+            confirmButtonColor: '#065f46',
+            cancelButtonColor: '#334155',
             focusConfirm: false,
             didOpen: () => {
                 // Apply border radius manually via style if class isn't enough
@@ -1241,6 +1245,12 @@ function handleRowClick(item) {
  * Abre el modal para registrar un pago
  */
 function openPagoBancoModal(item) {
+    if (typeof window.validateCajaBeforeAction === 'function') {
+        if (!window.validateCajaBeforeAction('PAGO DE CUOTA BANCARIA')) {
+            return;
+        }
+    }
+
     currentBancoDetalle = item;
 
     document.getElementById('pago-banco-id-detalle').value = item.id_detalle;
@@ -1424,6 +1434,12 @@ function clearBancoPreview() {
  * Abre el modal de precancelación
  */
 function openPrecancelarModal() {
+    if (typeof window.validateCajaBeforeAction === 'function') {
+        if (!window.validateCajaBeforeAction('PRECANCELACIÓN BANCARIA')) {
+            return;
+        }
+    }
+
     if (!currentBancoId) return;
 
     // Calcular total pendiente real

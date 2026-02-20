@@ -71,6 +71,13 @@
     <div id="splash-screen">
         <img src="https://i.ibb.co/3mC22Hc4/inka-corp.png" alt="Logo" class="splash-logo">
         <div class="splash-spinner"></div>
+        <div class="mobile-powered-by mobile-powered-by-dark">
+            <span>POWERED BY</span>
+            <picture>
+                <source srcset="../img/LPwebp/lpsolutionswithe.webp" type="image/webp">
+                <img src="../img/LPpng/lpsolutionswithe.png" alt="LP SOLUTIONS" class="mobile-powered-logo">
+            </picture>
+        </div>
     </div>
 
     <div class="mobile-app">
@@ -80,6 +87,7 @@
                 <div class="header-logo">
                     <img src="https://i.ibb.co/3mC22Hc4/inka-corp.png" alt="Logo">
                     <span class="header-logo-text">INKA CORP</span>
+                    <span id="mobile-app-version" class="mobile-app-version-inline" data-app-version></span>
                 </div>
                 <div class="header-actions">
                     <button class="header-btn" id="report-btn-mobile" style="display: none;">
@@ -104,6 +112,13 @@
             <div class="loading-state">
                 <div class="loading-spinner"></div>
                 <p>Cargando mï¿½dulo...</p>
+                <div class="mobile-powered-by mobile-powered-by-light">
+                    <span>POWERED BY</span>
+                    <picture>
+                        <source srcset="../img/LPwebp/lpsolutionsblack.webp" type="image/webp">
+                        <img src="../img/LPpng/lpsolutionsblack.png" alt="LP SOLUTIONS" class="mobile-powered-logo">
+                    </picture>
+                </div>
             </div>
         </main>
 
@@ -303,42 +318,42 @@
     <!-- Modal Registro de Pago Pro (Créditos) -->
     <div id="modal-registro-pago-credito" class="modal-overlay">
         <div class="modal-content lite-modal">
-            <div class="modal-header lite-header">
+            <div class="modal-header lite-header" style="border-bottom: 1px solid var(--border-color);">
                 <div style="display: flex; flex-direction: column;">
-                    <h3 style="margin: 0;"><i class="fas fa-cash-register"></i> Registrar Pago</h3>
+                    <h3 style="margin: 0; color: var(--gold);"><i class="fas fa-cash-register"></i> Registrar Pago</h3>
                     <span id="pago-lite-credito-codigo" style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 500;">COD: ---</span>
                 </div>
-                <button class="modal-close" onclick="closeLiteModal('modal-registro-pago-credito')">
+                <button class="modal-close" onclick="closeLiteModal('modal-registro-pago-credito')" style="background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border-color);">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             
-            <div class="modal-body lite-body" style="padding: 1.25rem;">
+            <div class="modal-body lite-body" style="padding: 1.25rem; background: var(--bg-card);">
                 <!-- Socio Info -->
-                <div style="background: #f8fafc; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px dashed #cbd5e1;">
-                    <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Socio</span>
-                    <div id="pago-lite-socio-nombre" style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">-</div>
+                <div style="background: var(--bg-main); padding: 1.25rem; border-radius: 16px; margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
+                    <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Socio</span>
+                    <div id="pago-lite-socio-nombre" style="font-weight: 800; color: var(--text-primary); font-size: 1.2rem; margin-top: 4px;">-</div>
                 </div>
 
                 <!-- Selección de Cuotas -->
                 <div class="lite-form-group" style="margin-bottom: 1.25rem;">
-                    <label style="font-weight: 600; margin-bottom: 0.5rem; display: block; font-size: 0.85rem;">Cuotas a Cancelar</label>
+                    <label style="font-weight: 700; margin-bottom: 0.6rem; display: block; font-size: 0.85rem; color: var(--text-primary);">Cuotas a Cancelar</label>
                     <div style="position: relative;">
-                        <select id="pago-lite-cuotas-select" class="lite-input" style="appearance: none; padding-right: 40px; border-radius: 12px; height: 50px;">
+                        <select id="pago-lite-cuotas-select" class="lite-input" style="appearance: none; padding-right: 40px; border-radius: 12px; height: 50px; background: var(--bg-main); color: var(--white); border-color: var(--border-color);">
                             <!-- Opciones dinámicas -->
                         </select>
-                        <i class="fas fa-chevron-down" style="position: absolute; right: 15px; top: 18px; color: var(--text-secondary); pointer-events: none;"></i>
+                        <i class="fas fa-chevron-down" style="position: absolute; right: 15px; top: 18px; color: var(--gold); pointer-events: none;"></i>
                     </div>
                 </div>
 
                 <div class="lite-form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
                     <div class="lite-form-group">
-                        <label style="font-weight: 600; margin-bottom: 0.5rem; display: block; font-size: 0.85rem;">Fecha Pago</label>
-                        <input type="date" id="pago-lite-fecha" class="lite-input" style="border-radius: 12px; height: 50px;">
+                        <label style="font-weight: 700; margin-bottom: 0.6rem; display: block; font-size: 0.85rem; color: var(--text-primary);">Fecha Pago</label>
+                        <input type="date" id="pago-lite-fecha" class="lite-input" style="border-radius: 12px; height: 50px; background: var(--bg-main); color: var(--white); border-color: var(--border-color);">
                     </div>
                     <div class="lite-form-group">
-                        <label style="font-weight: 600; margin-bottom: 0.5rem; display: block; font-size: 0.85rem;">Método</label>
-                        <select id="pago-lite-metodo" class="lite-input" style="border-radius: 12px; height: 50px;">
+                        <label style="font-weight: 700; margin-bottom: 0.6rem; display: block; font-size: 0.85rem; color: var(--text-primary);">Método</label>
+                        <select id="pago-lite-metodo" class="lite-input" style="border-radius: 12px; height: 50px; background: var(--bg-main); color: var(--white); border-color: var(--border-color);">
                             <option value="EFECTIVO">Efectivo</option>
                             <option value="TRANSFERENCIA">Transferencia</option>
                             <option value="DEPOSITO">Depósito</option>
@@ -348,22 +363,22 @@
                 </div>
 
                 <!-- Card de Resumen con Totals -->
-                <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 1.5rem; border-radius: 20px; color: white; margin-bottom: 1.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+                <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 1.5rem; border-radius: 20px; color: white; margin-bottom: 1.5rem; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.05);">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem; opacity: 0.8; font-size: 0.85rem;">
-                        <span>Subtotal Cuotas</span>
-                        <span id="pago-lite-monto-base">$0.00</span>
+                        <span style="color: var(--text-secondary);">Subtotal Cuotas</span>
+                        <span id="pago-lite-monto-base" style="font-weight: 600;">$0.00</span>
                     </div>
-                    <div id="pago-lite-mora-row" style="display: none; justify-content: space-between; margin-bottom: 0.75rem; color: #fbbf24; font-size: 0.85rem;">
-                        <span>Mora Sugerida (<span id="pago-lite-dias-mora">0</span> días)</span>
-                        <span id="pago-lite-monto-mora">$0.00</span>
+                    <div id="pago-lite-mora-row" style="display: none; justify-content: space-between; margin-bottom: 0.75rem; color: var(--gold); font-size: 0.85rem;">
+                        <span style="font-weight: 600;">Mora Sugerida (<span id="pago-lite-dias-mora">0</span> días)</span>
+                        <span id="pago-lite-monto-mora" style="font-weight: 800;">$0.00</span>
                     </div>
                     <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 0.75rem 0;"></div>
                     <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                        <span style="font-weight: 600;">MONTO TOTAL</span>
+                        <span style="font-weight: 700; font-size: 0.9rem; letter-spacing: 0.5px;">MONTO TOTAL</span>
                         <div style="display: flex; flex-direction: column; align-items: flex-end;">
-                            <span id="pago-lite-total-final" style="font-size: 1.8rem; font-weight: 800; color: #38bdf8;">$0.00</span>
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: #94a3b8; margin-top: 5px; cursor: pointer;">
-                                <input type="checkbox" id="pago-lite-convenio-toggle" style="width: 16px; height: 16px; accent-color: #38bdf8;">
+                            <span id="pago-lite-total-final" style="font-size: 2rem; font-weight: 900; color: #38bdf8; text-shadow: 0 2px 10px rgba(56, 189, 248, 0.3);">$0.00</span>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px; cursor: pointer; font-weight: 500;">
+                                <input type="checkbox" id="pago-lite-convenio-toggle" style="width: 18px; height: 18px; accent-color: #38bdf8;">
                                 Convenio de Pago
                             </label>
                         </div>
@@ -372,39 +387,39 @@
 
                 <!-- Monto Personalizado (Solo si hay convenio) -->
                 <div id="pago-lite-monto-personalizado-container" class="lite-form-group" style="display: none; margin-bottom: 1.25rem; animation: slideDown 0.3s ease;">
-                    <label style="font-weight: 600; margin-bottom: 0.5rem; display: block; font-size: 0.85rem; color: var(--primary);">Monto a Pagar por Convenio</label>
+                    <label style="font-weight: 700; margin-bottom: 0.6rem; display: block; font-size: 0.85rem; color: var(--gold);">Monto a Pagar por Convenio</label>
                     <div style="position: relative;">
-                        <span style="position: absolute; left: 15px; top: 12px; font-weight: 700; color: var(--primary);">$</span>
-                        <input type="number" id="pago-lite-monto-personalizado" class="lite-input" placeholder="0.00" step="0.01" style="padding-left: 35px; border-radius: 12px; height: 50px; border: 2px solid var(--primary);">
+                        <span style="position: absolute; left: 15px; top: 12px; font-weight: 800; color: var(--gold);">$</span>
+                        <input type="number" id="pago-lite-monto-personalizado" class="lite-input" placeholder="0.00" step="0.01" style="padding-left: 35px; border-radius: 12px; height: 50px; background: var(--bg-main); border: 2px solid var(--gold); color: var(--white);">
                     </div>
-                    <p id="pago-lite-min-hint" style="font-size: 0.75rem; color: var(--primary); margin-top: 5px; font-weight: 600; display: none;">
+                    <p id="pago-lite-min-hint" style="font-size: 0.75rem; color: var(--gold); margin-top: 5px; font-weight: 600; display: none;">
                         <i class="fas fa-hand-holding-usd"></i> Mínimo permitido: <span id="pago-lite-min-valor">$0.00</span>
                     </p>
                 </div>
 
                 <!-- Campos Adicionales -->
                 <div class="lite-form-group" style="margin-bottom: 1.25rem;">
-                    <label style="font-weight: 600; margin-bottom: 0.5rem; display: block; font-size: 0.85rem;">Referencia / Comprobante # <span style="color: #ef4444;">*</span></label>
-                    <input type="text" id="pago-lite-referencia" class="lite-input" placeholder="Ej: Transf. 12345" style="border-radius: 12px; height: 50px;">
+                    <label style="font-weight: 700; margin-bottom: 0.6rem; display: block; font-size: 0.85rem; color: var(--text-primary);">Referencia / Comprobante # <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="pago-lite-referencia" class="lite-input" placeholder="Ej: Transf. 12345" style="border-radius: 12px; height: 50px; background: var(--bg-main); border-color: var(--border-color);">
                 </div>
 
                 <!-- Subida de Comprobante -->
                 <div style="margin-bottom: 2rem;">
-                    <label style="font-weight: 600; margin-bottom: 0.5rem; display: block; font-size: 0.85rem;">Evidencia de Pago <span style="color: #ef4444;">*</span></label>
-                    <div id="pago-lite-upload-container" style="position: relative; min-height: 140px; border: 2px dashed #cbd5e1; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; overflow: hidden; padding: 15px;">
+                    <label style="font-weight: 700; margin-bottom: 0.6rem; display: block; font-size: 0.85rem; color: var(--text-primary);">Evidencia de Pago <span style="color: #ef4444;">*</span></label>
+                    <div id="pago-lite-upload-container" style="position: relative; min-height: 140px; border: 2px dashed var(--border-color); border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg-main); overflow: hidden; padding: 15px;">
                         
                         <!-- Preview (inicialmente oculto) -->
                         <img id="pago-lite-preview" style="display: none; width: 100%; max-height: 250px; object-fit: contain; border-radius: 12px;">
                         
                         <div id="pago-lite-upload-placeholder" style="width: 100%;">
                             <div class="lite-upload-choices">
-                                <div class="lite-upload-btn-choice" onclick="document.getElementById('pago-lite-file-input-camera').click()">
-                                    <i class="fas fa-camera"></i>
-                                    <span>Tomar Foto</span>
+                                <div class="lite-upload-btn-choice" onclick="document.getElementById('pago-lite-file-input-camera').click()" style="background: var(--bg-card); border-color: var(--border-color);">
+                                    <i class="fas fa-camera" style="color: var(--primary);"></i>
+                                    <span style="color: var(--text-primary);">Tomar Foto</span>
                                 </div>
-                                <div class="lite-upload-btn-choice" onclick="document.getElementById('pago-lite-file-input-gallery').click()">
-                                    <i class="fas fa-images"></i>
-                                    <span>Galería</span>
+                                <div class="lite-upload-btn-choice" onclick="document.getElementById('pago-lite-file-input-gallery').click()" style="background: var(--bg-card); border-color: var(--border-color);">
+                                    <i class="fas fa-images" style="color: var(--primary);"></i>
+                                    <span style="color: var(--text-primary);">Galería</span>
                                 </div>
                             </div>
                         </div>
@@ -450,29 +465,55 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('../sw.js')
                     .then((registration) => {
+                        console.log('[PWA] Service Worker registrado (Móvil)');
+
+                        // Recarga cuando el nuevo SW tome el control
+                        let refreshing = false;
+                        navigator.serviceWorker.addEventListener('controllerchange', () => {
+                            if (!refreshing) {
+                                refreshing = true;
+                                window.location.reload();
+                            }
+                        });
+
+                        // Detectar si hay una actualización esperando
+                        const showUpdatePrompt = (worker) => {
+                            if (window.Swal) {
+                                Swal.fire({
+                                    title: 'Nueva versión detectada',
+                                    text: 'Actualiza la app para continuar y disfrutar de las últimas mejoras.',
+                                    icon: 'info',
+                                    confirmButtonText: 'ACTUALIZAR AHORA',
+                                    confirmButtonColor: '#0B4E32',
+                                    allowOutsideClick: false,
+                                    allowEscapeKey: false
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        worker.postMessage({ type: 'SKIP_WAITING' });
+                                    }
+                                });
+                            } else if (confirm('Nueva versión detectada. ¿Actualizar ahora?')) {
+                                worker.postMessage({ type: 'SKIP_WAITING' });
+                            }
+                        };
+
+                        if (registration.waiting) {
+                            showUpdatePrompt(registration.waiting);
+                        }
+
                         registration.onupdatefound = () => {
                             const installingWorker = registration.installing;
                             installingWorker.onstatechange = () => {
                                 if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    if (window.Swal) {
-                                        Swal.fire({
-                                            title: 'Nueva versión',
-                                            text: 'Actualiza la app para seguir usándola. Se borrarán datos de sesión para seguridad.',
-                                            icon: 'info',
-                                            confirmButtonText: 'ACTUALIZAR',
-                                            confirmButtonColor: '#0B4E32',
-                                            allowOutsideClick: false
-                                        }).then((result) => {
-                                            if (result.isConfirmed) forceAppUpdate();
-                                        });
-                                    } else {
-                                        if (confirm('Actualización disponible. ¿Actualizar?')) forceAppUpdate();
-                                    }
+                                    showUpdatePrompt(installingWorker);
                                 }
                             };
                         };
+
+                        // Verificar actualizaciones periódicamente
+                        setInterval(() => registration.update(), 60 * 60 * 1000);
                     });
-            } );
+            });
         }
     </script>
 </body>

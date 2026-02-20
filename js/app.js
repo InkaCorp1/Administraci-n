@@ -74,12 +74,167 @@ function getDatosAcreedor() {
 
 // Exponer globalmente
 window.getDatosAcreedor = getDatosAcreedor;
+window.sysCajaAbierta = false; // Estado inicial
+
+/**
+ * Validador global para acciones financieras
+ * Retorna true si la caja está abierta, de lo contrario muestra alerta y retorna false
+ */
+window.validateCajaBeforeAction = function(modulo = 'esta operación') {
+    if (window.sysCajaAbierta) return true;
+
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            icon: 'error',
+            title: '<h2 style="color: #ef4444; margin-top: 0.5rem;">¡CAJA CERRADA!</h2>',
+            html: `
+                <div style="text-align: center; padding: 1rem;">
+                    <i class="fas fa-lock fa-4x" style="color: #ef4444; margin-bottom: 1.5rem; filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.4));"></i>
+                    <p style="font-size: 1.15rem; line-height: 1.6; color: #fecaca; font-weight: 500;">
+                        No puede registrar <strong>${modulo}</strong> sin una jornada de caja activa.
+                    </p>
+                    <p style="font-size: 0.95rem; margin-top: 1rem; color: #94a3b8;">
+                        Es obligatorio abrir su caja para garantizar la auditoría de este movimiento.
+                    </p>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonColor: '#F2BB3A',
+            cancelButtonColor: '#334155',
+            confirmButtonText: '<i class="fas fa-door-open"></i> IR AL MÓDULO DE CAJA',
+            cancelButtonText: 'CANCELAR',
+            background: '#0f172a',
+            color: '#fff',
+            showClass: {
+                popup: 'animate__animated animate__shakeX'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if (typeof loadView === 'function') loadView('caja');
+            }
+        });
+    } else {
+        alert(`¡ATENCIÓN! Su caja está cerrada. Debe abrirla para registrar ${modulo}.`);
+    }
+    return false;
+};
 
 // ==========================================
 // SISTEMA DE CACHÉ PERSISTENTE (localStorage)
-// Caché que sobrevive al cierre del navegador
-// Solo se limpia al cerrar sesión
 // ==========================================
+
+/**
+ * Muestra una advertencia persistente si la caja no está abierta
+ * en los módulos que requieren movimientos financieros.
+ */
+async function checkCajaStatusGlobal() {
+    const viewsWithCaja = [
+        'creditos', 
+        'precancelaciones', 
+        'polizas', 
+        'administrativos', 
+        'bancos', 
+        'creditos_preferenciales', 
+        'solicitud_credito', 
+        'ahorros',
+        'resumen_general',
+        'propuesta_caja'
+    ];
+    const isFinancialView = viewsWithCaja.includes(currentViewName);
+    const isDashboard = currentViewName === 'dashboard';
+
+    const sb = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    if (!sb) return;
+
+    const user = getCurrentUser();
+    if (!user) return;
+
+    try {
+        const { data: activeSessions, error } = await sb
+            .from('ic_caja_aperturas')
+            .select('id_apertura')
+            .eq('id_usuario', user.id)
+            .eq('estado', 'ABIERTA')
+            .limit(1);
+
+        if (error) throw error;
+
+        const isCajaOpen = activeSessions && activeSessions.length > 0;
+        window.sysCajaAbierta = isCajaOpen; // Estado global para módulos
+
+        // 1. Manejo de Banner en Vistas Financieras
+        if (isFinancialView) {
+            if (!isCajaOpen) {
+                injectCajaWarningBanner();
+            } else {
+                const existing = document.getElementById('global-caja-warning');
+                if (existing) existing.remove();
+            }
+        }
+
+        // 2. Manejo de Aviso Sutil en Dashboard
+        if (isDashboard) {
+            updateDashboardCajaStatus(isCajaOpen);
+        }
+
+    } catch (err) {
+        console.warn("[APP] Error validando estado de caja global:", err);
+    }
+}
+
+/**
+ * Actualiza el indicador de caja en el dashboard
+ */
+function updateDashboardCajaStatus(isOpen) {
+    const heroContent = document.querySelector('.hero-content');
+    if (!heroContent) return;
+
+    // Eliminar indicador previo si existe
+    const existing = document.getElementById('dashboard-caja-status');
+    if (existing) existing.remove();
+
+    if (!isOpen) {
+        const badge = document.createElement('div');
+        badge.id = 'dashboard-caja-status';
+        badge.className = 'dashboard-caja-badge-warning';
+        badge.innerHTML = `
+            <span><i class="fas fa-lock"></i> ATENCIÓN: CAJA PENDIENTE DE APERTURA</span>
+            <button class="btn-caja-dashboard" onclick="loadView('caja')">
+                <i class="fas fa-sign-in-alt"></i> IR A CAJA
+            </button>
+        `;
+        heroContent.appendChild(badge);
+    }
+}
+
+function injectCajaWarningBanner() {
+    if (!mainContent) return;
+    
+    // Evitar duplicados
+    if (document.getElementById('global-caja-warning')) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'global-caja-warning';
+    banner.className = 'caja-warning-banner';
+    banner.innerHTML = `
+        <div class="banner-content">
+            <div class="banner-text">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                    <strong>Atención: Caja Cerrada</strong>
+                    <p>No ha iniciado su turno de caja hoy. No podrá registrar pagos ni egresos en este módulo hasta que la abra.</p>
+                </div>
+            </div>
+            <button class="banner-btn" onclick="loadView('caja')">
+                <i class="fas fa-door-open"></i> IR A ABRIR CAJA
+            </button>
+        </div>
+    `;
+
+    // Insertar al inicio del contenido principal
+    mainContent.prepend(banner);
+}
+
 const CACHE_KEY = 'inkacorp_cache_v2';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos para considerar "fresco"
 const CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 horas máximo antes de forzar actualización
@@ -397,7 +552,15 @@ function startCacheRefresh() {
 document.addEventListener('DOMContentLoaded', async () => {
     // Bloqueo total desde JS si se intenta cargar en móvil
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 850;
-    if (isMobile && !window.location.pathname.includes('/mobile/')) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const allowDesktopFromMobile = sessionStorage.getItem('forceDesktop') === 'true' || urlParams.get('forceDesktop') === '1';
+
+    if (sessionStorage.getItem('forceDesktop') === 'true') {
+        sessionStorage.removeItem('forceDesktop');
+        console.log('[APP] Bypass móvil->PC permitido para flujo puntual.');
+    }
+
+    if (isMobile && !allowDesktopFromMobile && !window.location.pathname.includes('/mobile/')) {
         console.log('[APP] Bloqueando carga de PC en móvil...');
         window.location.replace(window.location.origin + window.location.pathname.replace(/\/$/, '') + '/mobile/');
         return;
@@ -424,6 +587,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function initApp() {
     console.log(`%c INKA CORP - APP VERSION: ${window.APP_VERSION || 'v1.0'} `, 'background: #1e40af; color: #fff; font-weight: bold;');
+    syncAppVersionLabels(document);
     
     // Verificar sesión
     const { isAuthenticated, user } = await checkSession();
@@ -878,17 +1042,21 @@ function showAlert(message, title = '', type = 'info') {
         const color = colors[type] || colors.info;
         const icon = icons[type] || icons.info;
         const displayTitle = title || (type === 'error' ? 'Error' : type === 'warning' ? 'Atención' : type === 'success' ? '¡Éxito!' : 'Información');
+        const isHtmlMessage = typeof message === 'string' && /<[^>]+>/.test(message);
+        const messageBlock = isHtmlMessage
+            ? '<div style="color: #d5e0ee; font-size: 0.95rem; line-height: 1.55; margin-bottom: 1.5rem; text-align: left;">' + message + '</div>'
+            : '<p style="color: #d5e0ee; font-size: 0.95rem; line-height: 1.55; margin-bottom: 1.5rem;">' + message + '</p>';
 
         const modal = document.createElement('div');
         modal.className = 'custom-alert-modal';
-        modal.style.cssText = 'position: fixed; inset: 0; z-index: 10001; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); animation: fadeIn 0.2s ease;';
+        modal.style.cssText = 'position: fixed; inset: 0; z-index: 10001; display: flex; align-items: center; justify-content: center; background: rgba(3,7,18,0.68); backdrop-filter: blur(6px); animation: fadeIn 0.2s ease;';
 
-        modal.innerHTML = '<div style="background: white; border-radius: 1rem; padding: 2rem; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.25); animation: scaleIn 0.2s ease;">' +
+        modal.innerHTML = '<div style="background: linear-gradient(145deg, #1b2633 0%, #202f40 100%); border: 1px solid rgba(148,163,184,0.28); border-radius: 1rem; padding: 2rem; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 25px 55px rgba(2,6,12,0.6); animation: scaleIn 0.2s ease;">' +
             '<div style="width: 60px; height: 60px; border-radius: 50%; background: ' + color + '20; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">' +
             '<i class="' + icon + '" style="font-size: 1.75rem; color: ' + color + ';"></i>' +
             '</div>' +
-            '<h3 style="color: #1e293b; font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">' + displayTitle + '</h3>' +
-            '<p style="color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem;">' + message + '</p>' +
+            '<h3 style="color: #f3f8ff; font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">' + displayTitle + '</h3>' +
+            messageBlock +
             '<button class="custom-alert-btn" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border: none; padding: 0.75rem 2rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; font-size: 0.95rem; box-shadow: 0 4px 12px rgba(11, 78, 50, 0.3);">Aceptar</button>' +
             '</div>';
 
@@ -942,19 +1110,25 @@ function showConfirm(message, title = '¿Confirmar acción?', options = {}) {
 
         const color = colors[type] || colors.warning;
         const icon = icons[type] || icons.warning;
+        const isHtmlMessage = typeof message === 'string' && /<[^>]+>/.test(message);
+        const messageBlock = isHtmlMessage
+            ? '<div style="color: #d5e0ee; font-size: 0.95rem; line-height: 1.55; margin-bottom: 1.5rem; text-align: left;">' +
+                message +
+              '</div>'
+            : '<p style="color: #d5e0ee; font-size: 0.95rem; line-height: 1.55; margin-bottom: 1.5rem;">' + message + '</p>';
 
         const modal = document.createElement('div');
         modal.className = 'custom-confirm-modal';
-        modal.style.cssText = 'position: fixed; inset: 0; z-index: 10001; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); animation: fadeIn 0.2s ease;';
+        modal.style.cssText = 'position: fixed; inset: 0; z-index: 10001; display: flex; align-items: center; justify-content: center; background: rgba(3,7,18,0.68); backdrop-filter: blur(6px); animation: fadeIn 0.2s ease;';
 
-        modal.innerHTML = '<div style="background: white; border-radius: 1rem; padding: 2rem; max-width: 420px; width: 90%; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.25); animation: scaleIn 0.2s ease;">' +
+        modal.innerHTML = '<div style="background: linear-gradient(145deg, #1b2633 0%, #202f40 100%); border: 1px solid rgba(148,163,184,0.28); border-radius: 1rem; padding: 2rem; max-width: 420px; width: 90%; text-align: center; box-shadow: 0 25px 55px rgba(2, 6, 12, 0.6); animation: scaleIn 0.2s ease;">' +
             '<div style="width: 60px; height: 60px; border-radius: 50%; background: ' + color + '20; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">' +
             '<i class="' + icon + '" style="font-size: 1.75rem; color: ' + color + ';"></i>' +
             '</div>' +
-            '<h3 style="color: #1e293b; font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">' + title + '</h3>' +
-            '<p style="color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem;">' + message + '</p>' +
+            '<h3 style="color: #f3f8ff; font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">' + title + '</h3>' +
+            messageBlock +
             '<div style="display: flex; gap: 0.75rem; justify-content: center;">' +
-            '<button class="custom-cancel-btn" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; font-size: 0.95rem;">' + cancelText + '</button>' +
+            '<button class="custom-cancel-btn" style="background: #2a3748; color: #e3ebf6; border: 1px solid rgba(148, 163, 184, 0.35); padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; font-size: 0.95rem;">' + cancelText + '</button>' +
             '<button class="custom-confirm-btn" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; font-size: 0.95rem; box-shadow: 0 4px 12px rgba(11, 78, 50, 0.3);">' + confirmText + '</button>' +
             '</div>' +
             '</div>';
@@ -995,6 +1169,14 @@ window.enableLoader = enableLoader;
 window.disableLoader = disableLoader;
 window.showLoader = showAppLoader; // Fix for external modules
 window.hideLoader = hideAppLoader; // Fix for external modules
+
+function syncAppVersionLabels(root = document) {
+    const version = window.APP_VERSION || 'v1.0';
+    if (!root) return;
+    root.querySelectorAll('[data-app-version]').forEach((el) => {
+        el.textContent = version;
+    });
+}
 
 // ==========================================
 // CARGA DE VISTAS
@@ -1047,6 +1229,7 @@ async function loadView(viewName, shouldPushState = true) {
                 .then(html => {
                     if (html && mainContent) {
                         mainContent.innerHTML = html;
+                        syncAppVersionLabels(mainContent);
                         if (typeof initDashboardView === 'function') initDashboardView();
                     }
                 })
@@ -1104,6 +1287,7 @@ async function loadView(viewName, shouldPushState = true) {
 
         if (mainContent) {
             mainContent.innerHTML = html;
+            syncAppVersionLabels(mainContent);
         }
 
         // 4. Inicializar módulo
@@ -1119,6 +1303,14 @@ async function loadView(viewName, shouldPushState = true) {
                 break;
             case 'solicitud_credito':
                 if (typeof initSolicitudCreditoModule === 'function') await initSolicitudCreditoModule();
+
+                const mobileCreditId = sessionStorage.getItem('mobile_generate_docs_credit_id');
+                if (mobileCreditId && typeof window.abrirModalDocumentosCredito === 'function') {
+                    sessionStorage.removeItem('mobile_generate_docs_credit_id');
+                    setTimeout(() => {
+                        window.abrirModalDocumentosCredito(mobileCreditId);
+                    }, 250);
+                }
                 break;
             case 'creditos':
                 if (typeof initCreditosModule === 'function') await initCreditosModule();
@@ -1161,6 +1353,10 @@ async function loadView(viewName, shouldPushState = true) {
         currentViewName = viewName;
         pendingViewName = null;
         isViewLoading = false;
+
+        // Validaciones post-carga
+        await checkCajaStatusGlobal();
+
         hideAppLoader();
 
         // Ocultar el Screen Locker de carga inicial si aún está visible
@@ -2117,3 +2313,53 @@ function debounce(func, wait) {
 
 // Exponer funciones globalmente
 window.loadDesembolsosPendientes = loadDesembolsosPendientes;
+
+/**
+ * Muestra el changelog de la versión actual si es la primera vez que se carga
+ */
+function checkAndShowChangelog() {
+    const lastVersion = localStorage.getItem('last_seen_version');
+    const currentVersion = window.APP_VERSION || '27.0.0';
+
+    if (lastVersion !== currentVersion) {
+        showChangelog(currentVersion);
+        localStorage.setItem('last_seen_version', currentVersion);
+    }
+}
+
+function showChangelog(version) {
+    if (!window.Swal) return;
+
+    Swal.fire({
+        title: `¡Bienvenido a INKA CORP v${version}!`,
+        html: `
+            <div style="text-align: left; font-size: 14px; line-height: 1.6;">
+                <p>Hemos actualizado el sistema a la versión mayor <b>v27.0.0</b>. Se han integrado herramientas de auditoría crítica:</p>
+                
+                <h4 style="color: #10b981; margin-top: 15px;">💰 Control de Caja Centralizado</h4>
+                <ul style="padding-left: 20px;">
+                    <li><b>Auditoría Obligatoria:</b> Los módulos financieros ahora requieren una sesión de caja abierta.</li>
+                    <li><b>Banners de Estado:</b> Indicadores visuales en tiempo real sobre el estado de la caja.</li>
+                    <li><b>Dashborad:</b> Nuevo acceso directo para apertura de caja desde el panel principal.</li>
+                </ul>
+
+                <h4 style="color: #10b981; margin-top: 15px;">⚙️ Actualizaciones de Seguridad</h4>
+                <ul style="padding-left: 20px;">
+                    <li><b>Triggers de Base de Datos:</b> Protección a nivel de servidor contra registros sin sesión.</li>
+                    <li><b>Versión Mayor:</b> Nuevo sistema de gestión de caché (PWA) optimizado.</li>
+                </ul>
+                <p style="margin-top: 15px; font-style: italic; color: #888;">Gracias por confiar en INKA CORP y LP Solutions.</p>
+            </div>
+        `,
+        icon: 'success',
+        confirmButtonText: '¡AHORA TODO ESTÁ CLARO!',
+        confirmButtonColor: '#10b981',
+        width: '500px'
+    });
+}
+
+// Llamar al cargar la app para verificar versión
+document.addEventListener('DOMContentLoaded', () => {
+    // Pequeño retardo para no interferir con la carga inicial
+    setTimeout(checkAndShowChangelog, 3000);
+});
