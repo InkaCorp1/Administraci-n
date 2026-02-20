@@ -617,7 +617,7 @@ async function handleMobilePayment(e) {
             .update({
                 estado: 'PAGADO',
                 fecha_pagado: fecha,
-                fotografia: publicUrlData.publicUrl,
+                fotografia: imgUrl,
                 valor: parseFloat(valorManual)
             })
             .eq('id_detalle', idDetalle);
@@ -651,7 +651,7 @@ async function handleMobilePayment(e) {
                             monto: parseFloat(valorManual),
                             metodo_pago: 'TRANSFERENCIA',
                             descripcion: `Pago Banco (M): ${banco ? banco.nombre_banco : 'Bancario'} (Cuota ${cuota ? cuota.cuota : 'N/A'})`,
-                            comprobante_url: publicUrlData.publicUrl,
+                            comprobante_url: imgUrl,
                             id_referencia: idDetalle,
                             tabla_referencia: 'ic_situacion_bancaria_detalle'
                         });

@@ -149,11 +149,19 @@ async function uploadFileToStorage(file, folder, id, bucketName = STORAGE_BUCKET
         let wasCompressed = false;
         let originalSize = file.size;
         let compressedSize = file.size;
-        let contentType = file.type;
-        let extension = file.name.split('.').pop().toLowerCase();
+        let contentType = file.type || 'application/octet-stream';
+        
+        // Determinar extensión: si viene de un File tiene .name, si es un Blob/URL intentamos inferir del type
+        let extension = 'bin';
+        if (file && file.name) {
+            extension = file.name.split('.').pop().toLowerCase();
+        } else if (file && file.type) {
+            extension = file.type.split('/')[1] || 'bin';
+            if (extension === 'jpeg') extension = 'jpg';
+        }
 
         // 1. Si es imagen, intentar compresión
-        if (file.type.startsWith('image/')) {
+        if (file.type && file.type.startsWith('image/')) {
             const compressionRes = await compressImage(file);
             uploadBlob = compressionRes.blob;
             wasCompressed = compressionRes.wasCompressed;

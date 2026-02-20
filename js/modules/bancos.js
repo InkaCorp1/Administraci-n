@@ -1397,7 +1397,7 @@ async function handleBancoPaymentSubmit(e) {
                             monto: montoPagado,
                             metodo_pago: 'TRANSFERENCIA',
                             descripcion: `Pago Banco: ${banco ? banco.nombre_banco : 'Bancario'} (Cuota ${currentBancoDetalle ? currentBancoDetalle.cuota : 'N/A'})`,
-                            comprobante_url: publicUrlData.publicUrl,
+                            comprobante_url: imgUrl,
                             id_referencia: idDetalle,
                             tabla_referencia: 'ic_situacion_bancaria_detalle'
                         });
