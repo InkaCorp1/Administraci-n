@@ -1,5 +1,29 @@
 # CHANGELOG - INKA CORP
 
+## [27.2.0] - 2026-02-20
+### Añadido
+- **Almacenamiento Centralizado (Bucket inkacorp):** Se unificó la subida de todos los documentos y comprobantes al bucket único `inkacorp`.
+- **Estructura de Carpetas (Organizativo):** Implementación de jerarquía de archivos (`documentos_creditos`, `pagos`, `caja`, `aportes`, `socios`) para un mantenimiento superior.
+- **Compresión Automática:** Integración de la utilidad `image-utils.js` en todos los procesos de subida (PC y Móvil), optimizando el espacio en el servidor.
+
+### Mejorado
+- **Velocidad de Carga (STORAGE DIRECTO):** Se eliminó el uso de webhooks externos para el procesamiento de documentos, realizando la subida directa a Supabase Storage.
+- **Corrección de Errores (PC y Móvil):** Se resolvió un error de sintaxis en la consola móvil causado por la redeclaración de variables en scripts duplicados.
+
+---
+
+## [27.1.0] - 2026-02-20
+### Añadido
+- **Auditoría de Desembolsos:** Los desembolsos de créditos (PC y Móvil) ahora registran automáticamente un **EGRESO** en Caja.
+- **Evidencia Digital:** Se vincula automáticamente la URL del **Pagaré Firmado** como comprobante del movimiento en la bitácora de caja.
+- **Integración Bancaria con Caja:** Soporte para referencias de texto (TRX-...) en movimientos de caja, permitiendo auditar pagos bancarios directamente.
+
+### Mejorado
+- **UX Móvil:** Se optimizó la visualización de la alerta de "Caja Cerrada", ocultándola por defecto para evitar parpadeos visuales durante la carga inicial de sesión.
+- **Estabilidad de Datos:** Corrección de tipos en base de datos (`id_referencia` a TEXT) para mayor flexibilidad en integraciones de terceros.
+
+---
+
 ## [27.0.0] - 2026-02-19
 ### Añadido
 - **Módulo de Control de Caja (MAJOR RELEASE):**

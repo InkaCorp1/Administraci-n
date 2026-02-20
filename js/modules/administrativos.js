@@ -417,7 +417,7 @@ async function handleAdmFormSubmit(e) {
         btnSave.disabled = true;
         btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
-        const id_gastos = document.getElementById('adm-id-gasto').value || 'adm-' + Date.now().toString(16);
+        const id_gastos = document.getElementById('adm-id-gasto').value || crypto.randomUUID();
         const monto = parseFloat(document.getElementById('adm-monto').value);
         const motivo = document.getElementById('adm-motivo').value;
         // Obtener la fecha del input y mantenerla en formato YYYY-MM-DD sin conversión de zona horaria
@@ -484,11 +484,17 @@ function viewAdmEvidencia(url) {
 
 /**
  * Helper para formatear fechas
+ * Corrige el desfase de zona horaria forzando el parsing local
  */
 function formatAdmDate(dateStr) {
     if (!dateStr) return '';
     try {
-        const d = new Date(dateStr);
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            const d = new Date(parts[0], parts[1] - 1, parts[2]);
+            return d.toLocaleDateString('es-EC', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+        const d = new Date(dateStr + 'T12:00:00');
         return d.toLocaleDateString('es-EC', { year: 'numeric', month: 'short', day: 'numeric' });
     } catch (e) {
         return dateStr;

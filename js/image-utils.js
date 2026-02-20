@@ -128,16 +128,16 @@ async function compressImage(file, options = {}) {
 // ==========================================
 
 /**
- * Sube una imagen a Supabase Storage
- * Comprime la imagen automáticamente antes de subir
+ * Sube un archivo (imagen o documento) a Supabase Storage
+ * Si es una imagen, la comprime automáticamente antes de subir
  * 
  * @param {File} file - Archivo a subir
- * @param {string} folder - Carpeta de destino (ej: 'pagos', 'administrativos')
- * @param {string} id - ID relacionado (ej: creditoId, gastoId)
+ * @param {string} folder - Carpeta de destino (ej: 'pagos', 'socios', 'aportes')
+ * @param {string} id - ID relacionado o subcarpeta (ej: idSocio, idCredito)
  * @param {string} bucketName - Nombre del bucket (opcional, usa STORAGE_BUCKET por defecto)
  * @returns {Promise<{success: boolean, url?: string, error?: string}>}
  */
-async function uploadImageToStorage(file, folder, id, bucketName = STORAGE_BUCKET) {
+async function uploadFileToStorage(file, folder, id, bucketName = STORAGE_BUCKET) {
     try {
         const supabase = window.getSupabaseClient();
 
@@ -145,32 +145,46 @@ async function uploadImageToStorage(file, folder, id, bucketName = STORAGE_BUCKE
             throw new Error('Cliente Supabase no disponible');
         }
 
-        // Comprimir imagen
-        const { blob, wasCompressed, originalSize, compressedSize } = await compressImage(file);
+        let uploadBlob = file;
+        let wasCompressed = false;
+        let originalSize = file.size;
+        let compressedSize = file.size;
+        let contentType = file.type;
+        let extension = file.name.split('.').pop().toLowerCase();
 
-        // Generar nombre único de archivo
+        // 1. Si es imagen, intentar compresión
+        if (file.type.startsWith('image/')) {
+            const compressionRes = await compressImage(file);
+            uploadBlob = compressionRes.blob;
+            wasCompressed = compressionRes.wasCompressed;
+            originalSize = compressionRes.originalSize;
+            compressedSize = compressionRes.compressedSize;
+            contentType = 'image/webp';
+            extension = 'webp';
+        }
+
+        // 2. Generar nombre único de archivo siguiendo el estándar de carpetas
         const timestamp = Date.now();
-        // Forzamos extensión webp ya que compressImage ahora usa image/webp por defecto
-        const extension = 'webp';
+        // folder/id/timestamp.extension
         const fileName = `${folder}/${id}/${timestamp}.${extension}`;
 
-        console.log(`uploadImageToStorage: Subiendo ${fileName} (${compressedSize} bytes, comprimido: ${wasCompressed})`);
+        console.log(`uploadFileToStorage: Subiendo ${fileName} (${compressedSize} bytes, tipo: ${contentType})`);
 
-        // Subir a Storage
-        const { data, error } = await supabase.storage
+        // 3. Subir a Storage
+        const { error } = await supabase.storage
             .from(bucketName)
-            .upload(fileName, blob, {
+            .upload(fileName, uploadBlob, {
                 cacheControl: '3600',
                 upsert: false,
-                contentType: 'image/webp'
+                contentType: contentType
             });
 
         if (error) {
-            console.error('uploadReceiptToStorage: Error al subir:', error);
+            console.error('uploadFileToStorage: Error al subir:', error);
             throw error;
         }
 
-        // Obtener URL pública
+        // 4. Obtener URL pública
         const { data: urlData } = supabase.storage
             .from(bucketName)
             .getPublicUrl(fileName);
@@ -181,30 +195,36 @@ async function uploadImageToStorage(file, folder, id, bucketName = STORAGE_BUCKE
             throw new Error('No se pudo obtener URL pública');
         }
 
-        console.log(`uploadImageToStorage: Subido exitosamente -> ${publicUrl}`);
-
         return {
             success: true,
             url: publicUrl,
             wasCompressed,
             originalSize,
-            compressedSize
+            compressedSize,
+            fileName
         };
 
     } catch (error) {
-        console.error('uploadImageToStorage: Error:', error);
+        console.error('uploadFileToStorage: Error:', error);
         return {
             success: false,
-            error: error.message || 'Error al subir imagen'
+            error: error.message || 'Error al subir archivo'
         };
     }
 }
 
 /**
- * Mantiene compatibilidad con la función anterior
+ * Alias para compatibilidad con módulos existentes que usaban uploadImageToStorage
+ */
+async function uploadImageToStorage(file, folder, id, bucketName = STORAGE_BUCKET) {
+    return uploadFileToStorage(file, folder, id, bucketName);
+}
+
+/**
+ * Mantiene compatibilidad con la función anterior de pagos
  */
 async function uploadReceiptToStorage(file, creditoId, cuotaNumero = '') {
-    return uploadImageToStorage(file, 'pagos', `${creditoId}${cuotaNumero ? '_cuota' + cuotaNumero : ''}`);
+    return uploadFileToStorage(file, 'pagos', `${creditoId}${cuotaNumero ? '_cuota' + cuotaNumero : ''}`);
 }
 
 /**

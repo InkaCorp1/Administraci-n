@@ -1566,3 +1566,62 @@ body.searching-mode .mobile-header {
     font-weight: 600;
 }
 
+/* Fix: Asegurar que SweetAlert se muestre al frente de los modales mï¿½viles */
+.swal2-container {
+    z-index: 100000 !important;
+}
+
+/* Alerta de Caja Cerrada en Inicio Móvil */
+.mobile-caja-status-alert {
+    margin: 0 1rem 1.5rem 1rem;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, #ef4444 0%, #991b1b 100%);
+    border-radius: 1.25rem;
+    box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.4);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mobile-caja-status-alert .alert-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.mobile-caja-status-alert .alert-icon {
+    font-size: 2rem;
+    opacity: 0.9;
+}
+
+.mobile-caja-status-alert .alert-text {
+    flex: 1;
+}
+
+.mobile-caja-status-alert .alert-text h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.mobile-caja-status-alert .alert-text p {
+    margin: 0;
+    font-size: 0.75rem;
+    opacity: 0.8;
+    line-height: 1.4;
+}
+
+.mobile-caja-status-alert .alert-btn {
+    background: white;
+    color: #ef4444;
+    border: none;
+    padding: 0.6rem 0.8rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+

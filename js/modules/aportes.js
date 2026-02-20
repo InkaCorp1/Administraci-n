@@ -347,12 +347,14 @@ function renderAportesRecientes(data) {
                 </td>
                 <td><span class="badge badge-success px-3 py-2 rounded-pill shadow-sm"><i class="fas fa-check mr-1"></i> Recibido</span></td>
                 <td class="text-center">
-                    <button class="btn-icon shadow-sm" style="background: white; border: 1px solid var(--border-color); width: 35px; height: 35px;" onclick="verComprobanteAporte('${aporte.comprobante_url}')" title="Ver Comprobante">
-                        <i class="fas fa-image text-gold"></i>
-                    </button>
-                    <button class="btn-icon shadow-sm ml-2" style="background: white; border: 1px solid var(--border-color); width: 35px; height: 35px;" onclick="window.open('${aporte.comprobante_url}', '_blank')" title="Descargar">
-                        <i class="fas fa-download text-primary"></i>
-                    </button>
+                    <div class="d-flex flex-column align-items-center justify-content-center" style="gap: 8px;">
+                        <button class="btn-icon shadow-sm" style="background: var(--gray-800); border: 1px solid var(--border-color); width: 35px; height: 35px;" onclick="verComprobanteAporte('${aporte.comprobante_url}')" title="Ver Comprobante">
+                            <i class="fas fa-image text-gold"></i>
+                        </button>
+                        <button class="btn-icon shadow-sm" style="background: var(--gray-800); border: 1px solid var(--border-color); width: 35px; height: 35px;" onclick="window.open('${aporte.comprobante_url}', '_blank')" title="Descargar">
+                            <i class="fas fa-download text-gold"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -565,23 +567,15 @@ async function handleAporteSubmit(e) {
         const supabase = window.getSupabaseClient();
         const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
 
-        // 1. Subir imagen
+        // 1. Subir imagen usando la utilidad centralizada
         let imageUrl = null;
-        const timestamp = Date.now();
-        const extension = selectedAporteFile.name.split('.').pop();
-        const fileName = `aportes/${socioId}/${timestamp}.${extension}`;
+        const uploadRes = await window.uploadFileToStorage(selectedAporteFile, 'aportes', socioId);
+        
+        if (!uploadRes.success) {
+            throw new Error('Error al subir comprobante: ' + uploadRes.error);
+        }
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('inkacorp')
-            .upload(fileName, selectedAporteFile);
-
-        if (uploadError) throw new Error('Error al subir comprobante: ' + uploadError.message);
-
-        const { data: urlData } = supabase.storage
-            .from('inkacorp')
-            .getPublicUrl(fileName);
-
-        imageUrl = urlData.publicUrl;
+        imageUrl = uploadRes.url;
 
         // 2. Guardar en DB
         const { data, error } = await supabase

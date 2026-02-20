@@ -443,6 +443,10 @@ function closeLiteComprobante() {
 }
 
 function openLitePago(idDetalle) {
+    if (typeof window.validateCajaBeforeAction === 'function') {
+        if (!window.validateCajaBeforeAction()) return;
+    }
+
     const cuota = currentBankAmortization.find(c => c.id_detalle === idDetalle);
     const banco = mobileBancosData.find(b => b.id_transaccion === currentBankId);
     if (!cuota || !banco) return;
@@ -597,22 +601,15 @@ async function handleMobilePayment(e) {
 
         const supabase = window.getSupabaseClient();
 
-        // 1. Comprimir y convertir a WebP (Calidad 80%)
-        const compressedBlob = await compressImage(previewImg.src, 0.8);
-        const fileName = `bancos_pagos/pago_mobile_${idDetalle}_${Date.now()}.webp`;
+        // 1. Subir imagen usando la utilidad centralizada (maneja compresión)
+        const blob = await fetch(previewImg.src).then(r => r.blob());
+        const uploadRes = await window.uploadFileToStorage(blob, 'bancos_pagos', idDetalle);
 
-        const { error: uploadError } = await supabase.storage
-            .from('inkacorp')
-            .upload(fileName, compressedBlob, {
-                contentType: 'image/webp',
-                upsert: true
-            });
+        if (!uploadRes.success) {
+            throw new Error(uploadRes.error);
+        }
 
-        if (uploadError) throw uploadError;
-
-        const { data: publicUrlData } = supabase.storage
-            .from('inkacorp')
-            .getPublicUrl(fileName);
+        const imgUrl = uploadRes.url;
 
         // 2. Actualizar en ic_situacion_bancaria_detalle
         const { error: updateError } = await supabase
@@ -626,6 +623,43 @@ async function handleMobilePayment(e) {
             .eq('id_detalle', idDetalle);
 
         if (updateError) throw updateError;
+
+        // 3. Registrar en Caja (Mobile: Reflejar en caja como EGRESO)
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && window.sysCajaAbierta) {
+                const { data: activeSessions } = await supabase
+                    .from('ic_caja_aperturas')
+                    .select('id_apertura')
+                    .eq('id_usuario', user.id)
+                    .eq('estado', 'ABIERTA')
+                    .order('fecha_apertura', { ascending: false })
+                    .limit(1);
+
+                if (activeSessions && activeSessions.length > 0) {
+                    const idApertura = activeSessions[0].id_apertura;
+                    const banco = (mobileBancosData || []).find(b => b.id_transaccion === currentBankId);
+                    const cuota = (currentBankAmortization || []).find(c => c.id_detalle === idDetalle);
+
+                    await supabase
+                        .from('ic_caja_movimientos')
+                        .insert({
+                            id_apertura: idApertura,
+                            id_usuario: user.id,
+                            tipo_movimiento: 'EGRESO',
+                            categoria: 'GASTO',
+                            monto: parseFloat(valorManual),
+                            metodo_pago: 'TRANSFERENCIA',
+                            descripcion: `Pago Banco (M): ${banco ? banco.nombre_banco : 'Bancario'} (Cuota ${cuota ? cuota.cuota : 'N/A'})`,
+                            comprobante_url: publicUrlData.publicUrl,
+                            id_referencia: idDetalle,
+                            tabla_referencia: 'ic_situacion_bancaria_detalle'
+                        });
+                }
+            }
+        } catch (cajaErr) {
+            console.warn('[Caja Mobile] Error:', cajaErr);
+        }
 
         await window.Swal.fire('¡Éxito!', 'Pago registrado correctamente', 'success');
 

@@ -1348,19 +1348,15 @@ async function handleBancoPaymentSubmit(e) {
 
         const supabase = window.getSupabaseClient();
 
-        // 1. Subir imagen a Storage
-        const fileName = `bancos_pagos/pago_${idDetalle}_${Date.now()}.jpg`;
+        // 1. Subir imagen a Storage usando la utilidad centralizada
         const blob = await fetch(previewImg.src).then(r => r.blob());
+        const uploadRes = await window.uploadFileToStorage(blob, 'bancos_pagos', idDetalle);
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('inkacorp')
-            .upload(fileName, blob);
+        if (!uploadRes.success) {
+            throw new Error(uploadRes.error);
+        }
 
-        if (uploadError) throw uploadError;
-
-        const { data: publicUrlData } = supabase.storage
-            .from('inkacorp')
-            .getPublicUrl(fileName);
+        const imgUrl = uploadRes.url;
 
         // 2. Actualizar registro en DB
         const { error: updateError } = await supabase
@@ -1368,11 +1364,48 @@ async function handleBancoPaymentSubmit(e) {
             .update({
                 estado: 'PAGADO',
                 fecha_pagado: fecha,
-                fotografia: publicUrlData.publicUrl
+                fotografia: imgUrl
             })
             .eq('id_detalle', idDetalle);
 
         if (updateError) throw updateError;
+
+        // 3. Registrar en Caja (Nuevo: Reflejar en caja como EGRESO)
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && window.sysCajaAbierta) {
+                const { data: activeSessions } = await supabase
+                    .from('ic_caja_aperturas')
+                    .select('id_apertura')
+                    .eq('id_usuario', user.id)
+                    .eq('estado', 'ABIERTA')
+                    .order('fecha_apertura', { ascending: false })
+                    .limit(1);
+
+                if (activeSessions && activeSessions.length > 0) {
+                    const idApertura = activeSessions[0].id_apertura;
+                    const banco = (bancosData || []).find(b => b.id_transaccion === currentBancoId);
+                    const montoPagado = parseFloat(document.getElementById('pago-banco-valor').value) || 0;
+
+                    await supabase
+                        .from('ic_caja_movimientos')
+                        .insert({
+                            id_apertura: idApertura,
+                            id_usuario: user.id,
+                            tipo_movimiento: 'EGRESO',
+                            categoria: 'GASTO',
+                            monto: montoPagado,
+                            metodo_pago: 'TRANSFERENCIA',
+                            descripcion: `Pago Banco: ${banco ? banco.nombre_banco : 'Bancario'} (Cuota ${currentBancoDetalle ? currentBancoDetalle.cuota : 'N/A'})`,
+                            comprobante_url: publicUrlData.publicUrl,
+                            id_referencia: idDetalle,
+                            tabla_referencia: 'ic_situacion_bancaria_detalle'
+                        });
+                }
+            }
+        } catch (cajaErr) {
+            console.error('[Caja] Error al registrar movimiento:', cajaErr);
+        }
 
         closePremiumModals();
         await window.showAlert('El pago se ha registrado correctamente en el sistema.', '¡Pago Exitoso!', 'success');
@@ -1528,14 +1561,15 @@ async function handlePrecancelarSubmit(e) {
 
         if (pendingInstallments.length === 0) throw new Error('No hay cuotas pendientes para precancelar');
 
-        // 1. Subir imagen
-        const fileName = `bancos_pagos/prepay_${currentBancoId}_${Date.now()}.jpg`;
+        // 1. Subir imagen usando la utilidad centralizada
         const blob = await fetch(previewImg.src).then(r => r.blob());
-        const { error: uploadError } = await supabase.storage.from('inkacorp').upload(fileName, blob);
-        if (uploadError) throw uploadError;
+        const uploadRes = await window.uploadFileToStorage(blob, 'bancos_pagos', `prepay_${currentBancoId}`);
+        
+        if (!uploadRes.success) {
+            throw new Error(uploadRes.error);
+        }
 
-        const { data: publicUrlData } = supabase.storage.from('inkacorp').getPublicUrl(fileName);
-        const imgUrl = publicUrlData.publicUrl;
+        const imgUrl = uploadRes.url;
 
         // 2. Distribuir el pago en las cuotas pendientes
         // Para que las estadísticas cuadren, pondremos el valor proporcional pagado en cada cuota
@@ -1555,6 +1589,42 @@ async function handlePrecancelarSubmit(e) {
             .in('id_detalle', idsPending);
 
         if (updateError) throw updateError;
+
+        // 3. Registrar en Caja (Nuevo: Reflejar la Precancelación)
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && window.sysCajaAbierta) {
+                const { data: activeSessions } = await supabase
+                    .from('ic_caja_aperturas')
+                    .select('id_apertura')
+                    .eq('id_usuario', user.id)
+                    .eq('estado', 'ABIERTA')
+                    .order('fecha_apertura', { ascending: false })
+                    .limit(1);
+
+                if (activeSessions && activeSessions.length > 0) {
+                    const idApertura = activeSessions[0].id_apertura;
+                    const bancoObj = (bancosData || []).find(b => b.id_transaccion === currentBancoId);
+
+                    await supabase
+                        .from('ic_caja_movimientos')
+                        .insert({
+                            id_apertura: idApertura,
+                            id_usuario: user.id,
+                            tipo_movimiento: 'EGRESO',
+                            categoria: 'GASTO',
+                            monto: valorPagar,
+                            metodo_pago: 'TRANSFERENCIA',
+                            descripcion: `PRECANCELACIÓN BANCO: ${bancoObj ? bancoObj.nombre_banco : 'Bancario'}`,
+                            comprobante_url: imgUrl,
+                            id_referencia: currentBancoId,
+                            tabla_referencia: 'ic_situacion_bancaria'
+                        });
+                }
+            }
+        } catch (cajaErr) {
+            console.error('[Caja] Error al registrar precancelación:', cajaErr);
+        }
 
         // 3. Si se pagó todo, podrías archivar el crédito o dejar que el usuario lo haga
         // Por ahora refrescamos y cerramos

@@ -343,6 +343,15 @@ async function ensureSolicitudDocsEngineMobile() {
 }
 
 async function initDesembolsosModule() {
+    // Si no se ha verificado el estado de la caja, intentamos hacerlo rápido
+    // O si ya está verificado, forzamos la actualización de la UI del alert inyectado
+    if (typeof window.checkCajaStatusGlobal === 'function') {
+        await window.checkCajaStatusGlobal();
+    }
+
+    // El alert se oculta/muestra automáticamente dentro de checkCajaStatusGlobal()
+    // si el elemento con id 'caja-cerrada-alert-mobile' ya está en el DOM
+
     await loadDesembolsosPendientes();
 }
 
@@ -459,6 +468,11 @@ async function loadDesembolsosPendientes() {
 }
 
 async function desembolsarCredito(idCredito) {
+    // Validar si la caja está abierta antes de continuar
+    if (typeof window.validateCajaBeforeAction === 'function') {
+        if (!window.validateCajaBeforeAction('realizar desembolsos')) return;
+    }
+
     try {
         const credito = creditosData.find(c => c.id_credito === idCredito);
         if (!credito) {
@@ -505,6 +519,10 @@ async function desembolsarCredito(idCredito) {
 }
 
 async function generarDocumentosCreditoMobile(idCredito) {
+    if (typeof window.validateCajaBeforeAction === 'function') {
+        if (!window.validateCajaBeforeAction('generar documentos')) return;
+    }
+
     const credito = creditosData.find(c => c.id_credito === idCredito);
     if (!credito) {
         Swal.fire('Error', 'No se encontró el crédito seleccionado.', 'error');
@@ -696,6 +714,11 @@ async function ejecutarDesembolsoConArchivosMobile(idCredito, nombreSocio, tiene
     const supabase = window.getSupabaseClient();
     const originalBtn = btn ? btn.innerHTML : '';
 
+    // Validar caja abierta antes de cualquier operación financiera
+    if (window.validateCajaBeforeAction && !window.validateCajaBeforeAction('desembolsar este crédito')) {
+        return;
+    }
+
     try {
         if (btn) {
             btn.disabled = true;
@@ -704,7 +727,6 @@ async function ejecutarDesembolsoConArchivosMobile(idCredito, nombreSocio, tiene
 
         const hoy = new Date();
         const fechaStr = `${hoy.getDate().toString().padStart(2, '0')}-${(hoy.getMonth() + 1).toString().padStart(2, '0')}-${hoy.getFullYear()}`;
-        const webhookUrl = 'https://lpwebhook.luispinta.com/webhook/documentos_creditos';
 
         const slots = ['contrato', 'pagare', 'tabla'];
         if (tieneGarante) slots.push('garante');
@@ -730,20 +752,14 @@ async function ejecutarDesembolsoConArchivosMobile(idCredito, nombreSocio, tiene
             if (statusEl) statusEl.innerHTML = '<i class="fas fa-sync fa-spin"></i> Subiendo archivo...';
             if (actionEl) actionEl.innerHTML = '';
 
-            const formData = new FormData();
-            const extension = file.name.split('.').pop();
-            const newFileName = `${nombreSocio}_${slotId.toUpperCase()}_${fechaStr}.${extension}`;
+            // 1. Subir a Storage usando la utilidad centralizada
+            const uploadRes = await window.uploadFileToStorage(file, 'documentos_creditos', `${idCredito}/${slotId}`);
+            
+            if (!uploadRes.success) {
+                throw new Error(`Error al subir ${slotId}: ${uploadRes.error}`);
+            }
 
-            formData.append('file', file, newFileName);
-            formData.append('filename', newFileName);
-            formData.append('id_credito', idCredito);
-            formData.append('tipo_documento', slotId);
-
-            const response = await fetch(webhookUrl, { method: 'POST', body: formData });
-            if (!response.ok) throw new Error(`Error al subir ${slotId}`);
-
-            const result = await response.json();
-            const fileLink = result.link;
+            const fileLink = uploadRes.url;
 
             if (progressBar) progressBar.style.width = '70%';
             if (statusEl) statusEl.innerHTML = '<i class="fas fa-database"></i> Registrando en base de datos...';
@@ -797,6 +813,71 @@ async function completarActivacionCreditoMobile(idCredito) {
     const now = new Date().toISOString();
     const todayStr = new Date().toISOString().split('T')[0];
 
+    // CARGAR DATOS DEL CRÉDITO PARA REGISTRO EN CAJA
+    const { data: infoCredito, error: errorCarga } = await supabase
+        .from('ic_creditos')
+        .select('capital, codigo_credito, id_socio, id_solicitud')
+        .eq('id_credito', idCredito)
+        .single();
+    
+    if (errorCarga) throw new Error('No se pudo obtener la información del crédito: ' + errorCarga.message);
+
+    // OBTENER NOMBRE DEL SOCIO
+    const { data: socioData } = await supabase
+        .from('ic_socios')
+        .select('nombre')
+        .eq('idsocio', infoCredito.id_socio)
+        .single();
+    
+    const nombreSocio = socioData?.nombre || 'SOCIO DESCONOCIDO';
+
+    // OBTENER URL DEL PAGARÉ (Para comprobante en Caja)
+    const { data: docData } = await supabase
+        .from('ic_creditos_documentos')
+        .select('pagare_url')
+        .eq('id_credito', idCredito)
+        .single();
+
+    const pagareUrl = docData?.pagare_url || null;
+
+    // 1. REGISTRAR EL EGRESO EN CAJA (Si hay caja abierta)
+    if (window.sysCajaAbierta) {
+        // Buscar id_apertura activo del usuario
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+
+        if (userId) {
+            const { data: cajaData } = await supabase
+                .from('ic_caja_aperturas')
+                .select('id_apertura')
+                .eq('id_usuario', userId)
+                .eq('estado', 'ABIERTA')
+                .order('fecha_apertura', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (cajaData) {
+                const { error: errorMov } = await supabase
+                    .from('ic_caja_movimientos')
+                    .insert({
+                        id_apertura: cajaData.id_apertura,
+                        tipo_movimiento: 'EGRESO',
+                        categoria: 'DESEMBOLSO_CREDITO',
+                        monto: infoCredito.capital,
+                        metodo_pago: 'TRANSFERENCIA',
+                        descripcion: `DESEMBOLSO DE CRÉDITO ${infoCredito.codigo_credito} A: ${nombreSocio}`,
+                        comprobante_url: pagareUrl,
+                        id_referencia: idCredito,
+                        tabla_referencia: 'ic_creditos',
+                        id_usuario: userId
+                    });
+                
+                if (errorMov) console.error('[CAJA] Error registrando desembolso:', errorMov);
+            }
+        }
+    }
+
+    // 2. ACTUALIZAR ESTADO DEL CRÉDITO A ACTIVO
     const { error: errorCredito } = await supabase
         .from('ic_creditos')
         .update({
@@ -808,6 +889,7 @@ async function completarActivacionCreditoMobile(idCredito) {
 
     if (errorCredito) throw errorCredito;
 
+    // 3. REGISTRAR EN HISTORIAL
     await supabase.from('ic_creditos_historial').insert({
         id_credito: idCredito,
         estado_anterior: 'PENDIENTE',
@@ -817,17 +899,12 @@ async function completarActivacionCreditoMobile(idCredito) {
         motivo: `Desembolso móvil con carga de documentos. Procesado por: ${currentUser?.nombre || 'Sistema'}`
     });
 
-    const { data: creditoData } = await supabase
-        .from('ic_creditos')
-        .select('id_solicitud')
-        .eq('id_credito', idCredito)
-        .single();
-
-    if (creditoData?.id_solicitud) {
+    // 4. ACTUALIZAR SOLICITUD
+    if (infoCredito?.id_solicitud) {
         await supabase
             .from('ic_solicitud_de_credito')
             .update({ estado: 'DESEMBOLSADA' })
-            .eq('solicitudid', creditoData.id_solicitud);
+            .eq('solicitudid', infoCredito.id_solicitud);
     }
 }
 

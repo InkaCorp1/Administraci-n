@@ -144,9 +144,9 @@
                 <i class="fas fa-university"></i>
                 <span>Bancos</span>
             </div>
-            <div class="nav-item" id="nav-simulador" onclick="loadMobileView('simulador')">
-                <i class="fas fa-calculator"></i>
-                <span>Simul.</span>
+            <div class="nav-item" id="nav-caja" onclick="loadMobileView('caja')">
+                <i class="fas fa-cash-register"></i>
+                <span>Caja</span>
             </div>
         </nav>
     </div>
@@ -167,11 +167,11 @@
                     </div>
                     <span>Aportes</span>
                 </div>
-                <div class="quick-item" onclick="loadMobileView('desembolsos'); toggleQuickMenu()">
-                    <div class="quick-icon bg-green">
-                        <i class="fas fa-money-bill-wave"></i>
+                <div class="quick-item" onclick="loadMobileView('simulador'); toggleQuickMenu()">
+                    <div class="quick-icon" style="background-color: #f59e0b;">
+                        <i class="fas fa-calculator"></i>
                     </div>
-                    <span>Desembolsos</span>
+                    <span>Simualdor</span>
                 </div>
                 <div class="quick-item" onclick="loadMobileView('socios'); toggleQuickMenu()">
                     <div class="quick-icon" style="background-color: #3b82f6;">
@@ -449,7 +449,6 @@
     </button>
 
     <!-- Tools & Utils -->
-    <script src="../js/config.js"></script>
     <script src="../js/image-utils.js"></script>
     <script src="js/mobile-app.js"></script>
 

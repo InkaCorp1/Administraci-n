@@ -429,6 +429,10 @@ let currentSelectedReceiptFile = null;
  * Abre el modal de pago completo para móvil
  */
 window.openPaymentModalMobile = async function(detalleId, btn) {
+    if (typeof window.validateCajaBeforeAction === 'function') {
+        if (!window.validateCajaBeforeAction()) return;
+    }
+
     if (btn) btn.classList.add('btn-loading');
     
     try {
@@ -799,23 +803,14 @@ async function confirmarPagoLite() {
         const supabase = window.getSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        // 1. Comprimir y subir imagen
-        let finalFile = currentSelectedReceiptFile;
-        if (typeof compressImage === 'function') {
-            const result = await compressImage(currentSelectedReceiptFile);
-            finalFile = result.blob;
+        // 1. Subir imagen usando la utilidad centralizada (maneja compresión)
+        const uploadRes = await window.uploadFileToStorage(currentSelectedReceiptFile, 'comprobantes', idCredito);
+
+        if (!uploadRes.success) {
+            throw new Error(uploadRes.error);
         }
 
-        const fileName = `${idCredito}_${Date.now()}.webp`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('inkacorp')
-            .upload(`comprobantes/${fileName}`, finalFile, {
-                contentType: 'image/webp'
-            });
-
-        if (uploadError) throw uploadError;
-        
-        const { data: { publicUrl } } = supabase.storage.from('inkacorp').getPublicUrl(`comprobantes/${fileName}`);
+        const publicUrl = uploadRes.url;
 
         // 2. Registrar cuota por cuota
         const cuotasAPagar = currentPaymentCuotas.slice(0, count);

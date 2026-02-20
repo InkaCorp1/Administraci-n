@@ -8,16 +8,16 @@
     --primary-light: #146E3A;
     --gold: #F2BB3A;
     --gold-dark: #D3900D;
-    --text-primary: #0F172A;
-    --text-secondary: #64748B;
-    --text-muted: #94A3B8;
-    --bg-main: #F8FAFC;
-    --bg-card: #FFFFFF;
+    --text-primary: #eef2f7;
+    --text-secondary: #93a1b3;
+    --text-muted: #5e6b7c;
+    --bg-main: #111318;
+    --bg-card: #1c222b;
     --border-color: rgba(255, 255, 255, 0.08);
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    --white-glass: rgba(255, 255, 255, 0.8);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    --white-glass: rgba(255, 255, 255, 0.05);
 }
 
 .aportes-wrapper {
@@ -152,7 +152,7 @@
 }
 
 .hero-actions-aportes .btn-primary:hover {
-    background: white;
+    background: var(--gold-light);
     color: var(--primary-dark);
     transform: translateY(-2px);
 }
@@ -167,7 +167,7 @@
 }
 
 .stat-card {
-    background: white;
+    background: var(--bg-card);
     border-radius: 18px;
     padding: 1.5rem;
     display: flex;
@@ -229,7 +229,7 @@
    SECTION CARDS
    ========================================== */
 .section-card {
-    background: white;
+    background: var(--bg-card);
     border-radius: 20px;
     padding: 1.5rem;
     box-shadow: var(--shadow-md);
@@ -248,7 +248,7 @@
 .section-card-title {
     font-size: 1.25rem;
     font-weight: 700;
-    color: var(--primary);
+    color: var(--gold);
     margin: 0;
     display: flex;
     align-items: center;
@@ -260,8 +260,8 @@
 }
 
 .badge-pulsing {
-    background: rgba(16, 185, 129, 0.1);
-    color: #059669;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10B981;
     padding: 0.5rem 1rem 0.5rem 1.8rem;
     border-radius: 50px;
     font-size: 0.75rem;
@@ -299,7 +299,7 @@
 }
 
 .premium-table thead th {
-    background: #F8FAFC;
+    background: var(--gray-900);
     padding: 1rem;
     text-align: left;
     font-size: 0.75rem;
@@ -318,7 +318,7 @@
 }
 
 .premium-table tbody tr:hover td {
-    background: #F1F5F9;
+    background: var(--gray-800);
 }
 
 .avatar-initial {
@@ -339,9 +339,9 @@
    MODALS PREMIUM
    ========================================== */
 .glass-modal {
-    background: rgba(255, 255, 255, 0.95) !important;
+    background: rgba(27, 33, 42, 0.95) !important;
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 24px !important;
     max-height: 90vh;
     display: flex;
@@ -419,12 +419,12 @@
 #modal-aporte input[type="date"],
 #modal-aporte input[type="number"] {
     /* give inputs a subtle card surface so they read over the modal background */
-    background: linear-gradient(180deg, #ffffff 0%, #fbfdfe 100%);
-    border: 1px solid rgba(11,78,50,0.06);
+    background: var(--gray-800);
+    border: 1px solid var(--border-color);
     padding: .8rem 1rem .8rem 3.6rem; /* space for left icon */
     border-radius: .75rem;
     box-sizing: border-box;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 8px 20px rgba(2,6,23,0.04);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 8px 20px rgba(0,0,0,0.2);
     font-size: 0.98rem;
     color: var(--text-primary);
     min-height: 48px;
@@ -460,7 +460,7 @@
 /* Specific contrast for placeholder text so it's readable */
 #modal-aporte .form-control-premium::placeholder,
 #modal-aporte input::placeholder {
-    color: rgba(15,23,42,0.45);
+    color: var(--gray-500);
 }
 
 /* Selects that expand to a list still need left padding for the icon */
@@ -482,16 +482,16 @@
     align-items: center;
     justify-content: center;
     padding: 2rem 1.75rem;
-    background: linear-gradient(180deg, #fbfdff 0%, #f5f7f9 100%);
+    background: var(--gray-800);
     border-radius: .9rem;
-    border: 1px solid rgba(11,78,50,0.04);
-    box-shadow: 0 18px 40px rgba(2,6,23,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
     transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
 }
 #modal-aporte #aporte-upload-placeholder:hover {
     transform: translateY(-6px);
-    box-shadow: 0 30px 60px rgba(2,6,23,0.12);
-    background: linear-gradient(180deg, #ffffff 0%, #f7f9fb 100%);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+    background: var(--gray-700);
     cursor: pointer;
 }
 
@@ -499,12 +499,12 @@
 #modal-aporte .upload-icon-circle {
     width: 64px;
     height: 64px;
-    background: linear-gradient(180deg,#ffffff 0%, #fffaf6 100%);
+    background: var(--gray-700);
     border-radius: 999px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 10px 30px rgba(2,6,23,0.08);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     transition: transform .28s cubic-bezier(.2,.9,.25,1), box-shadow .28s;
 }
 #modal-aporte #aporte-upload-placeholder:hover .upload-icon-circle {
@@ -571,18 +571,18 @@
 
 #modal-aporte .btn.btn-secondary {
     /* make secondary clearly distinct from background but subtler than primary */
-    background: rgba(243,245,247,0.9); /* soft card tone */
-    border: 1px solid rgba(11,78,50,0.08);
-    color: rgba(15,23,42,0.75);
+    background: var(--gray-700);
+    border: 1px solid var(--border-color);
+    color: var(--white);
     padding: .62rem 1.25rem;
     border-radius: .75rem;
-    box-shadow: 0 6px 18px rgba(2,6,23,0.04);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
     transition: background .12s ease, transform .12s ease, box-shadow .12s ease;
 }
 #modal-aporte .btn.btn-secondary:hover {
-    background: rgba(243,245,247,1);
+    background: var(--gray-600);
     transform: translateY(-2px);
-    box-shadow: 0 14px 30px rgba(2,6,23,0.06);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.3);
 }
 #modal-aporte .btn.btn-secondary:focus-visible {
     outline: 3px solid rgba(11,78,50,0.06);
@@ -608,17 +608,17 @@
     display: inline-flex;
     align-items: center;
     gap: 0.9rem;
-    background: linear-gradient(180deg,#ffffff 0%, #fbfdff 100%);
+    background: var(--gray-800);
     border: 1px solid var(--border-color);
     padding: 0.85rem 1.2rem;
     border-radius: 12px;
-    box-shadow: 0 8px 20px rgba(2,6,23,0.06);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
     font-weight: 700;
 }
-.selected-socio-pill .selected-socio-name { color: rgba(15,23,42,0.85); }
+.selected-socio-pill .selected-socio-name { color: var(--text-primary); }
 .selected-socio-pill .btn-clear-selected {
     margin-left: 0.6rem;
-    background: rgba(2,6,23,0.03);
+    background: rgba(255, 255, 255, 0.05);
     border: none;
     width: 30px;
     height: 30px;
@@ -628,7 +628,7 @@
     align-items: center;
     justify-content: center;
 }
-.selected-socio-pill .btn-clear-selected:hover { background: rgba(2,6,23,0.06); transform: scale(1.02); }
+.selected-socio-pill .btn-clear-selected:hover { background: rgba(255, 255, 255, 0.1); transform: scale(1.02); }
 
 /* Suggestions dropdown (custom, appears only while typing) */
 .aporte-suggestions {
@@ -636,9 +636,9 @@
     left: 0;
     right: 0;
     top: calc(100% + 8px);
-    background: linear-gradient(180deg,#ffffff 0%, #fbfdff 100%);
+    background: var(--gray-800);
     border: 1px solid var(--border-color);
-    box-shadow: 0 20px 40px rgba(2,6,23,0.08);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
     border-radius: 12px;
     max-height: 240px;
     overflow-y: auto;
@@ -700,16 +700,17 @@
     width: 100%;
     padding: 0.875rem 1.25rem 0.875rem 3rem;
     border-radius: 14px;
-    border: 2px solid #E2E8F0;
-    background: #F8FAFC;
+    border: 2px solid var(--border-color);
+    background: var(--gray-800);
+    color: var(--text-primary);
     font-size: 1rem;
     transition: all 0.2s;
 }
 
 .form-control-premium:focus {
     border-color: var(--primary);
-    background: white;
-    box-shadow: 0 0 0 4px rgba(11, 78, 50, 0.1);
+    background: var(--gray-700);
+    box-shadow: 0 0 0 4px rgba(11, 78, 50, 0.2);
     outline: none;
 }
 
@@ -720,9 +721,9 @@
     font-size: 1.03rem;
     line-height: 1.6;
     border-radius: 12px;
-    box-shadow: 0 12px 30px rgba(6, 25, 16, 0.15);
-    border: 1px solid rgba(11, 78, 50, 0.08);
-    background: linear-gradient(180deg, #ffffff, #fbfdfc);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-color);
+    background: var(--gray-800);
     padding-left: 1rem; /* mejora lectura del primer carácter */
     transition: all 180ms cubic-bezier(.2,.9,.2,1);
     z-index: 1400; /* por encima de otros elementos del modal */
@@ -757,19 +758,19 @@
 /* Resaltar la opción sobre la que se pasa el cursor */
 #modal-aporte select[data-size-temp] option:hover,
 #modal-aporte select[data-size-temp] option:focus {
-    background: rgba(11, 78, 50, 0.06);
-    color: var(--primary-dark);
+    background: var(--primary);
+    color: white;
 }
 
 /* Scrollbar más visible y delgado */
 #modal-aporte select[data-size-temp]::-webkit-scrollbar { width: 8px; }
-#modal-aporte select[data-size-temp]::-webkit-scrollbar-thumb { background: rgba(11,78,50,0.14); border-radius: 8px; }
+#modal-aporte select[data-size-temp]::-webkit-scrollbar-thumb { background: var(--primary-light); border-radius: 8px; }
 #modal-aporte select[data-size-temp]::-webkit-scrollbar-track { background: transparent; }
 
 /* Aumentar contraste de la opción seleccionada en el select nativo */
 #modal-aporte select option:checked {
-    background: rgba(11, 78, 50, 0.12);
-    color: var(--primary-dark);
+    background: var(--primary);
+    color: white;
 }
 
 
@@ -799,18 +800,18 @@
 #modal-aporte .upload-icon-circle {
     width: 64px;
     height: 64px;
-    background: linear-gradient(180deg,#ffffff 0%, #fffaf6 100%);
+    background: var(--gray-700);
     border-radius: 999px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 10px 30px rgba(2,6,23,0.08);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     transition: transform .28s cubic-bezier(.2,.9,.25,1), box-shadow .28s;
     margin: 0 auto 1rem;
 }
 #modal-aporte .upload-zone-premium:hover .upload-icon-circle {
     transform: translateY(-6px) scale(1.04);
-    box-shadow: 0 22px 48px rgba(2,6,23,0.16);
+    box-shadow: 0 22px 48px rgba(0,0,0,0.3);
 }
 
 /* Preview: match bank fixed-height crop for consistent composition */
@@ -823,7 +824,7 @@
     overflow: visible;
     display: block;
     margin: 0.5rem 0 0;
-    background: var(--bg-card);
+    background: var(--gray-800);
     padding: 1.25rem; /* espacio alrededor para que la imagen no toque bordes */
     box-sizing: border-box;
 }
@@ -839,8 +840,8 @@
     display: block;
     margin: 0 auto;
     border-radius: 12px;
-    background: rgba(255,255,255,0.6);
-    box-shadow: 0 8px 20px rgba(2,6,23,0.04) inset;
+    background: rgba(255,255,255,0.05);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2) inset;
 }
 
 /* Remove button: match bank red circular style and placement */
@@ -848,7 +849,7 @@
     position: absolute;
     top: 10px;
     right: 10px;
-    background: rgba(255, 0, 0, 0.8);
+    background: rgba(239, 68, 68, 0.9);
     color: white;
     border: none;
     width: 30px;
@@ -860,7 +861,7 @@
     justify-content: center;
     z-index: 12;
 }
-#modal-aporte .btn-remove-preview:hover { transform: scale(1.05); background: #e11d48; }
+#modal-aporte .btn-remove-preview:hover { transform: scale(1.05); background: #ef4444; }
 
 /* keep existing lighter placeholder styles for the 'no file' state but
    align spacing with the bank modal */
@@ -870,13 +871,13 @@
     align-items: center;
     justify-content: center;
     padding: 2rem 1.75rem;
-    background: linear-gradient(180deg, #fbfdff 0%, #f5f7f9 100%);
+    background: var(--gray-800);
     border-radius: .9rem;
-    border: 1px solid rgba(11,78,50,0.04);
-    box-shadow: 0 18px 40px rgba(2,6,23,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
     transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
 }
-#modal-aporte #aporte-upload-placeholder:hover { transform: translateY(-6px); box-shadow: 0 30px 60px rgba(2,6,23,0.12); cursor: pointer; }
+#modal-aporte #aporte-upload-placeholder:hover { transform: translateY(-6px); box-shadow: 0 30px 60px rgba(0,0,0,0.4); cursor: pointer; }
 
 
 /* ==========================================
@@ -890,7 +891,7 @@
     align-items: center;
     justify-content: space-around;
     color: white;
-    box-shadow: 0 8px 20px rgba(11, 78, 50, 0.2);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 .summary-stat-box {
@@ -915,7 +916,7 @@
 .summary-stat-separator {
     width: 1px;
     height: 40px;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 /* ==========================================
@@ -965,7 +966,7 @@
    MODAL HISTORY EXTRAS
    ========================================== */
 .filters-bar-premium {
-    background: #F8FAFC;
+    background: var(--gray-800);
     padding: 1.25rem;
     border-radius: 16px;
     border: 1px solid var(--border-color);
@@ -1004,7 +1005,7 @@
 }
 
 .table-container-scroll {
-    background: white;
+    background: var(--gray-800);
     border-radius: 16px;
     border: 1px solid var(--border-color);
     margin-top: 1rem;

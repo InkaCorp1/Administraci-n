@@ -18,10 +18,34 @@ let egresosTurno = 0;
 async function initCajaModule() {
     try {
         setTodayDate();
+        setupDateFilters();
         await checkCajaStatus();
         await loadCajaData();
     } catch (error) {
         console.error("[CAJA] Error inicializando módulo:", error);
+    }
+}
+
+function setupDateFilters() {
+    const today = new Date();
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(today.getDate() - 2); // 3 días: hoy, ayer, anteayer
+
+    const inputInicio = document.getElementById('filter-caja-inicio');
+    const inputFin = document.getElementById('filter-caja-fin');
+
+    const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    if (inputInicio && !inputInicio.value) {
+        inputInicio.value = formatDate(threeDaysAgo);
+    }
+    if (inputFin && !inputFin.value) {
+        inputFin.value = formatDate(today);
     }
 }
 
@@ -108,22 +132,47 @@ function toggleCajaLayout(state) {
 }
 
 async function loadCajaData() {
-    if (!currentCajaSession) return;
-
     const sb = getSupabaseClient();
     if (!sb) return;
 
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return;
+
+    const inputInicio = document.getElementById('filter-caja-inicio')?.value;
+    const inputFin = document.getElementById('filter-caja-fin')?.value;
+
+    updateMovimientosTitle(inputInicio, inputFin);
+
     try {
-        const { data: movimientos, error } = await sb
-            .from(MOVIMIENTOS_TABLE)
+        let query = sb.from(MOVIMIENTOS_TABLE)
             .select('*')
-            .eq('id_apertura', currentCajaSession.id_apertura)
-            .order('fecha_movimiento', { ascending: false });
+            .eq('id_usuario', session.user.id);
+
+        if (inputInicio) query = query.gte('fecha_movimiento', `${inputInicio}T00:00:00`);
+        if (inputFin) query = query.lte('fecha_movimiento', `${inputFin}T23:59:59`);
+
+        const { data: movimientos, error } = await query.order('fecha_movimiento', { ascending: false });
 
         if (error) throw error;
 
-        processMovimientos(movimientos);
+        // Render table with filtered movements
         renderMovimientosTable(movimientos);
+
+        // Stats specific for the current active turn (even if movements are outside filtered range)
+        if (currentCajaSession) {
+            // Re-fetch only turn movements for accuracy if they might be filtered out
+            const { data: turnMovs } = await sb.from(MOVIMIENTOS_TABLE)
+                .select('*')
+                .eq('id_apertura', currentCajaSession.id_apertura);
+            
+            processMovimientos(turnMovs || []);
+        } else {
+            // Reset visible stats if no session
+            updateStat('caja-total-ingresos', 0);
+            updateStat('caja-total-egresos', 0);
+            updateStat('caja-saldo-actual', 0);
+            updateStat('caja-saldo-inicial', 0);
+        }
     } catch (error) {
         console.error("[CAJA] Error cargando movimientos:", error);
     }
@@ -190,7 +239,10 @@ function renderMovimientosTable(movimientos) {
 
 function showAperturaModal() {
     const modal = document.getElementById('modal-apertura-caja');
-    if (modal) modal.classList.remove('hidden');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+    }
 }
 
 async function handleAperturaCaja(e) {
@@ -243,7 +295,10 @@ function showMovimientoManualModal(tipo) {
         ? '<i class="fas fa-plus-circle text-success"></i> Nuevo Ingreso Manual' 
         : '<i class="fas fa-minus-circle text-danger"></i> Nuevo Egreso Manual';
     
-    if (modal) modal.classList.remove('hidden');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+    }
 }
 
 async function handleMovimientoManual(e) {
@@ -263,19 +318,15 @@ async function handleMovimientoManual(e) {
     try {
         let comprobanteUrl = null;
         if (file) {
-            // Helper function for uploading should exist or use simplified upload
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Math.random()}.${fileExt}`;
-            const filePath = `caja/${fileName}`;
-
-            const { error: uploadError, data } = await sb.storage
-                .from('inkacorp')
-                .upload(filePath, file);
-
-            if (uploadError) throw uploadError;
+            statusText.textContent = 'Subiendo comprobante...';
+            // Usamos la utilidad centralizada para consistencia y compresión
+            const uploadRes = await window.uploadFileToStorage(file, 'caja', session.user.id);
             
-            const { data: { publicUrl } } = sb.storage.from('inkacorp').getPublicUrl(filePath);
-            comprobanteUrl = publicUrl;
+            if (!uploadRes.success) {
+                throw new Error(uploadRes.error);
+            }
+            
+            comprobanteUrl = uploadRes.url;
         }
 
         const { error } = await sb
@@ -307,7 +358,10 @@ function showCierreModal() {
     const modal = document.getElementById('modal-cierre-caja');
     const label = document.getElementById('cierre-saldo-previsto');
     if (label) label.textContent = formatCurrency(currentBalance);
-    if (modal) modal.classList.remove('hidden');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+    }
 }
 
 async function handleCierreCaja(e) {
@@ -348,7 +402,6 @@ function closeModal(id) {
     const modal = document.getElementById(id);
     if (modal) {
         modal.classList.add('hidden');
-        modal.style.display = 'none';
     }
 }
 
@@ -432,6 +485,41 @@ function showNotif(title, text, icon) {
         Swal.fire(title, text, icon);
     } else {
         alert(`${title}: ${text}`);
+    }
+}
+
+function updateMovimientosTitle(start, end) {
+    const titleEl = document.getElementById('caja-movimientos-title');
+    if (!titleEl) return;
+
+    if (!start || !end) {
+        titleEl.textContent = "Movimientos Recientes";
+        return;
+    }
+
+    const startDate = new Date(start + 'T00:00:00');
+    const endDate = new Date(end + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const isTodayIncluded = endDate >= today && startDate <= today;
+
+    const options = { day: 'numeric', month: 'short', year: 'numeric' };
+    const startStr = startDate.toLocaleDateString('es-ES', options);
+    const endStr = endDate.toLocaleDateString('es-ES', options);
+
+    if (isTodayIncluded) {
+        // Calcular diferencia de días para el "últimos X días"
+        const diffTime = Math.abs(endDate - startDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        
+        if (diffDays === 1 && startDate.getTime() === today.getTime()) {
+            titleEl.textContent = "Movimientos de Hoy";
+        } else {
+            titleEl.textContent = `Movimientos de los últimos ${diffDays} días (Incluye hoy)`;
+        }
+    } else {
+        titleEl.textContent = `Movimientos del ${startStr} al ${endStr}`;
     }
 }
 

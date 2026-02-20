@@ -2,6 +2,8 @@
  * Núcleo de la Aplicación Móvil - Manejo de Rutas y Módulos
  */
 
+window.sysCajaAbierta = true; // Por defecto asumimos abierta para evitar alertas fantasmas en carga
+
 document.addEventListener('DOMContentLoaded', () => {
     initMobileApp();
 });
@@ -34,6 +36,9 @@ async function initMobileApp() {
 
     // Exponer localmente y globalmente
     window.currentUser = user;
+
+    // 1.1 Verificar estado de caja global
+    await checkCajaStatusGlobal();
 
     // 2. Saludo de usuario
     try {
@@ -73,6 +78,9 @@ function goToDesktopModule(module) {
 }
 
 async function loadMobileView(view, pushState = true) {
+    // Cerrar cualquier modal abierto al cambiar de vista
+    closeAllLiteModals();
+
     // Si la vista es la base (index o vacÃ­a), redirigir a desembolsos
     if (!view || view === 'index') view = 'desembolsos';
 
@@ -166,26 +174,34 @@ async function loadMobileView(view, pushState = true) {
 async function loadModuleResources(moduleName) {
     if (loadedModules.has(moduleName)) return;
 
-    // Intentar cargar CSS del mÃ³dulo
+    // Intentar cargar CSS del módulo
     const cssPath = `css/modules/${moduleName}.css`;
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = cssPath;
-    document.head.appendChild(link);
+    const cssPromise = new Promise((resolve) => {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = cssPath;
+        link.onload = () => resolve();
+        link.onerror = () => {
+            console.warn(`No se pudo cargar CSS: ${cssPath}`);
+            resolve();
+        };
+        document.head.appendChild(link);
+    });
 
-    // Intentar cargar JS del mÃ³dulo
+    // Intentar cargar JS del módulo
     const jsPath = `js/modules/${moduleName}.js`;
-    await new Promise((resolve) => {
+    const jsPromise = new Promise((resolve) => {
         const script = document.createElement('script');
         script.src = jsPath;
-        script.onload = resolve;
+        script.onload = () => resolve();
         script.onerror = () => {
-            console.error(`Error al cargar el mÃ³dulo JS: ${jsPath}`);
-            resolve(); // Continuar aunque falle para no bloquear
+            console.error(`Error al cargar el módulo JS: ${jsPath}`);
+            resolve();
         };
         document.body.appendChild(script);
     });
 
+    await Promise.all([cssPromise, jsPromise]);
     loadedModules.add(moduleName);
 }
 
@@ -243,6 +259,14 @@ function closeLiteModal(modalId = 'credito-lite-modal') {
         modal.classList.remove('active');
         document.body.style.overflow = ''; // Restaurar scroll
     }
+}
+
+/**
+ * Cierra todos los modales lite abiertos de forma segura
+ */
+function closeAllLiteModals() {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+    document.body.style.overflow = '';
 }
 
 /** * Parsea una fecha asegurando que los strings YYYY-MM-DD se interpreten en la zona horaria de Ecuador
@@ -387,4 +411,87 @@ if (typeof initMobileApp !== 'undefined') {
         setTimeout(checkAndShowChangelog, 3000);
     };
 }
+
+/**
+ * Validador global para acciones financieras en Móvil
+ */
+window.validateCajaBeforeAction = function(modulo = 'esta operación') {
+    if (window.sysCajaAbierta) return true;
+
+    if (window.Swal) {
+        Swal.fire({
+            icon: 'error',
+            title: '<h3 style="color: #ef4444;">¡CAJA CERRADA!</h3>',
+            html: `
+                <div style="text-align: center; padding: 0.5rem;">
+                    <i class="fas fa-lock fa-3x" style="color: #ef4444; margin-bottom: 1rem;"></i>
+                    <p style="font-size: 1rem; color: #e8edf5;">
+                        No puede <strong>${modulo}</strong> sin una jornada de caja abierta.
+                    </p>
+                    <p style="font-size: 0.85rem; margin-top: 0.75rem; color: #aab6c7;">
+                        Diríjase al módulo de Caja para iniciar su turno.
+                    </p>
+                </div>
+            `,
+            confirmButtonColor: '#F2BB3A',
+            confirmButtonText: '<i class="fas fa-cash-register"></i> ABRIR CAJA',
+            background: '#131820',
+            color: '#fff'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                loadMobileView('caja');
+            }
+        });
+    } else {
+        alert('CAJA CERRADA: Debe abrir su caja para continuar.');
+    }
+    return false;
+};
+
+/**
+ * Verifica el estado de la caja del usuario en Supabase (Versión Móvil)
+ * Ahora expuesta globalmente para activación dinámica.
+ */
+window.checkCajaStatusGlobal = async function() {
+    const sb = getSupabaseClient();
+    const { data: { session } } = await sb.auth.getSession();
+    
+    if (!session || !session.user) return;
+
+    try {
+        const { data, error } = await sb
+            .from('ic_caja_aperturas')
+            .select('id_apertura')
+            .eq('id_usuario', session.user.id)
+            .eq('estado', 'ABIERTA')
+            .limit(1);
+
+        if (error) throw error;
+        
+        const isCajaOpen = (data && data.length > 0);
+        window.sysCajaAbierta = isCajaOpen;
+        
+        console.log(`[MOBILE-AUTH] Estado de caja global: ${isCajaOpen ? 'ABIERTA' : 'CERRADA'}`);
+
+        // Actualizar alertas en UI de forma dinámica si el elemento existe en el DOM
+        const alertCaja = document.getElementById('caja-cerrada-alert-mobile');
+        if (alertCaja) {
+            if (isCajaOpen) {
+                alertCaja.classList.add('hidden');
+                alertCaja.style.display = 'none'; // Refuerzo
+            } else {
+                alertCaja.classList.remove('hidden');
+                alertCaja.style.display = 'block'; // Refuerzo
+            }
+        }
+        
+        // Disparar evento para que otros módulos reaccionen si lo necesitan
+        window.dispatchEvent(new CustomEvent('cajaStatusChanged', { detail: { open: isCajaOpen } }));
+        
+        return isCajaOpen;
+    } catch (err) {
+        console.warn('Error verificando caja global:', err);
+        return window.sysCajaAbierta;
+    }
+};
 
