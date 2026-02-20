@@ -1,5 +1,18 @@
 # CHANGELOG - INKA CORP
 
+## [27.5.0] - 2026-02-20
+### Añadido
+- **Transferencias Inter-Cajas (PC y Móvil):** Sistema de envío de dinero en tiempo real entre compañeros con confirmación segura.
+- **Validación Automática de Caja:** El sistema detecta si la caja está abierta antes de permitir el envío o la recepción de fondos.
+- **Alertas de Transferencia Entrante:** Notificación visual tipo banner en el dashboard móvil para transferencias pendientes.
+- **Nuevo Dashboard de Acciones (Móvil):** Rediseño total de los botones de Ingreso, Egreso y Transferir con iconos grandes y gradientes intuitivos.
+
+### Mejorado
+- **UX de Modales Móviles:** Apertura instantánea de modales de transferencia para mejorar la percepción de velocidad.
+- **Esquema de Base de Datos:** Corrección de referencias cruzadas entre `ic_usuarios` e `ic_users` en el módulo móvil de caja.
+
+---
+
 ## [27.2.0] - 2026-02-20
 ### Añadido
 - **Almacenamiento Centralizado (Bucket inkacorp):** Se unificó la subida de todos los documentos y comprobantes al bucket único `inkacorp`.

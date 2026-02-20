@@ -70,20 +70,17 @@ const PAIS_CONFIG_SOCIOS = {
 
 function normalizePaisSocios(pais) {
     if (!pais) return '';
-    const normalized = String(pais)
-        .toUpperCase()
-        .trim()
+    const raw = String(pais).toUpperCase().trim();
+
+    // Normalizar a los valores exactos requeridos (MAYYUSCULAS Y TILDES)
+    if (raw === 'ECUADOR') return 'ECUADOR';
+    if (raw === 'ESTADOS UNIDOS' || raw === 'USA' || raw === 'UNITED STATES' || raw === 'UNITED STATES OF AMERICA') return 'ESTADOS UNIDOS';
+    if (raw === 'PERÚ' || raw === 'PERU' || raw.includes('PERU')) return 'PERÚ';
+
+    // Generar normalizado genérico para otros
+    return raw
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '');
-
-    if (normalized === 'ESTADOS UNIDOS' || normalized === 'UNITED STATES' || normalized === 'UNITED STATES OF AMERICA') {
-        return 'USA';
-    }
-    if (normalized === 'PERU' || normalized === 'PERU\u0301' || normalized === 'PERU\u0301 ') {
-        return 'PERU';
-    }
-    if (normalized === 'USA') return 'USA';
-    return normalized;
 }
 
 function setSociosFilterMode(mode) {

@@ -405,10 +405,9 @@ async function sincronizarEstadosMorosos(creditos) {
     const idsParaActualizar = [];
 
     creditos.forEach(c => {
-        // Solo verificamos créditos que NO sean CANCELADO, PRECANCELADO o ya estén MOROSO
-        // También ignoramos créditos PAUSADOS
-        const estadosFinales = ['CANCELADO', 'PRECANCELADO', 'PAUSADO', 'MOROSO'];
-        if (estadosFinales.includes(c.estado_credito)) return;
+        // Solo los créditos en estado ACTIVO pueden pasar a MOROSO.
+        // Se ignoran explícitamente PAUSADO, CANCELADO, PRECANCELADO y los que ya son MOROSO.
+        if (c.estado_credito !== 'ACTIVO') return;
 
         // Calcular próxima fecha de pago (Capital + Interés + Ahorro)
         const fechaBase = parseDate(c.fecha_primer_pago);

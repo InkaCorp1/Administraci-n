@@ -1192,9 +1192,9 @@ async function sincronizarEstadosMorososLite(creditos) {
     const idsParaActualizar = [];
 
     creditos.forEach(c => {
-        // Ignorar estados finales o ya morosos
-        const ignorar = ['CANCELADO', 'PRECANCELADO', 'PAUSADO', 'MOROSO'];
-        if (ignorar.includes(c.estado_credito)) return;
+        // Solo los créditos en estado ACTIVO pueden pasar a MOROSO.
+        // Se ignoran explícitamente PAUSADO, CANCELADO, PRECANCELADO y los que ya son MOROSO.
+        if (c.estado_credito !== 'ACTIVO') return;
 
         if (!c.fecha_primer_pago) return;
 

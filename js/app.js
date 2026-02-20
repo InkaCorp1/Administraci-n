@@ -1604,8 +1604,10 @@ async function fetchMorososFromDB(container, countBadge, isBackgroundUpdate) {
         cuotasVencidas.forEach(cuota => {
             if (!cuota.credito || !cuota.credito.socio) return;
 
-            // Excluir créditos PAUSADOS - no cuentan como mora
-            if (cuota.credito.estado_credito === 'PAUSADO') return;
+            // Solo considerar créditos ACTIVOS o que ya están marcados como MOROSO
+            // Excluir PAUSADOS, CANCELADOS o PRECANCELADOS del dashboard de mora
+            const estadosPermitidos = ['ACTIVO', 'MOROSO'];
+            if (!estadosPermitidos.includes(cuota.credito.estado_credito)) return;
 
             const socioId = cuota.credito.socio.idsocio;
             const fechaVencimiento = parseDate(cuota.fecha_vencimiento);
