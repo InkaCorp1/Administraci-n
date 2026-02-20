@@ -1,5 +1,10 @@
 # CHANGELOG - INKA CORP
 
+## [27.5.2] - 2026-02-20
+### Corregido
+- **Estandarización de Modales (Móvil):** Se unificaron los estilos de modales en una arquitectura global mejorada. Todos los modales ahora tienen scroll vertical garantizado, soporte para áreas seguras de iPhone (notch) y una animación de apertura más fluida.
+- **Resolución de Conflictos CSS:** Se eliminaron definiciones redundantes de modales en archivos de módulos individuales para asegurar un comportamiento único y predecible.
+
 ## [27.5.1] - 2026-02-20
 ### Corregido
 - **Scroll en Modal de Documentos (Móvil):** Se corrigió un problema de visualización donde el botón de "Descargar Todos" era inaccesible en pantallas pequeñas. El modal ahora se expande a pantalla completa y permite scroll vertical suave en dispositivos táctiles.

@@ -871,6 +871,10 @@ body.searching-mode .mobile-header {
 }
 
 /* Modal Overlay */
+/* ==========================================
+   MODALES LITE VERSION (MOBILE OPTIMIZED)
+   ========================================== */
+
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -878,10 +882,10 @@ body.searching-mode .mobile-header {
     right: 0;
     bottom: 0;
     background: rgba(15, 23, 42, 0.95); /* Fondo más oscuro para enfoque */
-    backdrop-filter: blur(10px);
-    z-index: 2000; /* Superamos cualquier header o nav */
+    backdrop-filter: blur(14px); /* Blur mayor para profundidad */
+    z-index: 2000;
     display: none;
-    align-items: stretch;
+    align-items: flex-end; /* Alineación al fondo tipo app nativa modern style */
     justify-content: center;
 }
 
@@ -889,14 +893,31 @@ body.searching-mode .mobile-header {
     display: flex;
 }
 
-/* Fix for possible inherited white backgrounds */
+/* Modal Content Base */
 .modal-content {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
     width: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
+/* El modal estándar que sube desde abajo (Bottom Sheet style) */
+.lite-modal {
+    background: var(--bg-secondary, #171b22);
+    border-radius: 2rem 2rem 0 0; /* Bordes redondeados superiores */
+    max-height: 94vh; /* Casi pantalla completa */
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
+    animation: slideUpModal 0.35s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+/* Modal Fullscreen (Usado en Bancos y otros módulos densos) */
 .lite-modal-fullscreen {
     background: var(--bg-secondary, #171b22) !important;
     width: 100%;
@@ -907,6 +928,56 @@ body.searching-mode .mobile-header {
     animation: slideUpModal 0.35s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
+/* Header Estándar */
+.lite-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    background: var(--primary, #0B4E32);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    flex-shrink: 0;
+    border-radius: 2rem 2rem 0 0;
+}
+
+.lite-header h3 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+}
+
+/* Body: El secreto del scroll está aquí */
+.lite-body {
+    flex: 1;
+    overflow-y: auto !important;
+    padding: 1.5rem;
+    -webkit-overflow-scrolling: touch;
+    background: var(--bg-secondary, #171b22) !important;
+    padding-bottom: 5rem; /* Margen extra para no chocar con el footer o teclado */
+}
+
+/* Footer Estándar */
+.lite-footer {
+    padding: 1rem 1.5rem calc(1rem + env(safe-area-inset-bottom)); /* Soporte para iPhone notch */
+    background: var(--bg-secondary, #171b22);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    flex-shrink: 0;
+}
+
+.lite-footer.split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+/* Header para navegación interior (tipo pantalla nueva) */
 .lite-header-nav {
     display: flex;
     align-items: center;
@@ -979,38 +1050,14 @@ body.searching-mode .mobile-header {
     color: var(--primary);
 }
 
-.lite-input {
-    font-size: 1rem;
-    color: var(--text-primary);
-    transition: all 0.2s ease;
-    outline: none;
-    -webkit-appearance: none;
-    appearance: none;
-}
+/* Duplicate input removed */
 
-.lite-input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(11, 78, 50, 0.1);
-}
 
-.lite-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    background: var(--primary);
-    flex-shrink: 0;
-}
+/* Duplicate header removed */
 
-/* Scroll handling for modals */
-.lite-body {
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 2rem;
-    background: var(--bg-secondary, #171b22) !important;
-}
+
+/* Scroll handling cleaned */
+
 
 /* Button Loading State */
 .btn-loading {
