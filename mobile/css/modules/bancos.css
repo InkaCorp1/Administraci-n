@@ -238,6 +238,176 @@
     height: 70px;
 }
 
+/* Dashboard Header Improvement - Se movió a mobile-styles.css para uso global */
+.header-sync {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.lite-sync-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: white;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.lite-sync-btn:active { transform: rotate(180deg) scale(0.9); }
+
+/* Amortization Cards for Banks (Premium Style) */
+.lite-amort-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0.5rem 0 2rem 0;
+}
+
+.lite-amort-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 1.5rem;
+    padding: 1.25rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.lite-amort-card.is-paid {
+    opacity: 0.85;
+    background: rgba(16, 185, 129, 0.02);
+    border-color: rgba(16, 185, 129, 0.1);
+}
+
+.lite-amort-card.is-atrasado {
+    border-left: 5px solid #ef4444;
+    background: rgba(239, 68, 68, 0.04);
+}
+
+.lite-amort-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.lite-amort-number {
+    font-size: 0.72rem;
+    font-weight: 900;
+    color: var(--bank-primary, var(--primary));
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+}
+
+.lite-amort-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    padding: 1.15rem 0;
+    border-top: 1px dashed var(--border-color);
+    border-bottom: 1px dashed var(--border-color);
+}
+
+.lite-amort-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.lite-amort-label {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.lite-amort-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.lite-amort-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.lite-amort-total-label {
+    font-size: 0.72rem;
+    font-weight: 850;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.lite-amort-total-value {
+    font-size: 1.3rem;
+    font-weight: 950;
+    color: var(--gold);
+    letter-spacing: -0.5px;
+}
+
+.lite-amort-actions {
+    margin-top: 1.25rem;
+    display: flex;
+    gap: 0.85rem;
+}
+
+.lite-btn-amort-pay {
+    flex: 2;
+    background: var(--bank-primary, var(--primary));
+    color: white;
+    border: none;
+    padding: 1rem;
+    border-radius: 14px;
+    font-size: 0.85rem;
+    font-weight: 850;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 8px 16px -4px var(--bank-glow, rgba(0,0,0,0.25));
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.lite-btn-amort-view {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    border-radius: 14px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.lite-status-pill {
+    padding: 0.35rem 0.85rem;
+    border-radius: 10px;
+    font-size: 0.65rem;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pill-pagado { background: #10b981; color: white; border: none; }
+.pill-pendiente { background: rgba(255, 255, 255, 0.1); color: var(--text-secondary); border: 1px solid var(--border-color); }
+.pill-atrasado { background: #ef4444; color: white; border: none; }
+
 /* Modales estandarizados en mobile-styles.css */
 .lite-modal-fullscreen {
     /* Personalización mínima de color si es necesario */

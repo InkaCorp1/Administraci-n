@@ -310,7 +310,7 @@ function closeLiteSearch(event, btn) {
     filterLiteCreditos('');
 }
 
-function showLiteCreditDetails(id) {
+async function showLiteCreditDetails(id) {
     const c = liteCreditosData.find(item => item.id_credito === id);
     if (!c) return;
 
@@ -346,6 +346,56 @@ function showLiteCreditDetails(id) {
         }
         estadoEl.textContent = statusLabel;
         estadoEl.className = `lite-det-status badge-${c.estado_credito?.toLowerCase()}`;
+    }
+
+    // Sección de Deuda Mora
+    const moraSection = document.getElementById('lite-det-mora-section');
+    if (moraSection) {
+        if (c.estado_credito === 'MOROSO') {
+            moraSection.style.display = 'block';
+            document.getElementById('lite-det-mora-cuotas').textContent = 'Calculando...';
+            document.getElementById('lite-det-mora-valor').textContent = '$0.00';
+            document.getElementById('lite-det-mora-total').textContent = '$0.00';
+
+            try {
+                const supabase = window.getSupabaseClient();
+                const { data: cuotas, error } = await supabase
+                    .from('ic_creditos_amortizacion')
+                    .select('*')
+                    .eq('id_credito', c.id_credito)
+                    .neq('estado_cuota', 'PAGADO')
+                    .neq('estado_cuota', 'CONDONADO');
+
+                if (!error && cuotas) {
+                    const hoyStr = typeof getEcuadorDateString === 'function' ? getEcuadorDateString() : new Date().toISOString().split('T')[0];
+                    const hoy = window.parseDate(hoyStr);
+                    if (hoy) hoy.setHours(23, 59, 59, 999);
+
+                    let netoVencido = 0;
+                    let moraAcumulada = 0;
+
+                    cuotas.forEach(cuota => {
+                        const vencimento = window.parseDate(cuota.fecha_vencimiento);
+                        if (vencimento && vencimento <= hoy) {
+                            netoVencido += parseFloat(cuota.cuota_total || 0);
+                            const moraInfo = calcularMoraLite(cuota.fecha_vencimiento, hoyStr);
+                            if (moraInfo.estaEnMora) {
+                                moraAcumulada += moraInfo.montoMora;
+                            }
+                        }
+                    });
+
+                    document.getElementById('lite-det-mora-cuotas').textContent = `$${netoVencido.toLocaleString('es-EC', { minimumFractionDigits: 2 })}`;
+                    document.getElementById('lite-det-mora-valor').textContent = `$${moraAcumulada.toLocaleString('es-EC', { minimumFractionDigits: 2 })}`;
+                    document.getElementById('lite-det-mora-total').textContent = `$${(netoVencido + moraAcumulada).toLocaleString('es-EC', { minimumFractionDigits: 2 })}`;
+                }
+            } catch (err) {
+                console.error('Error calculando deuda mora lite:', err);
+                moraSection.style.display = 'none';
+            }
+        } else {
+            moraSection.style.display = 'none';
+        }
     }
 
     // Nuevos campos
@@ -457,19 +507,65 @@ window.openPaymentModalMobile = async function(detalleId, btn) {
         document.getElementById('pago-lite-credito-codigo').textContent = `COD: ${c.codigo_credito}`;
         document.getElementById('pago-lite-socio-nombre').textContent = c.socio?.nombre || 'Socio';
         
-        // Poblar select de cuotas
+        const hoy = new Date();
+        hoy.setHours(23, 59, 59, 999);
+
+        // Poblar Seleccionador Personalizado (Grid de Cards)
         const select = document.getElementById('pago-lite-cuotas-select');
-        select.innerHTML = currentPaymentCuotas.map((_, idx) => {
+        const customContainer = document.getElementById('pago-lite-cuotas-selection-list');
+        
+        // Reset 
+        select.innerHTML = '';
+        customContainer.innerHTML = '';
+
+        currentPaymentCuotas.forEach((cuota, idx) => {
             const count = idx + 1;
-            const endNum = currentPaymentCuotas[0].numero_cuota + idx;
+            const endNum = cuota.numero_cuota;
             const total = currentPaymentCuotas.slice(0, count).reduce((sum, item) => sum + parseFloat(item.cuota_total), 0);
             
-            if (count === 1) {
-                return `<option value="${count}">Cuota #${currentPaymentCuotas[0].numero_cuota} ($${total.toFixed(2)})</option>`;
-            } else {
-                return `<option value="${count}">${count} Cuotas - Hasta #${endNum} ($${total.toFixed(2)})</option>`;
-            }
-        }).join('');
+            const venc = window.parseDate(cuota.fecha_vencimiento);
+            const fechaLabel = venc ? window.formatDate(venc) : 'S/F';
+            const isVencida = venc && venc <= hoy;
+
+            // 1. Sincronizar select oculto (Compatibility)
+            const option = document.createElement('option');
+            option.value = count;
+            option.textContent = `${count} ${count === 1 ? 'Cuota' : 'Cuotas'}`;
+            select.appendChild(option);
+
+            // 2. Crear Card Personalizada
+            const card = document.createElement('div');
+            card.className = `lite-selection-card ${isVencida ? 'selection-atrasada-bg' : ''} ${idx === 0 ? 'selected' : ''}`;
+            card.setAttribute('data-value', count);
+            
+            card.innerHTML = `
+                <div class="lite-selection-card-info">
+                    <span class="lite-selection-card-title">
+                        ${count} ${count === 1 ? 'Cuota' : 'Cuotas'} (Hasta #${endNum})
+                    </span>
+                    <span class="lite-selection-card-subtitle ${isVencida ? 'selection-atrasada' : ''}">
+                        <i class="fas fa-calendar-day"></i> 
+                        ${fechaLabel} ${isVencida ? '(ATRASADA)' : ''}
+                    </span>
+                </div>
+                <div class="lite-selection-card-value">$${total.toFixed(2)}</div>
+            `;
+
+            card.onclick = () => selectCard(count);
+            customContainer.appendChild(card);
+        });
+
+        function selectCard(val) {
+            // UI Update
+            const cards = customContainer.querySelectorAll('.lite-selection-card');
+            cards.forEach(c => c.classList.toggle('selected', parseInt(c.getAttribute('data-value')) === val));
+            
+            // Sync Hidden Select
+            select.value = val;
+            
+            // Trigger Original Re-calculation logic
+            updateMoraYTotalLite();
+        }
 
         // Reset inputs
         const fechaInput = document.getElementById('pago-lite-fecha');
@@ -803,11 +899,11 @@ async function confirmarPagoLite() {
         const supabase = window.getSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        // 1. Subir imagen usando la utilidad centralizada (maneja compresión)
-        const uploadRes = await window.uploadFileToStorage(currentSelectedReceiptFile, 'comprobantes', idCredito);
+        // 1. Subir a bucket 'inkacorp' con subcarpeta unificada
+        const uploadRes = await window.uploadFileToStorage(currentSelectedReceiptFile, 'creditos/pagos', idCredito, 'inkacorp');
 
         if (!uploadRes.success) {
-            throw new Error(uploadRes.error);
+            throw new Error("No se pudo subir el comprobante: " + uploadRes.error);
         }
 
         const publicUrl = uploadRes.url;
@@ -1003,7 +1099,7 @@ async function showCreditoAmortization() {
     const tbody = document.getElementById('lite-amortization-credito-body');
     if (!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Cargando plan...</td></tr>';
+    tbody.innerHTML = '<div style="text-align:center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Cargando plan...</div>';
 
     if (typeof openLiteModal === 'function') openLiteModal('modal-amortizacion-credito');
 
@@ -1018,46 +1114,103 @@ async function showCreditoAmortization() {
         if (error) throw error;
 
         if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 2rem;">No se encontró el plan de pagos.</td></tr>';
+            tbody.innerHTML = '<div style="text-align:center; padding: 2rem;">No se encontró el plan de pagos.</div>';
             return;
         }
 
         let nextToPayFound = false;
+        const hoyStr = typeof getEcuadorDateString === 'function' ? getEcuadorDateString() : new Date().toISOString().split('T')[0];
+        const hoy = window.parseDate(hoyStr);
+        if (hoy) hoy.setHours(23, 59, 59, 999);
 
         tbody.innerHTML = data.map(cuota => {
             const isPaid = cuota.estado_cuota === 'PAGADO';
-            const fecha = cuota.fecha_vencimiento ? new Date(cuota.fecha_vencimiento + 'T12:00:00') : null;
-            const fechaTxt = fecha ? fecha.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : '---';
+            const venc = window.parseDate(cuota.fecha_vencimiento);
+            const fechaTxt = venc ? window.formatDate(venc) : '---';
+            const isAtrasado = !isPaid && venc && venc <= hoy;
             
-            let actionHtml = '';
-            if (!isPaid && !nextToPayFound) {
-                // Esta es la primera cuota no pagada (la siguiente a pagar)
-                actionHtml = `<button class="lite-btn-pay" onclick="window.openPaymentModalMobile('${cuota.id_detalle}', this)"><i class="fas fa-dollar-sign"></i></button>`;
-                nextToPayFound = true;
+            const capitalVal = parseFloat(cuota.pago_capital || 0);
+            const interesVal = parseFloat(cuota.pago_interes || 0);
+            const subtotalVal = capitalVal + interesVal;
+            
+            let moraVal = 0;
+            let totalFinal = subtotalVal;
+
+            if (isAtrasado && venc) {
+                const diffTime = Math.abs(hoy - venc);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                moraVal = diffDays * 2;
+                totalFinal = subtotalVal + moraVal;
             } else if (isPaid) {
-                // Cuota pagada: Botón de ojo para ver recibo
-                actionHtml = `<button class="lite-btn-view" onclick="window.showReceiptDetailMobile('${cuota.id_detalle}')" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: none; width: 32px; height: 32px; border-radius: 8px; cursor: pointer;"><i class="fas fa-eye"></i></button>`;
+                // Si ya está pagado, mostramos lo que se guardó en DB
+                totalFinal = parseFloat(cuota.cuota_total || 0);
             }
 
+            let actionHtml = '';
+            if (!isPaid && !nextToPayFound) {
+                actionHtml = `
+                    <div class="lite-amort-actions">
+                        <button class="lite-btn-amort-pay" onclick="window.openPaymentModalMobile('${cuota.id_detalle}', this)">
+                            <i class="fas fa-hand-holding-usd"></i> PAGAR AHORA
+                        </button>
+                    </div>`;
+                nextToPayFound = true;
+            } else if (isPaid) {
+                actionHtml = `
+                    <div class="lite-amort-actions">
+                        <button class="lite-btn-amort-view" onclick="window.showReceiptDetailMobile('${cuota.id_detalle}')">
+                            <i class="fas fa-file-invoice-dollar"></i> VER RECIBO
+                        </button>
+                    </div>`;
+            }
+
+            const statusClass = isPaid ? 'pill-pagado' : (isAtrasado ? 'pill-atrasado' : 'pill-pendiente');
+            const statusLabel = isPaid ? 'PAGADO' : (isAtrasado ? 'ATRASADO' : 'PENDIENTE');
+
             return `
-                <tr class="${isPaid ? 'lite-row-paid' : ''}">
-                    <td style="font-weight:700">${cuota.numero_cuota}</td>
-                    <td>${fechaTxt}</td>
-                    <td style="text-align: center;">
-                        ${isPaid ? 
-                            '<span class="lite-status-pill pill-pagado">PAGADO</span>' : 
-                            '<span class="lite-status-pill pill-pendiente">PENDIENTE</span>'}
-                    </td>
-                    <td style="text-align: right;">
-                        ${actionHtml}
-                    </td>
-                </tr>
+                <div class="lite-amort-card ${isPaid ? 'is-paid' : ''} ${isAtrasado ? 'is-atrasado' : ''}">
+                    <div class="lite-amort-card-header">
+                        <span class="lite-amort-number">CUOTA #${cuota.numero_cuota}</span>
+                        <span class="lite-status-pill ${statusClass}" style="font-size: 0.65rem; padding: 2px 8px;">${statusLabel}</span>
+                    </div>
+                    
+                    <div class="lite-amort-grid">
+                        <div class="lite-amort-item">
+                            <span class="lite-amort-label">Vencimiento</span>
+                            <span class="lite-amort-value">${fechaTxt}</span>
+                        </div>
+                        <div class="lite-amort-item">
+                            <span class="lite-amort-label">Capital + Int.</span>
+                            <span class="lite-amort-value">$${subtotalVal.toFixed(2)}</span>
+                        </div>
+                    </div>
+
+                    ${isAtrasado ? `
+                    <div class="lite-amort-extra-info">
+                        <div class="lite-amort-detail-row">
+                            <span>Subtotal</span>
+                            <span>$${subtotalVal.toFixed(2)}</span>
+                        </div>
+                        <div class="lite-amort-detail-row mora-text">
+                            <span>Mora acumulada</span>
+                            <span>$${moraVal.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <div class="lite-amort-footer">
+                        <span class="lite-amort-total-label">${isAtrasado ? 'TOTAL A PAGAR' : 'TOTAL CUOTA'}</span>
+                        <span class="lite-amort-total-value">$${totalFinal.toFixed(2)}</span>
+                    </div>
+
+                    ${actionHtml}
+                </div>
             `;
         }).join('');
 
     } catch (error) {
         console.error('Error fetching amortization:', error);
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 2rem; color: var(--error);">Error: ${error.message}</td></tr>`;
+        tbody.innerHTML = `<div style="text-align:center; padding: 2rem; color: var(--error);">Error: ${error.message}</div>`;
     }
 }
 

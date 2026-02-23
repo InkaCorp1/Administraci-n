@@ -1,32 +1,5 @@
 ﻿
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.section-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.section-badge {
-    background: var(--primary);
-    color: white;
-    font-weight: 700;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.85rem;
-}
+/* Header globalizado en mobile-styles.css */
 
 .desembolso-card {
     background: linear-gradient(160deg, #223042 0%, #1f2b3a 100%);
@@ -36,6 +9,11 @@
     box-shadow: 0 10px 24px rgba(4, 10, 18, 0.34);
     border: 1px solid rgba(148, 163, 184, 0.24);
     border-left: 5px solid var(--gold);
+    transition: all 0.2s;
+}
+
+.desembolso-card:active {
+    transform: scale(0.98);
 }
 
 .desembolso-header {
@@ -137,6 +115,10 @@
     background: linear-gradient(135deg, var(--primary) 0%, #0f7f4f 100%);
     color: white;
     box-shadow: 0 8px 16px rgba(11, 78, 50, 0.28);
+}
+
+.desembolso-btn:active {
+    transform: scale(0.95) translateY(2px);
 }
 
 .empty-state {

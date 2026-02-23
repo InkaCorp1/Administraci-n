@@ -251,8 +251,13 @@ async function showAmortizationLite(id) {
     const banco = mobileBancosData.find(b => b.id_transaccion === id);
     if (!banco) return;
 
-    const tbody = document.getElementById('lite-amortization-body');
-    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Cargando cuotas...</td></tr>';
+    const container = document.getElementById('lite-amortization-body');
+    container.innerHTML = `
+        <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Cargando cronograma...</p>
+        </div>
+    `;
 
     const theme = getBankTheme(banco.nombre_banco);
     const styles = `
@@ -297,46 +302,90 @@ async function showAmortizationLite(id) {
         currentBankAmortization = detalles || [];
 
         let nextToPayFound = false;
+        const today = new Date();
+        today.setHours(0,0,0,0);
 
-        tbody.innerHTML = currentBankAmortization.map(item => {
+        container.innerHTML = currentBankAmortization.map(item => {
             const isPaid = item.estado === 'PAGADO';
+            // Validar atraso (si no está pagado y la fecha ya pasó)
+            const fechaCuota = item.fecha_pago ? new Date(item.fecha_pago + 'T00:00:00') : null;
+            const isAtrasado = !isPaid && fechaCuota && fechaCuota < today;
+
             const fechaTxt = item.fecha_pago ? window.formatDate(item.fecha_pago) : '---';
 
+            let statusClass = 'pill-pendiente';
+            let statusText = 'PENDIENTE';
+
+            if (isPaid) {
+                statusClass = 'pill-pagado';
+                statusText = 'PAGADO';
+            } else if (isAtrasado) {
+                statusClass = 'pill-atrasado';
+                statusText = 'ATRASADO';
+            }
+
             let actionHtml = '';
-            if (isPaid && item.fotografia) {
-                actionHtml = `<button class="lite-action-btn btn-view" onclick="showLiteComprobante('${item.id_detalle}')">
-                                <i class="fas fa-eye"></i>
-                             </button>`;
-            } else if (!isPaid && !nextToPayFound) {
-                actionHtml = `<button class="lite-action-btn btn-pay" onclick="openLitePago('${item.id_detalle}')">
-                                <i class="fas fa-dollar-sign"></i>
-                             </button>`;
+            if (isPaid) {
+                actionHtml = `
+                    <button class="lite-btn-amort-view" onclick="showLiteComprobante('${item.id_detalle}')">
+                        <i class="fas fa-eye"></i> Comprobante
+                    </button>`;
+            } else if (!nextToPayFound) {
+                actionHtml = `
+                    <button class="lite-btn-amort-pay" onclick="openLitePago('${item.id_detalle}')">
+                        <i class="fas fa-dollar-sign"></i> Pagar Cuota
+                    </button>`;
                 nextToPayFound = true;
+            } else {
+                // Cuotas futuras
+                actionHtml = `
+                    <button class="lite-btn-amort-view" style="opacity: 0.5; cursor: not-allowed;" disabled>
+                        <i class="fas fa-lock"></i> Bloqueado
+                    </button>`;
             }
 
             return `
-                <tr class="${isPaid ? 'lite-row-paid' : ''}">
-                    <td style="font-weight:700">${item.cuota}</td>
-                    <td>${fechaTxt}</td>
-                    <td style="text-align: center;">
-                        <span class="lite-status-pill ${isPaid ? 'pill-pagado' : 'pill-pendiente'}">
-                            ${isPaid ? 'PAGADO' : 'PENDIENTE'}
-                        </span>
-                    </td>
-                    <td style="text-align: right;">
+                <div class="lite-amort-card ${isPaid ? 'is-paid' : ''} ${isAtrasado ? 'is-atrasado' : ''}">
+                    <div class="lite-amort-card-header">
+                        <span class="lite-amort-number">Cuota ${item.cuota}</span>
+                        <span class="lite-status-pill ${statusClass}">${statusText}</span>
+                    </div>
+                    
+                    <div class="lite-amort-grid">
+                        <div class="lite-amort-item">
+                            <span class="lite-amort-label">Vencimiento</span>
+                            <span class="lite-amort-value">${fechaTxt}</span>
+                        </div>
+                        <div class="lite-amort-item" style="text-align: right;">
+                            <span class="lite-amort-label">Monto</span>
+                            <span class="lite-amort-value">$${Number(item.valor || 0).toLocaleString('es-EC', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                    </div>
+
+                    <div class="lite-amort-actions">
                         ${actionHtml}
-                    </td>
-                </tr>
+                    </div>
+                </div>
             `;
         }).join('');
 
         if (currentBankAmortization.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 2rem;">No hay cuotas registradas.</td></tr>';
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-calendar-times"></i>
+                    <p>No se encontraron cuotas programadas.</p>
+                </div>
+            `;
         }
 
     } catch (error) {
         console.error('Error loading amortization details:', error);
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 2rem; color: var(--error);">Error: ${error.message}</td></tr>`;
+        container.innerHTML = `
+            <div class="empty-state error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Error: ${error.message}</p>
+            </div>
+        `;
     }
 }
 
@@ -601,12 +650,12 @@ async function handleMobilePayment(e) {
 
         const supabase = window.getSupabaseClient();
 
-        // 1. Subir imagen usando la utilidad centralizada (maneja compresión)
+        // 1. Subir imagen usando la utilidad centralizada (maneja compresión y bucket unificado 'inkacorp')
         const blob = await fetch(previewImg.src).then(r => r.blob());
-        const uploadRes = await window.uploadFileToStorage(blob, 'bancos_pagos', idDetalle);
+        const uploadRes = await window.uploadFileToStorage(blob, 'bancos/pagos', idDetalle, 'inkacorp');
 
         if (!uploadRes.success) {
-            throw new Error(uploadRes.error);
+            throw new Error("No se pudo subir la imagen: " + uploadRes.error);
         }
 
         const imgUrl = uploadRes.url;

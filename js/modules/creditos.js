@@ -293,16 +293,24 @@ async function loadCreditos(forceRefresh = false) {
     try {
         // PASO 1: Mostrar datos de caché INMEDIATAMENTE si existen
         if (!forceRefresh && window.hasCacheData && window.hasCacheData('creditos')) {
-            allCreditos = window.getCacheData('creditos');
-            filteredCreditos = [...allCreditos];
-            updateEstadoCountsCreditos();
-            updateStats();
-            applySorting();
-            renderCreditosTable(filteredCreditos);
+            const cachedData = window.getCacheData('creditos');
+            
+            // Verificamos si los datos cacheados tienen la estructura necesaria (amortización)
+            // Si al menos un moroso no tiene amortización, forzamos la actualización de Supabase
+            const needsRefresh = cachedData.some(c => c.estado_credito === 'MOROSO' && !c.amortizacion);
+            
+            if (!needsRefresh) {
+                allCreditos = cachedData;
+                filteredCreditos = [...allCreditos];
+                updateEstadoCountsCreditos();
+                updateStats();
+                applySorting();
+                renderCreditosTable(filteredCreditos);
 
-            // Si el caché es reciente, no recargar
-            if (window.isCacheValid && window.isCacheValid('creditos')) {
-                return;
+                // Si el caché es reciente, no recargar
+                if (window.isCacheValid && window.isCacheValid('creditos')) {
+                    return;
+                }
             }
         }
 
@@ -319,6 +327,11 @@ async function loadCreditos(forceRefresh = false) {
                     cedula,
                     whatsapp,
                     paisresidencia
+                ),
+                amortizacion:ic_creditos_amortizacion (
+                    cuota_total,
+                    fecha_vencimiento,
+                    estado_cuota
                 )
             `)
             .order('created_at', { ascending: false });
@@ -712,7 +725,7 @@ function renderEstadoSection(estado, creditos, isSingleSection) {
                         <tr>
                             <th class="col-socio">Socio</th>
                             <th class="col-capital text-right">Capital</th>
-                            <th class="text-right">Cuota</th>
+                            <th class="text-right">${estado === 'MOROSO' ? 'DEUDA ACUMULADA' : 'CUOTA'}</th>
                             <th class="text-center">País</th>
                             <th class="text-center">Pagadas</th>
                             <th class="text-center">Próx. Pago</th>
@@ -721,7 +734,7 @@ function renderEstadoSection(estado, creditos, isSingleSection) {
                         </tr>
                     </thead>
                     <tbody>
-                        ${creditos.map(credito => renderCreditoRow(credito)).join('')}
+                        ${creditos.map(credito => renderCreditoRow(credito, estado)).join('')}
                     </tbody>
                 </table>
             </div>
@@ -729,13 +742,52 @@ function renderEstadoSection(estado, creditos, isSingleSection) {
     `;
 }
 
-function renderCreditoRow(credito) {
+/**
+ * Calcula la deuda acumulada para un crédito moroso (Cuotas vencidas + mora)
+ */
+function calculateDeudaAcumulada(credito) {
+    if (!credito.amortizacion || !Array.isArray(credito.amortizacion)) {
+        return credito.cuota_con_ahorro || 0;
+    }
+
+    // Obtener la fecha actual en Ecuador para comparar
+    const hoyStr = getEcuadorDateString();
+    const hoy = parseDate(hoyStr);
+    if (hoy) hoy.setHours(23, 59, 59, 999);
+
+    // Filtrar solo cuotas que no están pagadas Y que YA vencieron (hasta hoy)
+    const overdueCuotas = credito.amortizacion.filter(c => {
+        const isNotPaid = c.estado_cuota === 'VENCIDO' || c.estado_cuota === 'PENDIENTE' || c.estado_cuota === 'PARCIAL';
+        const vencimiento = parseDate(c.fecha_vencimiento);
+        return isNotPaid && vencimiento && (vencimiento <= hoy);
+    });
+
+    if (overdueCuotas.length === 0) {
+        return 0;
+    }
+
+    let totalDeuda = 0;
+    overdueCuotas.forEach(cuota => {
+        const montoCuota = parseFloat(cuota.cuota_total || 0);
+        const moraInfo = calcularMora(cuota.fecha_vencimiento);
+        totalDeuda += montoCuota + (moraInfo.montoMora || 0);
+    });
+
+    return totalDeuda;
+}
+
+function renderCreditoRow(credito, sectionEstado = '') {
     const progreso = `${credito.cuotas_pagadas || 0}/${credito.plazo}`;
     const proximoPago = getProximoPago(credito);
     const pais = credito.socio?.paisresidencia || '';
     const paisFlag = getPaisFlag(pais);
     const paisCode = getPaisCode(pais);
     const estadoBadge = getEstadoBadgeCredito(credito.estado_credito);
+    
+    // Si estamos en la sección de morosos, calculamos la deuda acumulada total
+    const valorCuota = sectionEstado === 'MOROSO' 
+        ? calculateDeudaAcumulada(credito) 
+        : (credito.cuota_con_ahorro || 0);
     
     // Clase de estado para fondo sutil
     const statusClass = credito.estado_credito ? `row-status-${credito.estado_credito.toLowerCase()}` : '';
@@ -749,7 +801,7 @@ function renderCreditoRow(credito) {
                 </div>
             </td>
             <td class="col-capital text-right">${formatMoney(credito.capital)}</td>
-            <td class="text-right">${formatMoney(credito.cuota_con_ahorro)}</td>
+            <td class="text-right"><strong>${formatMoney(valorCuota)}</strong></td>
             <td class="col-pais text-center">
                 <div class="pais-container-row">
                     ${paisFlag ? `<img src="${paisFlag}" alt="${paisCode}" class="pais-flag-img-row">` : ''}
@@ -935,7 +987,11 @@ async function viewCredito(creditoId, btn = null) {
     const modalHeader = document.querySelector('#ver-credito-modal .modal-header');
     const modalTitle = document.querySelector('#ver-credito-modal .modal-title');
     const modalClose = document.querySelector('#ver-credito-modal .modal-close');
+    const modalDoc = document.querySelector('#ver-credito-modal .modal-card');
     
+    // Resetear clase de moroso por si acaso
+    if (modalDoc) modalDoc.classList.remove('modal-moroso-wide');
+
     if (modalHeader) {
         modalHeader.style.background = `linear-gradient(135deg, ${config.color} 0%, #a48d5d 100%)`;
     }
@@ -951,6 +1007,11 @@ async function viewCredito(creditoId, btn = null) {
         modalClose.style.display = 'flex';
         modalClose.style.alignItems = 'center';
         modalClose.style.justifyContent = 'center';
+    }
+
+    // Si es moroso, añadir clase para ensanchar el modal
+    if (credito.estado_credito === 'MOROSO' && modalDoc) {
+        modalDoc.classList.add('modal-moroso-wide');
     }
 
     document.getElementById('det-nombre-socio').textContent = credito.socio?.nombre || '-';
@@ -1026,9 +1087,31 @@ async function viewCredito(creditoId, btn = null) {
 // ==========================================
 async function loadAmortizacionTable(creditoId) {
     const tbody = document.getElementById('amortizacion-table-body');
-    tbody.innerHTML = '<tr><td colspan="10" class="text-center">Cargando...</td></tr>';
+    const thead = document.querySelector('.amortizacion-table thead tr');
+    tbody.innerHTML = '<tr><td colspan="12" class="text-center">Cargando...</td></tr>';
 
     try {
+        const credito = currentViewingCredito;
+        const isMoroso = credito && credito.estado_credito === 'MOROSO';
+
+        // Ajustar el header de la tabla si es Moroso
+        if (thead) {
+            thead.innerHTML = `
+                <th class="hide-mobile">#</th>
+                <th>Fecha</th>
+                <th class="hide-mobile">Capital</th>
+                <th class="hide-mobile">Interés</th>
+                <th class="hide-mobile">Cuota</th>
+                <th class="hide-mobile">Ahorro</th>
+                <th>Subtotal</th>
+                ${isMoroso ? '<th class="text-danger" style="font-weight: 800;">Mora</th>' : ''}
+                <th>Total</th>
+                <th>Saldo</th>
+                <th>Estado</th>
+                <th>Acción</th>
+            `;
+        }
+
         const supabase = window.getSupabaseClient();
         const { data: cuotas, error } = await supabase
             .from('ic_creditos_amortizacion')
@@ -1039,8 +1122,39 @@ async function loadAmortizacionTable(creditoId) {
         if (error) throw error;
 
         if (!cuotas || cuotas.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center">No hay datos de amortización</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="12" class="text-center">No hay datos de amortización</td></tr>';
             return;
+        }
+
+        // Calcular resumen para morosos (Solo cuotas vencidas y su mora)
+        const morosoSection = document.getElementById('det-deuda-moroso-section');
+        if (morosoSection) {
+            if (isMoroso) {
+                const hoyStr = getEcuadorDateString();
+                const hoy = parseDate(hoyStr);
+                if (hoy) hoy.setHours(23, 59, 59, 999);
+
+                let montoCuotasVencidas = 0;
+                let moraTotalAcumulada = 0;
+
+                cuotas.forEach(cuota => {
+                    const isNotPaid = cuota.estado_cuota !== 'PAGADO' && cuota.estado_cuota !== 'CONDONADO';
+                    const vencimiento = parseDate(cuota.fecha_vencimiento);
+                    
+                    if (isNotPaid && vencimiento && (vencimiento <= hoy)) {
+                        montoCuotasVencidas += parseFloat(cuota.cuota_total || 0);
+                        const moraInfo = calcularMora(cuota.fecha_vencimiento);
+                        moraTotalAcumulada += (moraInfo.montoMora || 0);
+                    }
+                });
+
+                document.getElementById('det-monto-cuotas-vencidas').textContent = formatMoney(montoCuotasVencidas);
+                document.getElementById('det-mora-acumulada-total').textContent = formatMoney(moraTotalAcumulada);
+                document.getElementById('det-total-deuda-acumulada').textContent = formatMoney(montoCuotasVencidas + moraTotalAcumulada);
+                morosoSection.style.display = 'block';
+            } else {
+                morosoSection.style.display = 'none';
+            }
         }
 
         // Encontrar la última cuota pagada
@@ -1056,11 +1170,21 @@ async function loadAmortizacionTable(creditoId) {
         const nextPayableIndex = lastPaidIndex + 1;
 
         tbody.innerHTML = cuotas.map((cuota, index) => {
-            const estadoBadge = getEstadoCuotaBadge(cuota.estado_cuota);
+            const moraInfo = calcularMora(cuota.fecha_vencimiento);
+            const moraVal = (cuota.estado_cuota !== 'PAGADO' && cuota.estado_cuota !== 'CONDONADO') ? moraInfo.montoMora : 0;
+            const estadoBadge = getEstadoCuotaBadge(cuota.estado_cuota, moraVal);
 
             // Solo habilitar botón para la siguiente cuota pagable
             const canPay = index === nextPayableIndex &&
                 (cuota.estado_cuota === 'PENDIENTE' || cuota.estado_cuota === 'VENCIDO');
+
+            let moraHtml = '';
+            let valorTotalFinal = parseFloat(cuota.cuota_total);
+
+            if (isMoroso) {
+                valorTotalFinal += moraVal;
+                moraHtml = `<td class="text-right text-danger" style="font-weight: 800;">${moraVal > 0 ? formatMoney(moraVal) : '-'}</td>`;
+            }
 
             return `
                 <tr class="${cuota.estado_cuota === 'PAGADO' ? 'row-paid' : ''}">
@@ -1070,7 +1194,9 @@ async function loadAmortizacionTable(creditoId) {
                     <td class="text-right hide-mobile">${formatMoney(cuota.pago_interes)}</td>
                     <td class="text-right hide-mobile">${formatMoney(cuota.cuota_base)}</td>
                     <td class="text-right hide-mobile">${formatMoney(cuota.ahorro_programado)}</td>
-                    <td class="text-right"><strong>${formatMoney(cuota.cuota_total)}</strong></td>
+                    <td class="text-right">${formatMoney(cuota.cuota_total)}</td>
+                    ${moraHtml}
+                    <td class="text-right"><strong>${formatMoney(valorTotalFinal)}</strong></td>
                     <td class="text-right">${formatMoney(cuota.saldo_capital)}</td>
                     <td>${estadoBadge}</td>
                     <td>
@@ -1089,7 +1215,7 @@ async function loadAmortizacionTable(creditoId) {
 
     } catch (error) {
         console.error('Error loading amortización:', error);
-        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-danger">Error al cargar datos</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" class="text-center text-danger">Error al cargar datos</td></tr>';
     }
 }
 
@@ -1247,7 +1373,10 @@ async function showReceiptDetail(detalleId) {
 // Exponer globalmente para el onclick de la tabla
 window.showReceiptDetail = showReceiptDetail;
 
-function getEstadoCuotaBadge(estado) {
+function getEstadoCuotaBadge(estado, moraVal = 0) {
+    if ((estado === 'PENDIENTE' || estado === 'VENCIDO' || estado === 'PARCIAL') && moraVal > 0) {
+        return '<span class="badge badge-atrasado">Atrasado</span>';
+    }
     const badges = {
         'PAGADO': '<span class="badge badge-pagado">Pagado</span>',
         'PENDIENTE': '<span class="badge badge-pendiente">Pendiente</span>',
@@ -1418,17 +1547,27 @@ async function openPaymentModal(detalleId, btn = null) {
 
         // Poblar el dropdown de selección de cuotas
         const select = document.getElementById('pago-cuotas-select');
-        select.innerHTML = currentUnpaidInstallments.map((_, idx) => {
+        const hoyStr = getEcuadorDateString();
+        const hoy = parseDate(hoyStr);
+        if (hoy) hoy.setHours(23, 59, 59, 999);
+
+        select.innerHTML = currentUnpaidInstallments.map((cuotaActual, idx) => {
             const count = idx + 1;
             const endNum = currentUnpaidInstallments[0].numero_cuota + idx;
             const total = currentUnpaidInstallments.slice(0, count).reduce(
                 (sum, c) => sum + parseFloat(c.cuota_total), 0
             );
 
+            // Determinar si la cuota de este índice está vencida para resaltar en rojo
+            const vencimiento = parseDate(cuotaActual.fecha_vencimiento);
+            const isVencida = vencimiento && (vencimiento <= hoy);
+            const style = isVencida ? ' style="color: #EF4444; font-weight: 800;"' : '';
+            const fechaStr = formatDate(cuotaActual.fecha_vencimiento);
+
             if (count === 1) {
-                return `<option value="${count}">Cuota #${currentUnpaidInstallments[0].numero_cuota} - ${formatMoney(total)}</option>`;
+                return `<option value="${count}"${style}>Cuota #${cuotaActual.numero_cuota} (${fechaStr}) - ${formatMoney(total)}</option>`;
             } else {
-                return `<option value="${count}">Cuotas #${currentUnpaidInstallments[0].numero_cuota} - #${endNum} (${count}) - ${formatMoney(total)}</option>`;
+                return `<option value="${count}"${style}>Cuotas #${currentUnpaidInstallments[0].numero_cuota} - #${endNum} (${count}) [Vence: ${fechaStr}] - ${formatMoney(total)}</option>`;
             }
         }).join('');
 

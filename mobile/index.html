@@ -168,13 +168,13 @@
                     <span>Aportes</span>
                 </div>
                 <div class="quick-item" onclick="loadMobileView('simulador'); toggleQuickMenu()">
-                    <div class="quick-icon" style="background-color: #f59e0b;">
+                    <div class="quick-icon bg-gold">
                         <i class="fas fa-calculator"></i>
                     </div>
-                    <span>Simualdor</span>
+                    <span>Simulador</span>
                 </div>
                 <div class="quick-item" onclick="loadMobileView('socios'); toggleQuickMenu()">
-                    <div class="quick-icon" style="background-color: #3b82f6;">
+                    <div class="quick-icon bg-blue">
                         <i class="fas fa-users"></i>
                     </div>
                     <span>Socios</span>
@@ -242,6 +242,26 @@
                     </div>
                 </div>
 
+                <!-- Sección de Deuda Mora (Solo para Morosos) -->
+                <div id="lite-det-mora-section" class="lite-det-section" style="display: none; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: #EF4444; font-weight: 800; font-size: 0.85rem; margin-bottom: 0.75rem; text-transform: uppercase;">
+                        <i class="fas fa-exclamation-triangle"></i> Deuda para estar al día
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.8rem;">
+                        <span style="color: var(--text-secondary);">Cuotas Vencidas (Neto)</span>
+                        <span id="lite-det-mora-cuotas" style="color: var(--text-primary); font-weight: 600;">$0.00</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.8rem;">
+                        <span style="color: var(--text-secondary);">Mora Acumulada</span>
+                        <span id="lite-det-mora-valor" style="color: #EF4444; font-weight: 700;">$0.00</span>
+                    </div>
+                    <div style="height: 1px; background: rgba(239, 68, 68, 0.2); margin: 0.5rem 0;"></div>
+                    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                        <span style="font-weight: 700; font-size: 0.8rem; color: #EF4444;">TOTAL DEUDA ACTUAL</span>
+                        <span id="lite-det-mora-total" style="font-size: 1.25rem; font-weight: 900; color: #EF4444;">$0.00</span>
+                    </div>
+                </div>
+
                 <!-- Acciones -->
                 <div class="lite-actions-group">
                     <button class="lite-btn-action success" id="btn-pagar-credito" style="display:none;">
@@ -278,20 +298,8 @@
                     <div id="lite-amort-socio" class="lite-bank-debtor">---</div>
                 </div>
 
-                <div class="amortization-table-mobile-container">
-                    <table class="amortization-table-lite">
-                        <thead>
-                            <tr>
-                                <th style="width: 40px;">#</th>
-                                <th>Vencimiento</th>
-                                <th style="text-align: center;">Estado</th>
-                                <th style="text-align: right;">Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody id="lite-amortization-credito-body">
-                            <!-- Cuotas se cargan aquí -->
-                        </tbody>
-                    </table>
+                <div id="lite-amortization-credito-body" class="lite-amort-card-list">
+                    <!-- Cards se cargan aquí -->
                 </div>
             </div>
         </div>
@@ -336,14 +344,18 @@
                 </div>
 
                 <!-- Selección de Cuotas -->
-                <div class="lite-form-group" style="margin-bottom: 1.25rem;">
-                    <label style="font-weight: 700; margin-bottom: 0.6rem; display: block; font-size: 0.85rem; color: var(--text-primary);">Cuotas a Cancelar</label>
-                    <div style="position: relative;">
-                        <select id="pago-lite-cuotas-select" class="lite-input" style="appearance: none; padding-right: 40px; border-radius: 12px; height: 50px; background: var(--bg-main); color: var(--white); border-color: var(--border-color);">
-                            <!-- Opciones dinámicas -->
-                        </select>
-                        <i class="fas fa-chevron-down" style="position: absolute; right: 15px; top: 18px; color: var(--gold); pointer-events: none;"></i>
+                <div class="lite-form-group" style="margin-bottom: 1.5rem;">
+                    <label style="font-weight: 800; margin-bottom: 0.85rem; display: block; font-size: 0.9rem; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.5px;">Cuotas a Cancelar</label>
+                    
+                    <!-- New Selection List (Mobile optimized) -->
+                    <div id="pago-lite-cuotas-selection-list" class="lite-selection-list">
+                        <!-- Items rendered dynamically via JS -->
                     </div>
+
+                    <!-- Hidden select for JS compatibility -->
+                    <select id="pago-lite-cuotas-select" style="display: none;">
+                        <!-- Options still synced here for other logic functions -->
+                    </select>
                 </div>
 
                 <div class="lite-form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">

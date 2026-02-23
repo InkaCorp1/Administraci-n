@@ -388,8 +388,20 @@ async function loadDesembolsosPendientes() {
                     <p>No hay créditos pendientes de desembolso en este momento.</p>
                 </div>
             `;
-            if (countBadge) countBadge.textContent = '0';
+            if (countBadge) {
+                countBadge.textContent = '0';
+                countBadge.classList.add('hidden');
+            }
             return;
+        }
+
+        if (countBadge) {
+            countBadge.textContent = creditosPendientes.length;
+            countBadge.classList.remove('hidden');
+            
+            // Actualizar el badge dinámico de la alerta de caja si existe
+            const alertBadge = document.querySelector('.mobile-caja-status-alert .alert-badge');
+            if (alertBadge) alertBadge.textContent = creditosPendientes.length;
         }
 
         const socioIds = [...new Set(creditosPendientes.map(c => c.id_socio))];
@@ -445,7 +457,7 @@ async function loadDesembolsosPendientes() {
                         <button class="desembolso-btn desembolso-btn-docs" onclick="generarDocumentosCreditoMobile('${credito.id_credito}')">
                             <i class="fas fa-file-pdf"></i> Documentos
                         </button>
-                        <button class="desembolso-btn desembolso-btn-action" onclick="desembolsarCredito('${credito.id_credito}')">
+                        <button class="desembolso-btn desembolso-btn-action" onclick="desembolsarCreditoMobile('${credito.id_credito}')">
                             <i class="fas fa-cloud-upload-alt"></i> Desembolsar
                         </button>
                     </div>
@@ -467,7 +479,7 @@ async function loadDesembolsosPendientes() {
     }
 }
 
-async function desembolsarCredito(idCredito) {
+async function desembolsarCreditoMobile(idCredito) {
     // Validar si la caja está abierta antes de continuar
     if (typeof window.validateCajaBeforeAction === 'function') {
         if (!window.validateCajaBeforeAction('realizar desembolsos')) return;
@@ -752,8 +764,8 @@ async function ejecutarDesembolsoConArchivosMobile(idCredito, nombreSocio, tiene
             if (statusEl) statusEl.innerHTML = '<i class="fas fa-sync fa-spin"></i> Subiendo archivo...';
             if (actionEl) actionEl.innerHTML = '';
 
-            // 1. Subir a Storage usando la utilidad centralizada
-            const uploadRes = await window.uploadFileToStorage(file, 'documentos_creditos', `${idCredito}/${slotId}`);
+            // 1. Subir a bucket 'inkacorp' con subcarpeta unificada
+            const uploadRes = await window.uploadFileToStorage(file, 'creditos/documentos', `${idCredito}_${slotId}`, 'inkacorp');
             
             if (!uploadRes.success) {
                 throw new Error(`Error al subir ${slotId}: ${uploadRes.error}`);
@@ -914,4 +926,6 @@ window.handleFileSelectSlotMobile = handleFileSelectSlotMobile;
 window.removeFileFromSlotMobile = removeFileFromSlotMobile;
 window.ejecutarDesembolsoConArchivosMobile = ejecutarDesembolsoConArchivosMobile;
 window.generarDocumentosCreditoMobile = generarDocumentosCreditoMobile;
+window.desembolsarCreditoMobile = desembolsarCreditoMobile;
+window.loadDesembolsosPendientes = loadDesembolsosPendientes;
 

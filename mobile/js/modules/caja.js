@@ -5,14 +5,17 @@
 
 const CAJA_TABLE = 'ic_caja_aperturas';
 const MOVIMIENTOS_TABLE = 'ic_caja_movimientos';
+const TRANSFERENCIAS_TABLE = 'ic_caja_transferencias';
 
 let currentCajaSession = null;
 let currentBalance = 0;
 let ingresosTurno = 0;
 let egresosTurno = 0;
+let transferPollingInterval = null;
+let currentPendingTransfer = null;
 
 /**
- * Inicializaciï¿½n del mï¿½dulo - Requerido por mobile-app.js
+ * Inicialización del módulo - Requerido por mobile-app.js
  */
 async function initCajaModule() {
     try {
@@ -20,9 +23,18 @@ async function initCajaModule() {
         setupDateFilters();
         await checkCajaStatus();
         await loadCajaData();
+        
+        // Iniciar polling de transferencias entrantes
+        startTransferPolling();
     } catch (error) {
         console.error("[MOBILE-CAJA] Error inicializando módulo:", error);
     }
+}
+
+function startTransferPolling() {
+    if (transferPollingInterval) clearInterval(transferPollingInterval);
+    checkPendingTransfersMobile();
+    transferPollingInterval = setInterval(checkPendingTransfersMobile, 10000); // Cada 10 seg
 }
 
 function setupDateFilters() {
@@ -181,7 +193,8 @@ function renderMovimientosCards(movimientos) {
         container.innerHTML = `
             <div class="empty-state-mobile">
                 <i class="fas fa-receipt"></i>
-                <p>No se encontraron movimientos en este rango.</p>
+                <p>No hay movimientos registrados</p>
+                <span>Ajusta los filtros o inicia un nuevo turno para ver datos aquí.</span>
             </div>`;
         return;
     }
@@ -296,10 +309,11 @@ async function handleMovimientoManual(e) {
     try {
         let comprobanteUrl = null;
         if (file) {
-            const uploadRes = await window.uploadFileToStorage(file, 'caja', session.user.id);
+            // Bucket unificado inkacorp y subcarpeta detallada
+            const uploadRes = await window.uploadFileToStorage(file, 'caja/movimientos', session.user.id, 'inkacorp');
             
             if (!uploadRes.success) {
-                throw new Error(uploadRes.error);
+                throw new Error("No se pudo subir el comprobante: " + uploadRes.error);
             }
             
             comprobanteUrl = uploadRes.url;
@@ -372,6 +386,219 @@ async function handleCierreCaja(e) {
     }
 }
 
+/**
+ * LÓGICA DE TRANSFERENCIAS MÓVIL
+ */
+
+/**
+ * Muestra modal para iniciar transferencia
+ */
+async function showTransferModalMobile() {
+    if (!currentCajaSession) {
+        if (window.Swal) Swal.fire("Caja Cerrada", "Debes tener tu caja abierta para transferir.", "warning");
+        return;
+    }
+
+    // ABRIR EL MODAL DE INMEDIATO para dar respuesta al toque
+    openLiteModal('modal-transferencia-mobile');
+
+    const balanceEl = document.getElementById('transfer-current-balance-mobile');
+    if (balanceEl) balanceEl.textContent = formatCurrency(currentBalance || 0);
+    
+    // Cargar destinatarios de forma asíncrona pero sin bloquear la apertura
+    loadTransferDestinationsMobile();
+
+    // Validación de saldo en tiempo real
+    const inputMonto = document.getElementById('transfer-monto-mobile');
+    const msgError = document.getElementById('transfer-error-mobile');
+    const btnConfirm = document.getElementById('btn-confirm-transfer-mobile');
+
+    if (inputMonto) {
+        inputMonto.oninput = () => {
+            const val = parseFloat(inputMonto.value || 0);
+            if (val > currentBalance) {
+                msgError?.classList.remove('hidden');
+                btnConfirm?.setAttribute('disabled', 'true');
+            } else {
+                msgError?.classList.add('hidden');
+                btnConfirm?.removeAttribute('disabled');
+            }
+        };
+    }
+}
+
+async function loadTransferDestinationsMobile() {
+    const sb = getSupabaseClient();
+    const select = document.getElementById('transfer-destino-mobile');
+    if (!select) return;
+
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        const { data: users, error } = await sb.from('ic_users').select('id, nombre').eq('activo', true).neq('id', session.user.id);
+
+        if (error) throw error;
+
+        select.innerHTML = '<option value="">Seleccione compañero...</option>' + 
+            users.map(u => `<option value="${u.id}">${u.nombre}</option>`).join('');
+    } catch (err) {
+        console.error("Error cargando usuarios:", err);
+    }
+}
+
+function updateMobileFileName(input, targetId) {
+    const el = document.getElementById(targetId);
+    if (el && input.files.length > 0) {
+        el.textContent = input.files[0].name;
+        el.style.color = "var(--success)";
+    }
+}
+
+async function handleEnviarTransferenciaMobile(e) {
+    e.preventDefault();
+    if (!currentCajaSession) return;
+
+    const sb = getSupabaseClient();
+    const btn = document.getElementById('btn-confirm-transfer-mobile');
+    const originalText = btn.innerHTML;
+
+    try {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ENVIANDO...';
+        btn.disabled = true;
+
+        const idDestino = document.getElementById('transfer-destino-mobile').value;
+        const monto = parseFloat(document.getElementById('transfer-monto-mobile').value);
+        const descripcion = document.getElementById('transfer-descripcion-mobile').value;
+        const fileInput = document.getElementById('transfer-file-mobile');
+
+        if (monto > currentBalance) throw new Error("Saldo insuficiente para esta transferencia.");
+
+        let comprobanteUrl = null;
+        if (fileInput.files.length > 0) {
+            const fileName = `TRANSFER_${Date.now()}`;
+            // Correct format: uploadFileToStorage(file, folder, id, bucket)
+            const uploadRes = await window.uploadFileToStorage(fileInput.files[0], 'caja/transferencias', fileName, 'inkacorp');
+            if (uploadRes.success) {
+                comprobanteUrl = uploadRes.url;
+            } else {
+                throw new Error("No se pudo subir la evidencia: " + uploadRes.error);
+            }
+        }
+
+        const { error } = await sb.from(TRANSFERENCIAS_TABLE).insert([{
+            id_usuario_origen: currentCajaSession.id_usuario,
+            id_usuario_destino: idDestino,
+            monto: monto,
+            descripcion: descripcion,
+            comprobante_url: comprobanteUrl,
+            estado: 'PENDIENTE'
+        }]);
+
+        if (error) throw error;
+
+        closeLiteModal('modal-transferencia-mobile');
+        if (window.Swal) Swal.fire("¡Enviado!", "Transferencia registrada correctamente", "success");
+        
+        await loadCajaData(); // Refrescar balance
+
+    } catch (err) {
+        console.error("Error en transferencia:", err);
+        if (window.Swal) Swal.fire("Error", err.message, "error");
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+/**
+ * POLLING PARA RECEPTOR
+ */
+async function checkPendingTransfersMobile() {
+    const sb = getSupabaseClient();
+    if (!sb) return;
+
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) return;
+
+        const { data, error } = await sb
+            .from(TRANSFERENCIAS_TABLE)
+            .select(`*, id_usuario_origen(nombre)`)
+            .eq('id_usuario_destino', session.user.id)
+            .eq('estado', 'PENDIENTE')
+            .order('fecha_envio', { ascending: true }) // Cambiar fecha_transferencia por fecha_envio
+            .limit(1);
+
+        if (error) throw error;
+
+        const alertBanner = document.getElementById('transfer-alert-mobile');
+        if (data && data.length > 0) {
+            currentPendingTransfer = data[0];
+            if (alertBanner) {
+                alertBanner.innerHTML = `<i class="fas fa-hand-holding-usd"></i> Transferencia de: ${currentPendingTransfer.id_usuario_origen?.nombre || 'Alguien'}`;
+                alertBanner.classList.remove('hidden');
+            }
+        } else {
+            currentPendingTransfer = null;
+            if (alertBanner) alertBanner.classList.add('hidden');
+        }
+    } catch (err) {
+        console.error("Error polling transferencias:", err);
+    }
+}
+
+function showAceptarTransferModal() {
+    if (!currentPendingTransfer) return;
+
+    // Llenar datos
+    document.getElementById('recibir-origen-mobile').textContent = currentPendingTransfer.id_usuario_origen?.nombre || 'Desconocido';
+    document.getElementById('recibir-monto-mobile').textContent = formatCurrency(currentPendingTransfer.monto);
+    document.getElementById('recibir-descripcion-mobile').textContent = currentPendingTransfer.descripcion || 'Sin nota adjunta';
+
+    const imgBox = document.getElementById('recibir-comprobante-box-mobile');
+    const imgPreview = document.getElementById('recibir-img-mobile');
+
+    if (currentPendingTransfer.comprobante_url) {
+        imgPreview.src = currentPendingTransfer.comprobante_url;
+        imgBox.classList.remove('hidden');
+    } else {
+        imgBox.classList.add('hidden');
+    }
+
+    openLiteModal('modal-aceptar-transferencia-mobile');
+}
+
+async function handleProcesarTransferenciaMobile(nuevoEstado) {
+    if (!currentPendingTransfer) return;
+
+    // SI ACEPTA, VALIDAR CAJA ABIERTA
+    if (nuevoEstado === 'ACEPTADA' && !currentCajaSession) {
+        if (window.Swal) Swal.fire("Caja Cerrada", "Abre tu caja primero para recibir fondos.", "warning");
+        return;
+    }
+
+    const sb = getSupabaseClient();
+    
+    try {
+        const { error } = await sb
+            .from(TRANSFERENCIAS_TABLE)
+            .update({ estado: nuevoEstado })
+            .eq('id_transferencia', currentPendingTransfer.id_transferencia);
+
+        if (error) throw error;
+
+        closeLiteModal('modal-aceptar-transferencia-mobile');
+        if (window.Swal) Swal.fire("Completado", `Transferencia ${nuevoEstado.toLowerCase()}`, "success");
+
+        currentPendingTransfer = null;
+        checkPendingTransfersMobile(); // Quitar banner
+        loadCajaData(); // Refrescar movimientos
+
+    } catch (err) {
+        console.error("Error procesando transferencia:", err);
+        if (window.Swal) Swal.fire("Error", err.message, "error");
+    }
+}
+
 function previewMobileImage(event, targetId) {
     const file = event.target.files[0];
     if (file) {
@@ -401,3 +628,10 @@ window.showCierreModal = showCierreModal;
 window.handleCierreCaja = handleCierreCaja;
 window.previewMobileImage = previewMobileImage;
 window.loadCajaData = loadCajaData;
+
+// Exportaciones Transferencia
+window.showTransferModalMobile = showTransferModalMobile;
+window.updateMobileFileName = updateMobileFileName;
+window.handleEnviarTransferenciaMobile = handleEnviarTransferenciaMobile;
+window.showAceptarTransferModal = showAceptarTransferModal;
+window.handleProcesarTransferenciaMobile = handleProcesarTransferenciaMobile;

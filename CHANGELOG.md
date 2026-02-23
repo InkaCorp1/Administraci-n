@@ -1,5 +1,17 @@
 # CHANGELOG - INKA CORP
 
+## [29.0.0] - 2026-02-23
+### Añadido
+- **Rediseño del Simulador (Móvil):** Interfaz completa en modo oscuro "Premium" con gradientes, sombras elevadas y tarjetas de resultados de lujo.
+- **Módulo de Aportes Avanzado (Móvil):** Implementación de filtrado dual (Por Fecha / Por Socio) mediante un slider conmutador intuitivo.
+- **Filtrado de Socios Activos:** Lógica optimizada para mostrar únicamente socios con aportes registrados en el historial.
+- **Cabeceras Modernizadas (Floating Pill):** Sistema global de cabeceras flotantes con soporte para truncado inteligente de nombres largos y alineación de distintivos.
+
+### Mejorado
+- **Tipografía Mobile:** Estandarización de peso de fuente a 800 (Extra Bold) para solucionar problemas de renderizado en dispositivos móviles antiguos.
+- **UX de Búsqueda:** Búsqueda híbrida de socios (ID / Nombre) en el historial de aportes para mayor resiliencia ante errores de base de datos.
+- **Gestión de Créditos:** Mejoras en la visualización de la cartera de créditos y alineación con el nuevo sistema de diseño.
+
 ## [27.5.2] - 2026-02-20
 ### Corregido
 - **Estandarización de Modales (Móvil):** Se unificaron los estilos de modales en una arquitectura global mejorada. Todos los modales ahora tienen scroll vertical garantizado, soporte para áreas seguras de iPhone (notch) y una animación de apertura más fluida.
