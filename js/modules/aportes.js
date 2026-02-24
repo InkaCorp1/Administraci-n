@@ -7,8 +7,31 @@
 let aportesData = [];
 let sociosAportes = [];
 let selectedAporteFile = null;
-let filtroSemanaSeleccionada = null; // null significa "Semana Actual"
+let filtroSemanaSeleccionada = null; // null significa "Vista Reciente / Todo"
 let forcedTargetWeek = null; // Para bloquear la semana al completar aportes con fecha actual
+
+// Configuración de fechas para cálculo de semanas
+const ANCHOR_DATE = new Date(2025, 10, 17, 12, 0, 0); // Lunes 17 Nov
+
+/**
+ * Calcula el número de semana para una fecha dada
+ */
+function getWeekNumber(date) {
+    const d = new Date(date);
+    d.setHours(12, 0, 0, 0);
+    const day = d.getDay();
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+    monday.setHours(12, 0, 0, 0);
+    return Math.floor((monday.getTime() - ANCHOR_DATE.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
+}
+
+/**
+ * Obtiene el número de semana actual
+ */
+function getCurrentWeekNumber() {
+    return getWeekNumber(new Date());
+}
 
 // Función para alternar visibilidad de detalles de aportes agrupados
 window.toggleDetalleAportes = function(id) {
@@ -340,32 +363,32 @@ function renderAportesRecientes(data) {
     const listContainer = document.getElementById('lista-aportes-recientes');
     if (!listContainer) return;
 
-    // Calcular semana actual técnica (Hoy)
-    const anchor = new Date(2025, 10, 17, 12, 0, 0); // Lunes 17 Nov
-    const hoy = new Date();
-    const dayHoy = hoy.getDay();
-    const inicioSemanaHoy = new Date(hoy);
-    inicioSemanaHoy.setDate(hoy.getDate() - (dayHoy === 0 ? 6 : dayHoy - 1));
-    inicioSemanaHoy.setHours(12, 0, 0, 0);
-    const currentWeekNum = Math.floor((inicioSemanaHoy.getTime() - anchor.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
+    // Obtener semana actual
+    const currentWeekNum = getCurrentWeekNumber();
 
-    // Si no hay filtro, mostramos los últimos 10 aportes registrados (puedes cambiar a 6 si prefieres)
+    // Determinar qué semana estamos auditando para las estadísticas
+    const targetWeek = filtroSemanaSeleccionada || currentWeekNum;
+    
+    // Calcular estadísticas basadas SIEMPRE en la semana (actual o seleccionada)
+    const aportesDeLaSemana = data.filter(a => {
+        // Priorizar semana forzada
+        if (a.sub_semana && !isNaN(a.sub_semana)) {
+            return parseInt(a.sub_semana) === targetWeek;
+        }
+        // Fallback a fecha
+        return getWeekNumber(a.fecha + 'T12:00:00') === targetWeek;
+    });
+
+    const sociosUnicos = new Set(aportesDeLaSemana.map(a => a.id_socio));
+    const totalCajaSemana = aportesDeLaSemana.reduce((sum, a) => sum + parseFloat(a.monto || 0), 0);
+
+    // Actualizar estadísticas del dashboard
+    updateAportesStats(sociosUnicos, totalCajaSemana, aportesDeLaSemana.length);
+
+    // Determinar qué mostrar en la TABLA (la vista de "Movimientos Recientes")
     const aportesAMostrar = filtroSemanaSeleccionada 
-        ? data.filter(a => {
-            // Si tiene semana forzada, usamos esa
-            if (a.sub_semana && !isNaN(a.sub_semana)) {
-                return parseInt(a.sub_semana) === filtroSemanaSeleccionada;
-            }
-            const ad = new Date(a.fecha + 'T12:00:00');
-            const aday = ad.getDay();
-            const adiff = ad.getDate() - (aday === 0 ? 6 : aday - 1);
-            const amonday = new Date(ad);
-            amonday.setDate(adiff);
-            amonday.setHours(12, 0, 0, 0);
-            const aWeek = Math.floor((amonday.getTime() - anchor.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
-            return aWeek === filtroSemanaSeleccionada;
-        })
-        : data.slice(0, 10); // Vista por defecto: últimos 10 movimientos
+        ? aportesDeLaSemana // Si hay filtro, mostramos solo lo filtrado
+        : data.slice(0, 10); // Vista por defecto: últimos 10 movimientos globales
 
     // Actualizar Label de Semana en el Dashboard
     const weekLabel = document.getElementById('current-week-label');
@@ -384,58 +407,50 @@ function renderAportesRecientes(data) {
             ? `No hay aportes registrados para la Semana ${filtroSemanaSeleccionada}`
             : 'No hay aportes registrados recientemente';
         listContainer.innerHTML = `<tr><td colspan="5" class="text-center py-5">${msg}</td></tr>`;
-        updateAportesStats([], 0, 0);
         return;
     }
 
-    // Calcular estadísticas para los datos que se están visualizando
-    const sociosUnicos = new Set(aportesAMostrar.map(a => a.id_socio));
-    const totalCajaVista = aportesAMostrar.reduce((sum, a) => sum + parseFloat(a.monto || 0), 0);
-
-    // Actualizar Panel de Stats
-    updateAportesStats(sociosUnicos, totalCajaVista, aportesAMostrar.length);
-
-    // Si estamos viendo una semana específica, mostrar a los que NO han aportado (los 3 chicos específicos)
-    let pendingHTML = '';
-    if (filtroSemanaSeleccionada) {
-        // IDs de los 3 socios que aportan
-        const sociosObjetivo = sociosAportes.filter(s => ['69c69e99', 'be3ff55b', '20b691de'].includes(s.idsocio));
-        
-        sociosObjetivo.forEach(socio => {
-            const tieneAporte = aportesAMostrar.some(a => a.id_socio === socio.idsocio);
-            if (!tieneAporte) {
-                const initial = (socio.nombre || 'S').charAt(0);
-                const monDate = new Date(anchor);
-                monDate.setDate(anchor.getDate() + (filtroSemanaSeleccionada - 1) * 7);
-                const fechaSug = monDate.toISOString().split('T')[0];
-
-                pendingHTML += `
-                    <tr class="fade-in" style="background: rgba(239, 68, 68, 0.03);">
-                        <td>
-                            <div class="d-flex align-items-center" style="opacity: 0.7;">
-                                <div class="avatar-initial" style="background: #334155;">${initial}</div>
-                                <div>
-                                    <div class="font-weight-bold text-white">${socio.nombre}</div>
-                                    <small class="text-danger" style="font-size: 0.65rem; font-weight: 800;">SIN REGISTRO</small>
-                                </div>
-                            </div>
-                        </td>
-                        <td><span class="text-muted" style="font-size: 1.1rem; opacity: 0.5;">$0,00</span></td>
-                        <td><span class="text-muted" style="font-size: 0.85rem;">PENDIENTE</span></td>
-                        <td><span class="badge badge-danger px-3 py-2 rounded-pill shadow-sm" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444;"><i class="fas fa-times mr-1"></i> No Registrado</span></td>
-                        <td class="text-center">
-                            <button class="btn-icon shadow-sm" style="background: #0E5936; border: none; width: 110px; height: 35px; border-radius: 6px; color: white; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="window.igualarAportePendiente('${socio.idsocio}', '${socio.nombre}', '${fechaSug}', '${filtroSemanaSeleccionada}')">
-                                <i class="fas fa-plus-circle"></i> Aportar
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }
-        });
-    }
-
-    // Mostrar aportes
+    // Renderizar filas de la tabla
     let html = '';
+    let pendingHTML = '';
+
+    // Mostrar socios pendientes (los 3 socios principales) para la semana que se está auditando
+    const sociosObjetivo = sociosAportes.filter(s => ['69c69e99', 'be3ff55b', '20b691de'].includes(s.idsocio));
+    
+    sociosObjetivo.forEach(socio => {
+        // Verificar si este socio tiene aporte en la semana auditada (targetWeek)
+        const tieneAporte = aportesDeLaSemana.some(a => a.id_socio === socio.idsocio);
+        if (!tieneAporte) {
+            const initial = (socio.nombre || 'S').charAt(0);
+            const monDate = new Date(ANCHOR_DATE);
+            monDate.setDate(ANCHOR_DATE.getDate() + (targetWeek - 1) * 7);
+            const fechaSug = monDate.toISOString().split('T')[0];
+
+            pendingHTML += `
+                <tr class="fade-in" style="background: rgba(239, 68, 68, 0.03);">
+                    <td>
+                        <div class="d-flex align-items-center" style="opacity: 0.7;">
+                            <div class="avatar-initial" style="background: #334155;">${initial}</div>
+                            <div>
+                                <div class="font-weight-bold text-white">${socio.nombre}</div>
+                                <small class="text-danger" style="font-size: 0.65rem; font-weight: 800;">SIN REGISTRO (SEM ${targetWeek})</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="text-muted" style="font-size: 1.1rem; opacity: 0.5;">$0,00</span></td>
+                    <td><span class="text-muted" style="font-size: 0.85rem;">${targetWeek === currentWeekNum ? 'PENDIENTE HOY' : 'PENDIENTE'}</span></td>
+                    <td><span class="badge badge-danger px-3 py-2 rounded-pill shadow-sm" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444;"><i class="fas fa-times mr-1"></i> No Registrado</span></td>
+                    <td class="text-center">
+                        <button class="btn-icon shadow-sm" style="background: #0E5936; border: none; width: 110px; height: 35px; border-radius: 6px; color: white; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="window.igualarAportePendiente('${socio.idsocio}', '${socio.nombre}', '${fechaSug}', '${targetWeek}')">
+                            <i class="fas fa-plus-circle"></i> Aportar
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+    });
+
+    // Procesar aportes a mostrar en la tabla (ya sea filtrados o los últimos 10)
     aportesAMostrar.forEach(aporte => {
         const initial = (aporte.socio?.nombre || 'S').charAt(0);
         html += `
