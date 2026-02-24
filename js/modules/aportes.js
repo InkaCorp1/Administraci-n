@@ -7,11 +7,34 @@
 let aportesData = [];
 let sociosAportes = [];
 let selectedAporteFile = null;
+let filtroSemanaSeleccionada = null; // null significa "Semana Actual"
+let forcedTargetWeek = null; // Para bloquear la semana al completar aportes con fecha actual
+
+// Función para alternar visibilidad de detalles de aportes agrupados
+window.toggleDetalleAportes = function(id) {
+    const el = document.getElementById('detalle_' + id);
+    if (!el) return;
+    
+    if (el.classList.contains('hidden')) {
+        el.classList.remove('hidden');
+        // Transición suave
+        setTimeout(() => {
+            el.style.opacity = '1';
+        }, 10);
+    } else {
+        el.style.opacity = '0';
+        setTimeout(() => {
+            el.classList.add('hidden');
+        }, 300);
+    }
+};
 
 /**
  * Inicializa el módulo de Aportes Semanales
  */
 async function initAportesModule() {
+    // Resetear filtro de semana al iniciar el módulo
+    filtroSemanaSeleccionada = null;
 
     // Configurar event listeners
     setupAportesEventListeners();
@@ -36,6 +59,9 @@ function setupAportesEventListeners() {
             const modal = document.getElementById('modal-aporte');
             modal.style.display = 'flex';
             modal.classList.remove('hidden');
+
+            // Llenar el selector de semanas manual
+            llenarSelectorSemanasManual();
 
             // Set fecha actual por defecto
             document.getElementById('aporte-fecha').value = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
@@ -86,6 +112,18 @@ function setupAportesEventListeners() {
             resetAporteImage();
         });
     }
+
+    // Listener para cambio de fecha o socio para actualizar estado de semana
+    const inputFecha = document.getElementById('aporte-fecha');
+    const selectWeekOverride = document.getElementById('aporte-week-override');
+    const checkIgualacion = document.getElementById('aporte-igualacion');
+    if (inputFecha) inputFecha.addEventListener('change', updateStatusSemana);
+    if (selectWeekOverride) selectWeekOverride.addEventListener('change', () => {
+        const val = selectWeekOverride.value;
+        forcedTargetWeek = val ? parseInt(val) : null;
+        updateStatusSemana();
+    });
+    if (checkIgualacion) checkIgualacion.addEventListener('change', updateStatusSemana);
 
     // Formulario de Registro
     const formAporte = document.getElementById('form-aporte');
@@ -302,58 +340,117 @@ function renderAportesRecientes(data) {
     const listContainer = document.getElementById('lista-aportes-recientes');
     if (!listContainer) return;
 
-    if (!data || data.length === 0) {
-        listContainer.innerHTML = '<tr><td colspan="5" class="text-center py-5">No hay aportes registrados esta semana</td></tr>';
+    // Calcular semana actual técnica (Hoy)
+    const anchor = new Date(2025, 10, 17, 12, 0, 0); // Lunes 17 Nov
+    const hoy = new Date();
+    const dayHoy = hoy.getDay();
+    const inicioSemanaHoy = new Date(hoy);
+    inicioSemanaHoy.setDate(hoy.getDate() - (dayHoy === 0 ? 6 : dayHoy - 1));
+    inicioSemanaHoy.setHours(12, 0, 0, 0);
+    const currentWeekNum = Math.floor((inicioSemanaHoy.getTime() - anchor.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
 
-        // Reset stats
-        updateAportesStats([], 0);
+    // Si no hay filtro, mostramos los últimos 10 aportes registrados (puedes cambiar a 6 si prefieres)
+    const aportesAMostrar = filtroSemanaSeleccionada 
+        ? data.filter(a => {
+            // Si tiene semana forzada, usamos esa
+            if (a.sub_semana && !isNaN(a.sub_semana)) {
+                return parseInt(a.sub_semana) === filtroSemanaSeleccionada;
+            }
+            const ad = new Date(a.fecha + 'T12:00:00');
+            const aday = ad.getDay();
+            const adiff = ad.getDate() - (aday === 0 ? 6 : aday - 1);
+            const amonday = new Date(ad);
+            amonday.setDate(adiff);
+            amonday.setHours(12, 0, 0, 0);
+            const aWeek = Math.floor((amonday.getTime() - anchor.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
+            return aWeek === filtroSemanaSeleccionada;
+        })
+        : data.slice(0, 10); // Vista por defecto: últimos 10 movimientos
+
+    // Actualizar Label de Semana en el Dashboard
+    const weekLabel = document.getElementById('current-week-label');
+    if (weekLabel) {
+        if (filtroSemanaSeleccionada) {
+            weekLabel.innerHTML = `Semana ${filtroSemanaSeleccionada} <i class="fas fa-chevron-down" style="font-size: 0.7rem; margin-left: 5px;"></i>`;
+        } else {
+            weekLabel.innerHTML = `Semana ${currentWeekNum} (Actual) <i class="fas fa-chevron-down" style="font-size: 0.7rem; margin-left: 5px;"></i>`;
+        }
+        weekLabel.style.cursor = 'pointer';
+        weekLabel.onclick = () => abrirSelectorSemanas(currentWeekNum);
+    }
+
+    if (!aportesAMostrar || aportesAMostrar.length === 0) {
+        const msg = filtroSemanaSeleccionada 
+            ? `No hay aportes registrados para la Semana ${filtroSemanaSeleccionada}`
+            : 'No hay aportes registrados recientemente';
+        listContainer.innerHTML = `<tr><td colspan="5" class="text-center py-5">${msg}</td></tr>`;
+        updateAportesStats([], 0, 0);
         return;
     }
 
-    // Calcular estadísticas generales para el panel
-    const sociosUnicos = new Set(data.map(a => a.id_socio));
-    const totalCaja = data.reduce((sum, a) => sum + parseFloat(a.monto || 0), 0);
-
-    // Aportes de la semana actual (Lunes a Domingo)
-    const hoy = new Date();
-    const day = hoy.getDay();
-    const inicioSemana = new Date(hoy);
-    // Ajustar para que inicie en Lunes (si es Domingo [0], retroceder 6 días)
-    inicioSemana.setDate(hoy.getDate() - (day === 0 ? 6 : day - 1));
-    inicioSemana.setHours(0, 0, 0, 0);
-    const aportesSemana = data.filter(a => new Date(a.fecha + 'T12:00:00') >= inicioSemana);
-
-    // Actualizar Label de Semana Actual
-    // Usamos Lunes 17 Nov 2025 como Semana 1 para que los primeros registros sean positivos
-    const anchor = new Date(2025, 10, 17, 12, 0, 0);
-    const diffMs = inicioSemana.getTime() - anchor.getTime();
-    const currentWeekNum = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
-    const weekLabel = document.getElementById('current-week-label');
-    if (weekLabel) {
-        weekLabel.textContent = `Semana ${currentWeekNum}`;
-    }
+    // Calcular estadísticas para los datos que se están visualizando
+    const sociosUnicos = new Set(aportesAMostrar.map(a => a.id_socio));
+    const totalCajaVista = aportesAMostrar.reduce((sum, a) => sum + parseFloat(a.monto || 0), 0);
 
     // Actualizar Panel de Stats
-    updateAportesStats(sociosUnicos, totalCaja, aportesSemana.length);
+    updateAportesStats(sociosUnicos, totalCajaVista, aportesAMostrar.length);
 
-    // Mostrar los últimos 10 aportes
-    const itemsToShow = data.slice(0, 10);
+    // Si estamos viendo una semana específica, mostrar a los que NO han aportado (los 3 chicos específicos)
+    let pendingHTML = '';
+    if (filtroSemanaSeleccionada) {
+        // IDs de los 3 socios que aportan
+        const sociosObjetivo = sociosAportes.filter(s => ['69c69e99', 'be3ff55b', '20b691de'].includes(s.idsocio));
+        
+        sociosObjetivo.forEach(socio => {
+            const tieneAporte = aportesAMostrar.some(a => a.id_socio === socio.idsocio);
+            if (!tieneAporte) {
+                const initial = (socio.nombre || 'S').charAt(0);
+                const monDate = new Date(anchor);
+                monDate.setDate(anchor.getDate() + (filtroSemanaSeleccionada - 1) * 7);
+                const fechaSug = monDate.toISOString().split('T')[0];
 
+                pendingHTML += `
+                    <tr class="fade-in" style="background: rgba(239, 68, 68, 0.03);">
+                        <td>
+                            <div class="d-flex align-items-center" style="opacity: 0.7;">
+                                <div class="avatar-initial" style="background: #334155;">${initial}</div>
+                                <div>
+                                    <div class="font-weight-bold text-white">${socio.nombre}</div>
+                                    <small class="text-danger" style="font-size: 0.65rem; font-weight: 800;">SIN REGISTRO</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="text-muted" style="font-size: 1.1rem; opacity: 0.5;">$0,00</span></td>
+                        <td><span class="text-muted" style="font-size: 0.85rem;">PENDIENTE</span></td>
+                        <td><span class="badge badge-danger px-3 py-2 rounded-pill shadow-sm" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444;"><i class="fas fa-times mr-1"></i> No Registrado</span></td>
+                        <td class="text-center">
+                            <button class="btn-icon shadow-sm" style="background: #0E5936; border: none; width: 110px; height: 35px; border-radius: 6px; color: white; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="window.igualarAportePendiente('${socio.idsocio}', '${socio.nombre}', '${fechaSug}', '${filtroSemanaSeleccionada}')">
+                                <i class="fas fa-plus-circle"></i> Aportar
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+    }
+
+    // Mostrar aportes
     let html = '';
-    itemsToShow.forEach(aporte => {
+    aportesAMostrar.forEach(aporte => {
+        const initial = (aporte.socio?.nombre || 'S').charAt(0);
         html += `
             <tr class="fade-in">
                 <td>
                     <div class="d-flex align-items-center">
-                        <div class="avatar-initial">${(aporte.socio?.nombre || 'S').charAt(0)}</div>
+                        <div class="avatar-initial">${initial}</div>
                         <div>
-                            <div class="font-weight-bold text-dark">${aporte.socio?.nombre || 'Desconocido'}</div>
-                            <small class="text-muted">ID: ${aporte.id_socio}</small>
+                            <div class="font-weight-bold text-white">${aporte.socio?.nombre || 'Desconocido'}</div>
+                            <small class="text-muted" style="font-size: 0.7rem;">ID: ${aporte.id_socio}</small>
                         </div>
                     </div>
                 </td>
                 <td>
-                    <div class="font-weight-bold text-primary" style="font-size: 1.1rem;">
+                    <div class="font-weight-bold" style="color: #F2BB3A; font-size: 1.1rem;">
                         $${parseFloat(aporte.monto).toLocaleString('es-EC', { minimumFractionDigits: 2 })}
                     </div>
                 </td>
@@ -365,12 +462,12 @@ function renderAportesRecientes(data) {
                 </td>
                 <td><span class="badge badge-success px-3 py-2 rounded-pill shadow-sm"><i class="fas fa-check mr-1"></i> Recibido</span></td>
                 <td class="text-center">
-                    <div class="d-flex flex-column align-items-center justify-content-center" style="gap: 8px;">
+                    <div class="d-flex flex-row align-items-center justify-content-center" style="gap: 8px;">
                         <button class="btn-icon shadow-sm" style="background: var(--gray-800); border: 1px solid var(--border-color); width: 35px; height: 35px;" onclick="verComprobanteAporte('${aporte.comprobante_url}')" title="Ver Comprobante">
                             <i class="fas fa-image text-gold"></i>
                         </button>
-                        <button class="btn-icon shadow-sm" style="background: var(--gray-800); border: 1px solid var(--border-color); width: 35px; height: 35px;" onclick="window.open('${aporte.comprobante_url}', '_blank')" title="Descargar">
-                            <i class="fas fa-download text-gold"></i>
+                        <button class="btn-icon shadow-sm" style="background: var(--gray-800); border: 1px solid var(--border-color); width: 35px; height: 35px;" onclick="gestionarSemana('${aporte.id_aporte}', '${aporte.fecha}', '${aporte.sub_semana || ''}', '${aporte.id_socio}', '${aporte.socio?.nombre || ''}')" title="Gestionar / Reemplazar Comprobante">
+                            <i class="fas fa-pencil-alt text-gold"></i>
                         </button>
                     </div>
                 </td>
@@ -378,7 +475,7 @@ function renderAportesRecientes(data) {
         `;
     });
 
-    listContainer.innerHTML = html;
+    listContainer.innerHTML = pendingHTML + html;
 }
 
 /**
@@ -493,6 +590,9 @@ function selectAporteById(id) {
     `;
     aporteSearch.value = '';
 
+    // Actualizar estado de semana
+    updateStatusSemana();
+
     // Clear handler for the pill
     const btn = aporteSelectedView.querySelector('.btn-clear-selected');
     if (btn) btn.addEventListener('click', () => clearSelectedAporte(true));
@@ -504,7 +604,123 @@ function clearSelectedAporte(focusInput = false) {
     const aporteSelectedView = document.getElementById('aporte-socio-selected');
     if (aporteHidden) aporteHidden.value = '';
     if (aporteSelectedView) { aporteSelectedView.classList.add('hidden'); aporteSelectedView.innerHTML = ''; }
+    
+    // Ocultar status
+    const statusBanner = document.getElementById('aporte-status-semana');
+    if (statusBanner) statusBanner.classList.add('hidden');
+
     if (focusInput && aporteSearch) aporteSearch.focus();
+}
+
+/**
+ * Actualiza la información visual de cuánto ha aportado el socio en la semana seleccionada
+ */
+async function updateStatusSemana() {
+    const socioId = document.getElementById('aporte-socio')?.value;
+    const fecha = document.getElementById('aporte-fecha')?.value;
+    const statusBanner = document.getElementById('aporte-status-semana');
+
+    if (!socioId || !fecha || !statusBanner) {
+        if (statusBanner) statusBanner.classList.add('hidden');
+        return;
+    }
+
+    try {
+        const anchor = new Date(2025, 10, 17, 12, 0, 0); // Lunes 17 Nov
+        const d = new Date(fecha + 'T12:00:00');
+        const day = d.getDay();
+        const diff = d.getDate() - (day === 0 ? 6 : day - 1);
+        const monday = new Date(d);
+        monday.setDate(diff);
+        monday.setHours(12, 0, 0, 0);
+
+        const diffMs = monday.getTime() - anchor.getTime();
+        const calcWeekNum = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
+
+        // Lógica de Semana:
+        // 1. Si forcedTargetWeek existe (viniendo desde el historial/lápiz), se respeta SIEMPRE esa semana
+        // sin importar la fecha que se ponga en el calendario.
+        // 2. Si no hay forcedTargetWeek, se calcula dinámicamente según la fecha.
+        const weekNum = forcedTargetWeek || calcWeekNum;
+
+        // Determinar monto objetivo (450 desde semana 10, de lo contrario asumimos el estándar previo si existe, o 300)
+        const montoObjetivo = weekNum >= 10 ? 450.00 : 300.00;
+
+        // Buscar aportes existentes para este socio en este rango de semana o que tengan el override de semana
+        const mondayTarget = new Date(anchor);
+        mondayTarget.setDate(anchor.getDate() + (weekNum - 1) * 7);
+        const sundayTarget = new Date(mondayTarget);
+        sundayTarget.setDate(mondayTarget.getDate() + 6);
+        sundayTarget.setHours(23, 59, 59, 999);
+
+        // Formatear fechas para la query sin problemas de zona horaria
+        const formatDateForQuery = (dt) => {
+            const year = dt.getFullYear();
+            const month = String(dt.getMonth() + 1).padStart(2, '0');
+            const dayNum = String(dt.getDate()).padStart(2, '0');
+            return `${year}-${month}-${dayNum}`;
+        };
+
+        const mondayStr = formatDateForQuery(mondayTarget);
+        const sundayStr = formatDateForQuery(sundayTarget);
+
+        const supabase = window.getSupabaseClient();
+        
+        // Filtro robusto para obtener los aportes de la semana objetivo (weekNum):
+        // 1. Coincidir por override explícito (sub_semana == weekNum)
+        // 2. O por rango de fecha, siempre que NO tenga un override a otra semana (sub_semana es NULL)
+        const { data: aportesExistentes, error } = await supabase
+            .from('ic_aportes_semanales')
+            .select('monto, comprobante_url, fecha, sub_semana')
+            .eq('id_socio', socioId)
+            .or(`sub_semana.eq.${weekNum},and(sub_semana.is.null,fecha.gte.${mondayStr},fecha.lte.${sundayStr})`);
+
+        if (error) throw error;
+
+        const totalPagado = (aportesExistentes || []).reduce((sum, a) => sum + parseFloat(a.monto), 0);
+        const pendiente = Math.max(0, montoObjetivo - totalPagado);
+
+        // Actualizar UI
+        statusBanner.classList.remove('hidden');
+        document.getElementById('label-semana-num').textContent = weekNum;
+        document.getElementById('status-monto-pagado').textContent = `$${totalPagado.toLocaleString('es-EC', { minimumFractionDigits: 2 })}`;
+        document.getElementById('status-monto-objetivo').textContent = `$${montoObjetivo.toLocaleString('es-EC', { minimumFractionDigits: 2 })}`;
+        
+        // Si el total pagado es >= objetivo, mostrar en verde
+        const pagadoEl = document.getElementById('status-monto-pagado');
+        if (totalPagado >= montoObjetivo) {
+            pagadoEl.style.color = '#10B981';
+        } else {
+            pagadoEl.style.color = 'var(--gold)';
+        }
+
+        // Mostrar mini-comprobantes
+        const comprobantesContainer = document.getElementById('status-comprobantes-previos');
+        if (comprobantesContainer) {
+            if (aportesExistentes && aportesExistentes.length > 0) {
+                comprobantesContainer.innerHTML = '<p style="width: 100%; font-size: 0.75rem; color: #94a3b8; margin: 0 0 5px 0;">Comprobantes en esta semana:</p>' + 
+                    aportesExistentes.map(a => `
+                        <div class="mini-comprobante" onclick="verComprobanteAporte('${a.comprobante_url}')" title="Ver comprobante de $${a.monto}">
+                            <img src="${a.comprobante_url}" alt="Comp">
+                            <div class="monto-mini">$${parseFloat(a.monto).toFixed(0)}</div>
+                        </div>
+                    `).join('');
+                comprobantesContainer.style.display = 'flex';
+            } else {
+                comprobantesContainer.innerHTML = '';
+                comprobantesContainer.style.display = 'none';
+            }
+        }
+
+        // Sugerir el monto pendiente en el input si es > 0 y el input está vacío
+        const inputMonto = document.getElementById('aporte-monto');
+        if (pendiente > 0 && (!inputMonto.value || inputMonto.value == 0)) {
+            inputMonto.value = pendiente.toFixed(2);
+        }
+
+    } catch (err) {
+        console.error('Error al actualizar estado de semana:', err);
+    }
 }
 
 
@@ -563,7 +779,6 @@ async function handleAporteSubmit(e) {
     let socioId = (document.getElementById('aporte-socio') || {}).value || '';
     const monto = document.getElementById('aporte-monto').value;
     const fecha = document.getElementById('aporte-fecha').value;
-    const subSemana = document.getElementById('aporte-subsemana')?.value || null;
 
     if (!socioId) {
         const q = (document.getElementById('aporte-socio-search') || {}).value || '';
@@ -603,7 +818,7 @@ async function handleAporteSubmit(e) {
                 id_socio: socioId,
                 monto: parseFloat(monto),
                 fecha: fecha,
-                sub_semana: subSemana,
+                sub_semana: forcedTargetWeek ? String(forcedTargetWeek) : null,
                 es_igualacion: document.getElementById('aporte-igualacion')?.checked || false,
                 comprobante_url: imageUrl,
                 id_usuario_registro: currentUser ? currentUser.id : null
@@ -652,6 +867,11 @@ function resetFormAporte() {
     const form = document.getElementById('form-aporte');
     if (form) form.reset();
     resetAporteImage();
+    forcedTargetWeek = null; // Resetear la semana bloqueada
+    
+    // Al resetear, ocultar el banner
+    const statusBanner = document.getElementById('aporte-status-semana');
+    if (statusBanner) statusBanner.classList.add('hidden');
 }
 
 /**
@@ -766,27 +986,37 @@ function renderHistorialAportes(data) {
     const groups = {};
 
     data.forEach(item => {
-        const d = new Date(item.fecha + 'T12:00:00');
-        const day = d.getDay();
-        const diff = d.getDate() - (day === 0 ? 6 : day - 1);
-        const monday = new Date(d);
-        monday.setDate(diff);
-        monday.setHours(12, 0, 0, 0);
+        let weekNum;
+        let monday;
 
-        const diffMs = monday.getTime() - anchor.getTime();
-        const weekNum = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
-        const sub = item.sub_semana || '';
-        const groupKey = `${weekNum}${sub}`;
+        // Si sub_semana tiene un número (Semana forzada), usamos ese para el grupo
+        if (item.sub_semana && !isNaN(item.sub_semana)) {
+            weekNum = parseInt(item.sub_semana);
+            monday = new Date(anchor);
+            monday.setDate(anchor.getDate() + (weekNum - 1) * 7);
+        } else {
+            const d = new Date(item.fecha + 'T12:00:00');
+            const day = d.getDay();
+            const diff = d.getDate() - (day === 0 ? 6 : day - 1);
+            monday = new Date(d);
+            monday.setDate(diff);
+            monday.setHours(12, 0, 0, 0);
+
+            const diffMs = monday.getTime() - anchor.getTime();
+            weekNum = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
+        }
+
+        const groupKey = `${weekNum}`;
 
         const saturday = new Date(monday);
         saturday.setDate(monday.getDate() + 5);
 
         const mondayStr = monday.toLocaleDateString('es-EC', { day: 'numeric', month: 'short' });
         const saturdayStr = saturday.toLocaleDateString('es-EC', { day: 'numeric', month: 'short' });
-        const weekLabel = `Semana ${weekNum}${sub} (${mondayStr} - ${saturdayStr})`;
+        const weekLabel = `Semana ${weekNum} (${mondayStr} - ${saturdayStr})`;
 
         if (!groups[groupKey]) {
-            groups[groupKey] = { label: weekLabel, items: [], sortVal: weekNum + (sub.charCodeAt(0) || 0) / 1000 };
+            groups[groupKey] = { label: weekLabel, items: [], sortVal: weekNum };
         }
         groups[groupKey].items.push(item);
     });
@@ -813,45 +1043,134 @@ function renderHistorialAportes(data) {
             </tr>
         `;
 
+        // Agrupar aportes por socio dentro de la semana para visualización compacta
+        const aportesAgrupados = {};
         group.items.forEach(item => {
-            const initial = (item.socio?.nombre || 'S').charAt(0);
+            const id = item.id_socio;
+            if (!aportesAgrupados[id]) {
+                aportesAgrupados[id] = {
+                    socio: item.socio,
+                    id_socio: item.id_socio,
+                    montoTotal: parseFloat(item.monto),
+                    detalles: [{
+                        monto: parseFloat(item.monto),
+                        fecha: item.fecha,
+                        comprobante: item.comprobante_url,
+                        id_aporte: item.id_aporte,
+                        created_at: item.created_at
+                    }],
+                    sub_semana: item.sub_semana,
+                    es_igualacion: item.es_igualacion
+                };
+            } else {
+                aportesAgrupados[id].montoTotal += parseFloat(item.monto);
+                aportesAgrupados[id].detalles.push({
+                    monto: parseFloat(item.monto),
+                    fecha: item.fecha,
+                    comprobante: item.comprobante_url,
+                    id_aporte: item.id_aporte,
+                    created_at: item.created_at
+                });
+                if (item.es_igualacion) aportesAgrupados[id].es_igualacion = true;
+            }
+        });
+
+        Object.values(aportesAgrupados).forEach(agrupado => {
+            const initial = (agrupado.socio?.nombre || 'S').charAt(0);
+            const multi = agrupado.detalles.length > 1;
+            
             html += `
                 <tr class="fade-in">
                     <td>
-                        <div class="d-flex align-items-center" style="gap: 10px;">
+                        <div class="d-flex align-items-center" style="gap: 12px;">
                             <div class="d-flex flex-column">
-                                <span class="font-weight-bold">${formatDate(item.fecha)}</span>
-                                <small class="text-muted"><i class="far fa-calendar-alt"></i></small>
+                                <span class="font-weight-bold" style="color: #fff; font-size: 0.95rem;">${formatDate(agrupado.detalles[0].fecha)}</span>
+                                ${multi ? `<span class="badge" style="background: rgba(242, 187, 58, 0.1); color: var(--gold); font-size: 0.65rem; padding: 2px 6px; width: fit-content; margin-top: 2px;">+ ${agrupado.detalles.length - 1} ABONOS extra</span>` : ''}
                             </div>
-                            <button class="btn-icon-tiny" onclick="gestionarSemana('${item.id_aporte}', '${item.fecha}', '${item.sub_semana || ''}')" title="Gestionar Semana" style="color: var(--gold); background: rgba(242, 187, 58, 0.1); border: none; border-radius: 4px; padding: 2px 6px; cursor: pointer;">
-                                <i class="fas fa-pencil-alt" style="font-size: 0.8rem;"></i>
+                            <button class="btn-icon-tiny" onclick="gestionarSemana('${agrupado.detalles[0].id_aporte}', '${agrupado.detalles[0].fecha}', '${agrupado.sub_semana || ''}', '${agrupado.id_socio}', '${agrupado.socio?.nombre || ''}')" title="Gestionar Semana" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary);">
+                                <i class="fas fa-pencil-alt" style="font-size: 0.75rem;"></i>
                             </button>
                         </div>
                     </td>
                     <td>
                         <div class="d-flex align-items-center">
-                            <div class="avatar-initial" style="width: 32px; height: 32px; font-size: 0.8rem;">${initial}</div>
+                            <div class="avatar-initial" style="width: 36px; height: 36px; font-size: 0.9rem; background: var(--primary-light); color: white; margin-right: 12px;">${initial}</div>
                             <div class="d-flex flex-column">
-                                <span class="font-weight-600">${item.socio?.nombre || 'Socio'}</span>
-                                ${item.es_igualacion ? '<span class="badge badge-warning" style="font-size: 0.65rem; background: #f2bb3a; color: #000;"><i class="fas fa-clock"></i> IGUALACIÓN</span>' : ''}
+                                <span class="font-weight-600" style="font-size: 1rem; color: #fff; letter-spacing: 0.3px;">${agrupado.socio?.nombre || 'Socio'}</span>
+                                ${agrupado.es_igualacion ? '<span class="badge badge-warning" style="font-size: 0.6rem; background: #f2bb3a; color: #000; font-weight: 800; padding: 1px 5px; width: fit-content;"><i class="fas fa-clock"></i> IGUALACIÓN</span>' : ''}
                             </div>
                         </div>
                     </td>
                     <td>
-                        <span class="text-amount">$${parseFloat(item.monto).toLocaleString('es-EC', { minimumFractionDigits: 2 })}</span>
+                        <div class="d-flex flex-column align-items-start">
+                            <span class="text-amount" style="font-size: 1.1rem; color: #10B981; font-weight: 800;">$${agrupado.montoTotal.toLocaleString('es-EC', { minimumFractionDigits: 2 })}</span>
+                            ${multi ? `<a href="javascript:void(0)" class="text-gold" style="font-size: 0.7rem; text-decoration: none; display: flex; align-items: center; gap: 4px; margin-top: 2px;" onclick="toggleDetalleAportes('${agrupado.id_socio}_${key}')">
+                                Detalle de abonos <i class="fas fa-chevron-down" style="font-size: 0.6rem;"></i>
+                            </a>` : ''}
+                        </div>
                     </td>
                     <td class="text-center">
-                        <a href="${item.comprobante_url}" target="_blank" class="comprobante-link" title="Ver Comprobante">
-                            <i class="fas fa-image"></i>
-                        </a>
+                        <div class="d-flex justify-content-center gap-2">
+                            ${agrupado.detalles.map(d => `
+                                <a href="${d.comprobante}" target="_blank" class="comprobante-link" title="Ver $${d.monto} (${formatDate(d.fecha)})" style="width: 30px; height: 30px; border-radius: 6px; background: rgba(242, 187, 58, 0.1); border: 1px solid rgba(242, 187, 58, 0.2); display: flex; align-items: center; justify-content: center; color: var(--gold);">
+                                    <i class="fas fa-image" style="font-size: 0.9rem;"></i>
+                                </a>
+                            `).join('')}
+                        </div>
                     </td>
-                    <td>
+                    <td class="text-right">
                         <div class="d-flex flex-column">
-                            <small class="text-muted">${formatDateTime(item.created_at).split(' ')[0]}</small>
-                            <small class="text-muted" style="font-size: 0.7rem;">${formatDateTime(item.created_at).split(' ')[1] || ''}</small>
+                            <span style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 600;">${formatDateTime(agrupado.detalles[0].created_at).split(' ')[0]}</span>
+                            <small class="text-muted" style="font-size: 0.7rem;">${formatDateTime(agrupado.detalles[0].created_at).split(' ')[1] || ''}</small>
                         </div>
                     </td>
                 </tr>
+                ${multi ? `
+                <tr id="detalle_${agrupado.id_socio}_${key}" class="hidden" style="background: rgba(0,0,0,0.2); transition: all 0.3s ease;">
+                    <td colspan="5" style="padding: 15px 40px;">
+                        <div style="border-left: 3px solid var(--gold); padding: 5px 0 5px 25px; position: relative;">
+                            <div class="mb-3" style="font-size: 0.7rem; color: var(--gold); font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8;">
+                                Desglose de Contribuciones
+                            </div>
+                            
+                            <div class="d-flex flex-column gap-1">
+                                ${agrupado.detalles.map(d => `
+                                    <div class="d-flex align-items-center py-3 border-bottom" style="border-color: rgba(255,255,255,0.05) !important;">
+                                        <div style="width: 140px;">
+                                            <i class="far fa-calendar-check mr-2 text-gold" style="font-size: 0.85rem; opacity: 0.8;"></i>
+                                            <span style="font-size: 0.9rem; color: #fff; font-weight: 500;">${formatDate(d.fecha)}</span>
+                                        </div>
+                                        <div class="flex-grow-1 px-3">
+                                            <small style="color: rgba(255,255,255,0.4); font-size: 0.75rem; background: rgba(255,255,255,0.03); padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center;">
+                                                <i class="fas fa-history mr-2" style="font-size: 0.65rem; color: var(--gold); opacity: 0.6;"></i> 
+                                                Registrado el ${formatDateTime(d.created_at)}
+                                            </small>
+                                        </div>
+                                        <div class="text-right" style="width: 150px; display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
+                                            <span class="text-white" style="font-size: 1rem; font-weight: 700; letter-spacing: 0.3px;">$${d.monto.toLocaleString('es-EC', { minimumFractionDigits: 2 })}</span>
+                                            <button class="btn-icon-tiny" onclick="gestionarSemana('${d.id_aporte}', '${d.fecha}', '${agrupado.sub_semana || ''}', '${agrupado.id_socio}', '${agrupado.socio?.nombre || ''}')" title="Editar / Reemplazar Comprobante" style="background: rgba(242, 187, 58, 0.1); border: 1px solid rgba(242, 187, 58, 0.2); color: var(--gold); width: 28px; height: 28px;">
+                                                <i class="fas fa-pencil-alt" style="font-size: 0.7rem;"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center pt-4 mt-3 border-top" style="border-color: rgba(255,255,255,0.1) !important;">
+                                <div class="d-flex align-items-center" style="gap: 10px;">
+                                    <i class="fas fa-file-invoice-dollar" style="color: var(--text-muted); font-size: 0.9rem;"></i>
+                                    <span style="font-size: 0.8rem; color: var(--text-muted); font-style: italic; letter-spacing: 0.2px;">
+                                        ${agrupado.detalles.length} comprobantes vinculados
+                                    </span>
+                                </div>
+                                <div class="text-right d-flex align-items-center" style="gap: 15px;">
+                                    <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; letter-spacing: 0.5px; white-space: nowrap;">TOTAL SEMANA:</span>
+                                    <strong class="text-gold" style="font-size: 1.4rem; font-weight: 900; letter-spacing: 0.8px; text-shadow: 0 0 15px rgba(242, 187, 58, 0.2); line-height: 1;">$${agrupado.montoTotal.toLocaleString('es-EC', { minimumFractionDigits: 2 })}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>` : ''}
             `;
         });
     });
@@ -867,12 +1186,27 @@ function verComprobanteAporte(url) {
 }
 
 /**
- * Función para gestionar la semana y sub-división de un aporte
+ * Función para gestionar la semana y sub-división de un aporte, con opción de reemplazar comprobante
  */
-async function gestionarSemana(idAporte, fechaActual, subActual) {
+async function gestionarSemana(idAporte, fechaActual, subActual, idSocio = null, nombreSocio = '') {
     try {
+        // Al gestionar, si el aporte ya tenía una semana objetivo (subActual es número), la bloqueamos
+        if (subActual && !isNaN(subActual)) {
+            forcedTargetWeek = parseInt(subActual);
+        } else {
+            // Si no, calculamos la semana real de la fecha actual por si acaso
+            const anchor = new Date(2025, 10, 17, 12, 0, 0);
+            const d = new Date(fechaActual + 'T12:00:00');
+            const day = d.getDay();
+            const diff = d.getDate() - (day === 0 ? 6 : day - 1);
+            const mon = new Date(d);
+            mon.setDate(diff);
+            const diffMs = mon.getTime() - anchor.getTime();
+            forcedTargetWeek = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
+        }
+
         const { value: formValues } = await Swal.fire({
-            title: 'Gestionar Semana del Aporte',
+            title: 'Gestionar Registro de Aporte',
             background: '#1a1d21',
             color: '#ffffff',
             html: `
@@ -880,23 +1214,22 @@ async function gestionarSemana(idAporte, fechaActual, subActual) {
                     <label style="display: block; margin-bottom: 5px; color: #f2bb3a;">Fecha del Aporte</label>
                     <input type="date" id="swal-fecha-aporte" class="swal2-input" value="${fechaActual}" style="width: 100%; margin: 0 0 15px 0;">
                     
-                    <label style="display: block; margin-bottom: 5px; color: #f2bb3a;">Sub-división (A, B, C...)</label>
-                    <select id="swal-sub-semana" class="swal2-input" style="width: 100%; margin: 0;">
-                        <option value="" ${subActual === '' ? 'selected' : ''}>Ninguna (Normal)</option>
-                        <option value="A" ${subActual === 'A' ? 'selected' : ''}>A (Primer grupo)</option>
-                        <option value="B" ${subActual === 'B' ? 'selected' : ''}>B (Segundo grupo)</option>
-                        <option value="C" ${subActual === 'C' ? 'selected' : ''}>C (Tercer grupo)</option>
-                    </select>
-                    <small style="color: #64748B; margin-top: 5px; display: block;">Úsalo para mover este aporte a un grupo secundario en la misma semana.</small>
-
                     <div style="margin-top: 15px; display: flex; align-items: center; gap: 10px;">
                         <input type="checkbox" id="swal-es-igualacion" style="width: 20px; height: 20px;">
                         <label for="swal-es-igualacion" style="color: #f2bb3a; font-weight: bold; margin: 0;">Marcar como IGUALACIÓN</label>
                     </div>
+
+                    ${idSocio ? `
+                    <div style="margin-top: 25px; padding: 15px; background: rgba(242, 187, 58, 0.1); border: 1px dashed rgba(242, 187, 58, 0.3); border-radius: 12px; text-align: center;">
+                        <p style="font-size: 0.85rem; margin-bottom: 12px; color: #fff;">Añadir más abonos para <strong>${nombreSocio}</strong> en esta semana:</p>
+                        <button type="button" class="btn btn-primary btn-glow" style="width: 100%; padding: 8px; font-size: 0.85rem;" onclick="prepararAporteAdicional('${idSocio}', '${fechaActual}')">
+                            <i class="fas fa-plus-circle"></i> Nuevo Abono
+                        </button>
+                    </div>
+                    ` : ''}
                 </div>
             `,
             didOpen: () => {
-                // Intentar detectar si ya es igualacion para marcar el checkbox
                 const supabase = window.getSupabaseClient();
                 supabase.from('ic_aportes_semanales').select('es_igualacion').eq('id_aporte', idAporte).single()
                     .then(({data}) => {
@@ -907,41 +1240,70 @@ async function gestionarSemana(idAporte, fechaActual, subActual) {
             preConfirm: () => {
                 return {
                     fecha: document.getElementById('swal-fecha-aporte').value,
-                    sub_semana: document.getElementById('swal-sub-semana').value,
                     es_igualacion: document.getElementById('swal-es-igualacion').checked
                 }
             },
             showCancelButton: true,
             confirmButtonText: 'Guardar Cambios',
+            showDenyButton: true,
+            denyButtonText: '<i class="fas fa-trash"></i> Eliminar Registro',
             cancelButtonText: 'Cancelar',
             customClass: {
                 confirmButton: 'btn btn-primary',
+                denyButton: 'btn btn-danger',
                 cancelButton: 'btn btn-secondary'
             }
         });
 
+        if (Swal.isVisible() && Swal.getDenyButton() === document.activeElement) {
+            // Manejar eliminación
+            const result = await Swal.fire({
+                title: '¿Eliminar este aporte?',
+                text: 'Esta acción no se puede deshacer y el dinero se restará de la caja.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                background: '#1a1d21',
+                color: '#fff'
+            });
+
+            if (result.isConfirmed) {
+                beginLoading('Eliminando aporte...');
+                const { error } = await supabase.from('ic_aportes_semanales').delete().eq('id_aporte', idAporte);
+                if (error) throw error;
+                showToast('Aporte eliminado correctamente', 'success');
+                await cargarHistorialCompleto();
+                await cargarDatosAportes();
+            }
+            return;
+        }
+
         if (formValues) {
+            beginLoading('Actualizando datos...');
             const supabase = window.getSupabaseClient();
+            
+            const updateData = {
+                fecha: formValues.fecha,
+                es_igualacion: formValues.es_igualacion
+            };
+
             const { error } = await supabase
                 .from('ic_aportes_semanales')
-                .update({ 
-                    fecha: formValues.fecha,
-                    sub_semana: formValues.sub_semana || null,
-                    es_igualacion: formValues.es_igualacion
-                })
+                .update(updateData)
                 .eq('id_aporte', idAporte);
 
             if (error) throw error;
 
             showToast('Información actualizada correctamente', 'success');
-            
-            // Recargar datos
             await cargarHistorialCompleto();
             await cargarDatosAportes();
         }
     } catch (error) {
         console.error('Error al gestionar semana:', error);
         showToast('Error al actualizar los datos', 'error');
+    } finally {
+        endLoading();
     }
 }
 
@@ -956,7 +1318,7 @@ async function verAportesPendientes() {
         // Cargar todos los aportes para calcular deudas
         const { data: todosAportes, error } = await supabase
             .from('ic_aportes_semanales')
-            .select('id_socio, fecha, sub_semana');
+            .select('id_socio, fecha, sub_semana, monto');
             
         if (error) throw error;
 
@@ -977,39 +1339,34 @@ async function verAportesPendientes() {
 
         // Por cada semana desde la 1 hasta hoy
         for (let w = 1; w <= maxWeek; w++) {
-            const subs = ['', 'A', 'B'];
-            subs.forEach(s => {
-                const hayAportesEnSub = todosAportes.some(a => {
-                    const ad = new Date(a.fecha + 'T12:00:00');
-                    const aday = ad.getDay();
-                    const adiff = ad.getDate() - (aday === 0 ? 6 : aday - 1);
-                    const amon = new Date(ad); amon.setDate(adiff); amon.setHours(12, 0, 0, 0);
-                    const aw = Math.floor((amon.getTime() - anchor.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
-                    return aw === w && (a.sub_semana || '') === s;
-                });
-
-                if (hayAportesEnSub || (s === '' && w <= maxWeek)) {
-                    sociosObjetivo.forEach(socio => {
-                        const tieneAporte = todosAportes.some(a => {
+            sociosObjetivo.forEach(socio => {
+                const montoAportadoEnSemana = todosAportes
+                    .filter(a => a.id_socio === socio.idsocio)
+                    .reduce((total, a) => {
+                        // Calcular semana efectiva: sub_semana (forzada) o calculada por fecha
+                        let aw;
+                        if (a.sub_semana && !isNaN(a.sub_semana)) {
+                            aw = parseInt(a.sub_semana);
+                        } else {
                             const ad = new Date(a.fecha + 'T12:00:00');
                             const aday = ad.getDay();
                             const adiff = ad.getDate() - (aday === 0 ? 6 : aday - 1);
                             const amon = new Date(ad); amon.setDate(adiff); amon.setHours(12, 0, 0, 0);
-                            const aw = Math.floor((amon.getTime() - anchor.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
-                            return aw === w && (a.sub_semana || '') === s && a.id_socio === socio.idsocio;
-                        });
-
-                        if (!tieneAporte) {
-                            const monDate = new Date(anchor);
-                            monDate.setDate(anchor.getDate() + (w - 1) * 7);
-                            pendientes.push({
-                                socioNom: socio.nombre,
-                                socioId: socio.idsocio,
-                                semana: w,
-                                sub: s,
-                                fechaSugerida: monDate.toISOString().split('T')[0]
-                            });
+                            aw = Math.floor((amon.getTime() - anchor.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
                         }
+                        return aw === w ? total + parseFloat(a.monto || 0) : total;
+                    }, 0);
+
+                // Solo aparece en pendientes si el aporte es CERO
+                if (montoAportadoEnSemana === 0) {
+                    const monDate = new Date(anchor);
+                    monDate.setDate(anchor.getDate() + (w - 1) * 7);
+                    pendientes.push({
+                        socioNom: socio.nombre,
+                        socioId: socio.idsocio,
+                        semana: w,
+                        sub: '', 
+                        fechaSugerida: monDate.toISOString().split('T')[0]
                     });
                 }
             });
@@ -1036,10 +1393,14 @@ async function verAportesPendientes() {
                         <tbody>
                             ${pendientes.reverse().map(p => `
                                 <tr style="border-bottom: 1px solid #334155;">
-                                    <td style="padding: 10px;"><b>${p.socioNom}</b></td>
+                                    <td style="padding: 10px;">
+                                        <div class="d-flex flex-column">
+                                            <b>${p.socioNom}</b>
+                                        </div>
+                                    </td>
                                     <td style="padding: 10px;">Semana ${p.semana}${p.sub}</td>
                                     <td style="padding: 10px; text-align: center;">
-                                        <button onclick="window.igualarAportePendiente('${p.socioId}', '${p.socioNom}', '${p.fechaSugerida}', '${p.sub}')" 
+                                        <button onclick="window.igualarAportePendiente('${p.socioId}', '${p.socioNom}', '${p.fechaSugerida}', '${p.semana}')" 
                                                 style="background: #0E5936; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer;">
                                             <i class="fas fa-check"></i> Igualar
                                         </button>
@@ -1057,6 +1418,23 @@ async function verAportesPendientes() {
 window.igualarAportePendiente = (idSocio, nombre, fecha, sub) => {
     Swal.close();
     resetFormAporte();
+    
+    // Bloquear la semana antes de abrir el modal
+    if (sub) {
+        forcedTargetWeek = parseInt(sub);
+    } else {
+        // Si no viene sub (semana forzada), calculamos la semana de la fecha de la deuda
+        const anchor = new Date(2025, 10, 17, 12, 0, 0); // Lunes 17 Nov
+        const d = new Date(fecha + 'T12:00:00');
+        const day = d.getDay();
+        const diff = d.getDate() - (day === 0 ? 6 : day - 1);
+        const monday = new Date(d);
+        monday.setDate(diff);
+        monday.setHours(12, 0, 0, 0);
+        const diffMs = monday.getTime() - anchor.getTime();
+        forcedTargetWeek = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
+    }
+
     const modal = document.getElementById('modal-aporte');
     modal.style.display = 'flex';
     modal.classList.remove('hidden');
@@ -1064,9 +1442,19 @@ window.igualarAportePendiente = (idSocio, nombre, fecha, sub) => {
     document.getElementById('aporte-socio-search').value = nombre;
     document.getElementById('aporte-socio-selected').innerHTML = `<div class="selected-socio-item"><div class="avatar-initial">${nombre.charAt(0)}</div><span>${nombre}</span></div>`;
     document.getElementById('aporte-socio-selected').classList.remove('hidden');
-    document.getElementById('aporte-fecha').value = fecha;
-    document.getElementById('aporte-subsemana').value = sub;
+    
+    // Ponemos la fecha de HOY por defecto para el registro real
+    document.getElementById('aporte-fecha').value = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Guayaquil' });
+    
     document.getElementById('aporte-igualacion').checked = true;
+    
+    // Setear selector manual
+    llenarSelectorSemanasManual(forcedTargetWeek);
+    const selectManual = document.getElementById('aporte-week-override');
+    if (selectManual) selectManual.value = forcedTargetWeek;
+    
+    // Actualizar el banner (que ahora respetará forcedTargetWeek aunque la fecha sea hoy)
+    updateStatusSemana();
 };
 
 /**
@@ -1143,9 +1531,11 @@ async function generateAportesReport() {
                             <input type="hidden" id="swal-socio-id" value="ALL">
                             <div id="swal-socio-suggestions" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; background: #1a1d21; border: 1px solid #3f444a; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.8); z-index: 99999; max-height: none; overflow: visible; margin-top: 5px;"></div>
                         </div>
-                        <div id="swal-socio-selected-tag" style="margin-top: 8px; display: flex; align-items: center; gap: 5px; background: #3f444a; color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; width: fit-content;" class="hidden">
-                            <span id="swal-socio-selected-name">TODOS LOS APORTANTES</span>
-                            <i class="fas fa-times" id="btn-clear-swal-socio" style="cursor: pointer; color: #EF4444;"></i>
+                        <div id="swal-socio-selected-container" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;">
+                            <!-- Aquí se insertarán los tags -->
+                            <div id="tag-all-socios" class="swal-socio-tag" style="background: #3f444a; color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; display: flex; align-items: center; gap: 5px;">
+                                <span>TODOS LOS APORTANTES</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1158,6 +1548,30 @@ async function generateAportesReport() {
                         background: #1a1d21 !important;
                         color: #ffffff !important;
                         overflow-y: visible !important; /* Permitir que la lista se vea fuera del modal */
+                    }
+
+                    .swal-socio-tag {
+                        background: #3f444a;
+                        color: #fff;
+                        padding: 4px 10px;
+                        border-radius: 20px;
+                        font-size: 0.8rem;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        border: 1px solid rgba(242, 187, 58, 0.3);
+                        animation: fadeIn 0.2s ease;
+                    }
+
+                    .swal-socio-tag i {
+                        cursor: pointer;
+                        color: #EF4444;
+                        font-size: 0.9rem;
+                    }
+
+                    @keyframes fadeIn {
+                        from { opacity: 0; transform: translateY(5px); }
+                        to { opacity: 1; transform: translateY(0); }
                     }
 
                     .swal2-html-container {
@@ -1291,12 +1705,39 @@ async function generateAportesReport() {
                 });
 
                 // Lógica de búsqueda de aportante en el modal
+                let selectedSocioIds = [];
                 const socioSearch = Swal.getHtmlContainer().querySelector('#swal-socio-search');
                 const socioIdHidden = Swal.getHtmlContainer().querySelector('#swal-socio-id');
                 const suggestionsBox = Swal.getHtmlContainer().querySelector('#swal-socio-suggestions');
-                const selectedTag = Swal.getHtmlContainer().querySelector('#swal-socio-selected-tag');
-                const selectedName = Swal.getHtmlContainer().querySelector('#swal-socio-selected-name');
-                const clearBtn = Swal.getHtmlContainer().querySelector('#btn-clear-swal-socio');
+                const tagsContainer = Swal.getHtmlContainer().querySelector('#swal-socio-selected-container');
+
+                const renderSocioTags = () => {
+                    if (selectedSocioIds.length === 0) {
+                        tagsContainer.innerHTML = `
+                            <div id="tag-all-socios" class="swal-socio-tag">
+                                <span>TODOS LOS APORTANTES</span>
+                            </div>`;
+                        socioIdHidden.value = 'ALL';
+                    } else {
+                        tagsContainer.innerHTML = selectedSocioIds.map(id => {
+                            const s = sociosAportes.find(soc => soc.idsocio === id);
+                            return `
+                                <div class="swal-socio-tag" data-id="${id}">
+                                    <span>${s ? s.nombre : id}</span>
+                                    <i class="fas fa-times btn-remove-tag" data-id="${id}"></i>
+                                </div>`;
+                        }).join('');
+                        socioIdHidden.value = selectedSocioIds.join(',');
+
+                        tagsContainer.querySelectorAll('.btn-remove-tag').forEach(btn => {
+                            btn.addEventListener('click', (e) => {
+                                const idToRemove = btn.getAttribute('data-id');
+                                selectedSocioIds = selectedSocioIds.filter(id => id !== idToRemove);
+                                renderSocioTags();
+                            });
+                        });
+                    }
+                };
 
                 if (socioSearch) {
                     socioSearch.addEventListener('input', (e) => {
@@ -1308,12 +1749,12 @@ async function generateAportesReport() {
                         }
 
                         const matches = (sociosAportes || []).filter(s => 
-                            (s.nombre || '').toLowerCase().includes(q)
+                            (s.nombre || '').toLowerCase().includes(q) && !selectedSocioIds.includes(s.idsocio)
                         ).slice(0, 5);
 
                         if (matches.length > 0) {
                             suggestionsBox.innerHTML = matches.map(m => `
-                                <div class="swal-suggestion-item" data-id="${m.idsocio}" data-name="${m.nombre}" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #F1F5F9; font-size: 0.9rem;">
+                                <div class="swal-suggestion-item" data-id="${m.idsocio}" data-name="${m.nombre}" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #3f444a; font-size: 0.9rem; color: #fff;">
                                     ${m.nombre}
                                 </div>
                             `).join('');
@@ -1322,10 +1763,10 @@ async function generateAportesReport() {
                             suggestionsBox.querySelectorAll('.swal-suggestion-item').forEach(item => {
                                 item.addEventListener('click', () => {
                                     const id = item.getAttribute('data-id');
-                                    const name = item.getAttribute('data-name');
-                                    socioIdHidden.value = id;
-                                    selectedName.textContent = name;
-                                    selectedTag.classList.remove('hidden');
+                                    if (!selectedSocioIds.includes(id)) {
+                                        selectedSocioIds.push(id);
+                                        renderSocioTags();
+                                    }
                                     socioSearch.value = '';
                                     suggestionsBox.classList.add('hidden');
                                 });
@@ -1341,13 +1782,6 @@ async function generateAportesReport() {
                         if (!socioSearch.contains(ev.target) && !suggestionsBox.contains(ev.target)) {
                             suggestionsBox.classList.add('hidden');
                         }
-                    });
-                }
-
-                if (clearBtn) {
-                    clearBtn.addEventListener('click', () => {
-                        socioIdHidden.value = 'ALL';
-                        selectedTag.classList.add('hidden');
                     });
                 }
             },
@@ -1409,8 +1843,12 @@ async function generatePDFReporteAportes(params) {
 
     // Ajustar título si es para un socio específico
     if (params.socioId !== 'ALL') {
-        const socio = sociosAportes.find(s => s.idsocio === params.socioId);
-        if (socio) titlePeriod += ` - SOCIO: ${socio.nombre}`;
+        const ids = params.socioId.split(',');
+        const names = ids.map(id => {
+            const s = sociosAportes.find(soc => soc.idsocio === id);
+            return s ? s.nombre : id;
+        });
+        titlePeriod += ` - SOCIO(S): ${names.join(', ')}`;
     }
 
     if (typeof window.enableLoader === 'function') window.enableLoader();
@@ -1431,30 +1869,58 @@ async function generatePDFReporteAportes(params) {
             query = query.gte('fecha', startDate).lte('fecha', endDate);
         }
 
-        // Filtro por socio si no es ALL
         if (params.socioId !== 'ALL') {
-            query = query.eq('id_socio', params.socioId);
+            const ids = params.socioId.split(',');
+            query = query.in('id_socio', ids);
         }
 
         const { data: rawAportes, error: errorAportes } = await query;
 
         if (errorAportes) throw errorAportes;
-        if (!rawAportes || rawAportes.length === 0) {
-            throw new Error(`No hay aportes registrados en el periodo seleccionado.`);
-        }
 
         // --- Lógica de Agrupación por Semanas y Detección de Faltantes ---
         const anchor = new Date(2025, 10, 17, 12, 0, 0);
-        const socioListForReport = params.socioId === 'ALL' 
-            ? sociosAportes.filter(s => ['69c69e99', 'be3ff55b', '20b691de'].includes(s.idsocio))
-            : sociosAportes.filter(s => s.idsocio === params.socioId);
+        
+        let socioListForReport = [];
+        if (params.socioId === 'ALL') {
+            socioListForReport = sociosAportes.filter(s => ['69c69e99', 'be3ff55b', '20b691de'].includes(s.idsocio));
+        } else {
+            const idsSelections = params.socioId.split(',');
+            socioListForReport = sociosAportes.filter(s => idsSelections.includes(s.idsocio));
+        }
 
         const groups = {};
+
+        // 2. Obtener acumulado de cada persona involucrada (hasta la fecha final del reporte)
+        let idSociosParaAcumulado = [];
+        if (params.socioId === 'ALL') {
+            idSociosParaAcumulado = [...new Set(rawAportes.map(a => a.id_socio))];
+        } else {
+            idSociosParaAcumulado = params.socioId.split(',');
+        }
+
+        const { data: acumulados, error: errorAcum } = await supabase
+            .from('ic_aportes_semanales')
+            .select('id_socio, monto')
+            .lte('fecha', endDate)
+            .in('id_socio', idSociosParaAcumulado);
+
+        if (errorAcum) throw errorAcum;
+
+        // Calcular mapa de acumulados por socio
+        const acumuladoMap = {};
+        (acumulados || []).forEach(a => {
+            acumuladoMap[a.id_socio] = (acumuladoMap[a.id_socio] || 0) + parseFloat(a.monto);
+        });
 
         // Pre-poblar grupos para asegurar que se muestren semanas sin aportes (faltantes)
         if (startDate && endDate) {
             let curr = new Date(startDate + 'T12:00:00');
             const endLimit = new Date(endDate + 'T12:00:00');
+            // Si la fecha final es mayor a hoy, limitamos a hoy para no mostrar semanas futuras vacías
+            const limitRef = new Date() > endLimit ? endLimit : new Date();
+            limitRef.setHours(12, 0, 0, 0);
+
             while (curr <= endLimit) {
                 const d = new Date(curr);
                 const day = d.getDay();
@@ -1514,28 +1980,37 @@ async function generatePDFReporteAportes(params) {
         }
 
         rawAportes.forEach(a => {
-            const d = new Date(a.fecha + 'T12:00:00');
-            const day = d.getDay();
-            const diff = d.getDate() - (day === 0 ? 6 : day - 1);
-            const monday = new Date(d);
-            monday.setDate(diff);
-            monday.setHours(12, 0, 0, 0);
+            let weekNum;
+            let monday;
+            
+            // Si tiene una semana objetivo grabada (sub_semana es número), manda esa
+            if (a.sub_semana && !isNaN(a.sub_semana)) {
+                weekNum = parseInt(a.sub_semana);
+                monday = new Date(anchor);
+                monday.setDate(anchor.getDate() + (weekNum - 1) * 7);
+            } else {
+                const d = new Date(a.fecha + 'T12:00:00');
+                const day = d.getDay();
+                const diff = d.getDate() - (day === 0 ? 6 : day - 1);
+                monday = new Date(d);
+                monday.setDate(diff);
+                monday.setHours(12, 0, 0, 0);
 
-            const diffMs = monday.getTime() - anchor.getTime();
-            const weekNum = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
-            const sub = a.sub_semana || '';
-            const key = `${weekNum}${sub}`;
+                const diffMs = monday.getTime() - anchor.getTime();
+                weekNum = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
+            }
+
+            const key = `${weekNum}`;
 
             if (!groups[key]) {
                 const saturday = new Date(monday);
                 saturday.setDate(monday.getDate() + 5);
                 groups[key] = {
                     weekNum,
-                    sub,
                     monday,
-                    label: `SEMANA ${weekNum}${sub} (${monday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})} - ${saturday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})})`,
+                    label: `SEMANA ${weekNum} (${monday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})} - ${saturday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})})`,
                     items: [],
-                    sortVal: weekNum + (sub.charCodeAt(0) || 0) / 1000
+                    sortVal: weekNum
                 };
             }
             groups[key].items.push(a);
@@ -1549,13 +2024,34 @@ async function generatePDFReporteAportes(params) {
             // Marcador de inicio de semana
             finalProcessedAportes.push({ isHeader: true, label: group.label });
             
-            // Aportes registrados
-            group.items.forEach(item => finalProcessedAportes.push(item));
+            // AGRUPAR APORTES POR SOCIO DENTRO DE LA SEMANA (Para completar valores)
+            const aportesPorSocio = {};
+            group.items.forEach(item => {
+                if (!aportesPorSocio[item.id_socio]) {
+                    aportesPorSocio[item.id_socio] = {
+                        ...item,
+                        monto: parseFloat(item.monto),
+                        comprobantes: [item.comprobante_url],
+                        montos: [parseFloat(item.monto)],
+                        fechas: [item.fecha],
+                        esMerged: true
+                    };
+                } else {
+                    aportesPorSocio[item.id_socio].monto += parseFloat(item.monto);
+                    aportesPorSocio[item.id_socio].comprobantes.push(item.comprobante_url);
+                    aportesPorSocio[item.id_socio].montos.push(parseFloat(item.monto));
+                    aportesPorSocio[item.id_socio].fechas.push(item.fecha);
+                    if (item.es_igualacion) aportesPorSocio[item.id_socio].es_igualacion = true;
+                }
+            });
+
+            // Añadir socios agrupados
+            Object.values(aportesPorSocio).forEach(item => finalProcessedAportes.push(item));
 
             // Detección de faltantes
-            const sociosQueAportaron = group.items.map(i => i.id_socio);
+            const sociosQueAportaron = Object.keys(aportesPorSocio);
             socioListForReport.forEach(s => {
-                if (!sociosQueAportaron.includes(s.idsocio)) {
+                if (!sociosQueAportaron.includes(String(s.idsocio))) {
                     finalProcessedAportes.push({ 
                         isMissing: true, 
                         socioNombre: s.nombre,
@@ -1567,22 +2063,6 @@ async function generatePDFReporteAportes(params) {
 
         const aportes = finalProcessedAportes;
         // --- Fin Lógica de Agrupación ---
-
-        // 2. Obtener acumulado de cada persona involucrada (hasta la fecha final del reporte)
-        const idSocios = [...new Set(rawAportes.map(a => a.id_socio))];
-        const { data: acumulados, error: errorAcum } = await supabase
-            .from('ic_aportes_semanales')
-            .select('id_socio, monto')
-            .lte('fecha', endDate)
-            .in('id_socio', idSocios);
-
-        if (errorAcum) throw errorAcum;
-
-        // Calcular mapa de acumulados por socio
-        const acumuladoMap = {};
-        (acumulados || []).forEach(a => {
-            acumuladoMap[a.id_socio] = (acumuladoMap[a.id_socio] || 0) + parseFloat(a.monto);
-        });
 
         // 3. Generar PDF
         let yPos = 20;
@@ -1668,7 +2148,12 @@ async function generatePDFReporteAportes(params) {
             window.showLoader(`Procesando comprobante ${count} de ${rawAportes.length}...`);
             totalAportadoPeriodo += parseFloat(aporte.monto);
 
-            const boxHeight = 85; 
+            // Ajustar altura del box si hay muchos comprobantes
+            const comps = aporte.comprobantes || [aporte.comprobante_url];
+            let boxHeight = 85;
+            if (comps.length > 2) boxHeight = 130;
+            if (comps.length > 4) boxHeight = 175;
+
             if (yPos + boxHeight > (pageHeight - marginBottom)) {
                 doc.addPage();
                 yPos = 20;
@@ -1702,27 +2187,55 @@ async function generatePDFReporteAportes(params) {
             doc.text(`MONTO:`, leftMargin, textY);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(11, 78, 50);
-            doc.text(`$${parseFloat(aporte.monto).toFixed(2)}`, leftMargin + 25, textY);
+            
+            if (aporte.esMerged && aporte.montos.length > 1) {
+                doc.text(`$${parseFloat(aporte.monto).toFixed(2)} (Total)`, leftMargin + 25, textY);
+                textY += 5;
+                doc.setFontSize(7);
+                doc.setTextColor(100);
+                const desglose = aporte.montos.map((m, i) => `$${m.toFixed(2)} (${aporte.fechas[i]})`).join(' + ');
+                const desgloseLines = doc.splitTextToSize(desglose, 80);
+                doc.text(desgloseLines, leftMargin + 25, textY);
+                textY += (desgloseLines.length * 4) + 2;
+                doc.setFontSize(10);
+            } else {
+                doc.text(`$${parseFloat(aporte.monto).toFixed(2)}`, leftMargin + 25, textY);
+                textY += 10;
+            }
 
             if (aporte.es_igualacion) {
-                textY += 7;
                 doc.setFontSize(8);
                 doc.setTextColor(242, 187, 58);
                 doc.setFont('helvetica', 'bold');
                 doc.text(`[ PAGO DE IGUALACIÓN ]`, leftMargin, textY);
             }
 
-            // Comprobante
-            if (aporte.comprobante_url) {
-                try {
-                    const imgData = await fetchImageAsBase64Aportes(aporte.comprobante_url);
-                    if (imgData) {
-                        doc.addImage(imgData, 'JPEG', 115, yPos + 5, 75, 75, undefined, 'FAST');
+            // Comprobantes (Múltiples si existen)
+            if (comps.length > 0 && comps[0]) {
+                const imgWidth = comps.length > 1 ? 40 : 75;
+                const imgHeight = comps.length > 1 ? 40 : 75;
+                
+                for (let i = 0; i < comps.length; i++) {
+                    const cUrl = comps[i];
+                    if (!cUrl) continue;
+                    
+                    try {
+                        const imgData = await fetchImageAsBase64Aportes(cUrl);
+                        if (imgData) {
+                            // Si hay varios, ponerlos en grid
+                            const xOffset = 115 + (i % 2 === 0 ? 0 : 45);
+                            const yOffset = yPos + 5 + (Math.floor(i / 2) * 45);
+                            
+                            // Ajustar boxHeight si hay muchos comprobantes
+                            // (Para simplificar, asumiremos max 4 que caben en 85 o ajustamos dinamicamente)
+                            
+                            doc.addImage(imgData, 'JPEG', xOffset, yOffset, imgWidth, imgHeight, undefined, 'FAST');
+                        }
+                    } catch (e) {
+                        doc.setFontSize(8);
+                        doc.setTextColor(150);
+                        doc.text("[Err. Imagen]", 115 + (i * 20), yPos + 40);
                     }
-                } catch (e) {
-                    doc.setFontSize(8);
-                    doc.setTextColor(150);
-                    doc.text("[Imagen no disponible]", 130, yPos + 40);
                 }
             } else {
                 doc.setFontSize(8);
@@ -1750,19 +2263,21 @@ async function generatePDFReporteAportes(params) {
         doc.line(15, yPos, 195, yPos);
         yPos += 10;
 
-        // Tabla de Totales
-        const tableData = idSocios.map(id => {
-            const socio = (rawAportes.find(a => a.id_socio === id))?.socio?.nombre || 'Socio';
-            const periodSum = rawAportes.filter(a => a.id_socio === id).reduce((s, a) => s + parseFloat(a.monto), 0);
+        // Tabla de Totales (Ahora basada en socioListForReport para incluir los que no han aportado)
+        const tableData = socioListForReport.map(s => {
+            const id = s.idsocio;
+            const socioNombre = s.nombre;
+            const periodSum = rawAportes.filter(a => String(a.id_socio) === String(id)).reduce((sum, a) => sum + parseFloat(a.monto), 0);
             const totalSum = acumuladoMap[id] || 0;
             
-            if (params.socioId !== 'ALL') {
-                return [socio, `$${periodSum.toFixed(2)}` ];
+            // Si solo hay un socio seleccionado, omitimos la columna de acumulado (según diseño original)
+            if (params.socioId !== 'ALL' && params.socioId.split(',').length === 1) {
+                return [socioNombre, `$${periodSum.toFixed(2)}` ];
             }
-            return [socio, `$${periodSum.toFixed(2)}`, `$${totalSum.toFixed(2)}` ];
+            return [socioNombre, `$${periodSum.toFixed(2)}`, `$${totalSum.toFixed(2)}` ];
         });
 
-        const tableHead = params.socioId !== 'ALL' 
+        const tableHead = (params.socioId !== 'ALL' && params.socioId.split(',').length === 1)
             ? [['Socio', 'Aportado en Periodo']]
             : [['Socio', 'Aportado en Periodo', 'Total Acumulado']];
 
@@ -1837,6 +2352,145 @@ function verComprobanteAporte(url) {
     if (url) window.open(url, '_blank');
 }
 
+/**
+ * Prepara el modal de registro para añadir un aporte adicional a un socio y fecha específicos
+ */
+window.prepararAporteAdicional = async function(idSocio, fecha) {
+    Swal.close();
+    closeAllModals();
+    
+    // Al venir del historial, ya tenemos la semana objetivo bloqueada por gestionarSemana
+    
+    // Pequeño retardo para dejar que los modales se limpien
+    await new Promise(res => setTimeout(res, 100));
+    
+    // No reseteamos el forcedTargetWeek aquí porque lo queremos heredar
+    const _prevForced = forcedTargetWeek;
+    resetFormAporte();
+    forcedTargetWeek = _prevForced;
+    
+    // Abrir modal de aporte
+    const modal = document.getElementById('modal-aporte');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+    }
+    
+    // Pre-llenar fecha
+    const inputFecha = document.getElementById('aporte-fecha');
+    if (inputFecha) inputFecha.value = fecha;
+    
+    // Pre-seleccionar socio
+    selectAporteById(idSocio);
+    
+    // Setear selector manual
+    llenarSelectorSemanasManual(forcedTargetWeek);
+    const selectManual = document.getElementById('aporte-week-override');
+    if (selectManual) selectManual.value = forcedTargetWeek || "";
+    
+    // La función selectAporteById ya dispara updateStatusSemana()
+}
+
 // Exponer funciones necesarias globalmente
 window.initAportesModule = initAportesModule;
 window.verComprobanteAporte = verComprobanteAporte;
+window.gestionarSemana = gestionarSemana; // Asegurar exposición global
+
+/**
+ * Llena el selector de semanas manual en el modal de registro
+ */
+function llenarSelectorSemanasManual(defaultWeek = null) {
+    const select = document.getElementById('aporte-week-override');
+    if (!select) return;
+
+    const anchor = new Date(2025, 10, 17, 12, 0, 0); // Lunes 17 Nov
+    const hoy = new Date();
+    const dayHoy = hoy.getDay();
+    const inicioSemanaHoy = new Date(hoy);
+    inicioSemanaHoy.setDate(hoy.getDate() - (dayHoy === 0 ? 6 : dayHoy - 1));
+    inicioSemanaHoy.setHours(12, 0, 0, 0);
+    const maxWeek = Math.floor((inicioSemanaHoy.getTime() - anchor.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
+
+    let html = '<option value="">-- Autodetectar por Fecha --</option>';
+    for (let i = maxWeek; i >= 1; i--) {
+        const mon = new Date(anchor);
+        mon.setDate(anchor.getDate() + (i - 1) * 7);
+        const sun = new Date(mon);
+        sun.setDate(mon.getDate() + 6);
+        const range = `${mon.toLocaleDateString('es-EC', {day:'numeric', month:'short'})} - ${sun.toLocaleDateString('es-EC', {day:'numeric', month:'short'})}`;
+        html += `<option value="${i}">Semana ${i}${i === maxWeek ? ' (Actual)' : ''} [${range}]</option>`;
+    }
+    select.innerHTML = html;
+}
+
+/**
+ * Abre un modal para seleccionar la semana a visualizar en el dashboard
+ */
+async function abrirSelectorSemanas(maxWeek) {
+    const anchor = new Date(2025, 10, 17, 12, 0, 0); // Lunes 17 Nov
+    const semanas = [];
+    
+    // Crear la lista de semanas desde la actual hasta la 1
+    for (let i = maxWeek; i >= 1; i--) {
+        const monday = new Date(anchor);
+        monday.setDate(anchor.getDate() + (i - 1) * 7);
+        const saturday = new Date(monday);
+        saturday.setDate(monday.getDate() + 5);
+        
+        semanas.push({
+            num: i,
+            label: `Semana ${i}`,
+            range: `${monday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})} - ${saturday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})}`
+        });
+    }
+
+    await Swal.fire({
+        title: 'Seleccionar Semana',
+        background: '#1a1d21',
+        color: '#ffffff',
+        width: '450px',
+        showConfirmButton: false,
+        showCloseButton: true,
+        html: `
+            <div style="max-height: 450px; overflow-y: auto; padding-right: 5px;" id="week-scroll-container">
+                <div class="week-item ${!filtroSemanaSeleccionada ? 'selected' : ''}" 
+                     onclick="window.setDashboardWeekFilter(null)"
+                     style="display: flex; justify-content: space-between; align-items: center; padding: 15px; margin-bottom: 10px; background: #2d3238; border-radius: 12px; cursor: pointer; border: 1px solid #3f444a; transition: all 0.2s;">
+                    <div>
+                        <span style="font-weight: 800; font-size: 1rem; color: #F2BB3A;">Semana Actual (Dinámica)</span>
+                        <p style="margin: 3px 0 0 0; font-size: 0.8rem; color: #94a3b8;">Muestra siempre los últimos aportes</p>
+                    </div>
+                    ${!filtroSemanaSeleccionada ? '<i class="fas fa-check-circle" style="color: #F2BB3A;"></i>' : ''}
+                </div>
+
+                <div style="border-top: 1px solid #334155; margin: 15px 0; padding-top: 15px;">
+                    <p style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px;">Historial de Semanas</p>
+                    ${semanas.map(s => `
+                        <div class="week-item ${filtroSemanaSeleccionada === s.num ? 'selected' : ''}" 
+                             onclick="window.setDashboardWeekFilter(${s.num})"
+                             style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; margin-bottom: 8px; background: ${filtroSemanaSeleccionada === s.num ? 'rgba(242, 187, 58, 0.1)' : '#1e293b'}; border-radius: 10px; cursor: pointer; border: 1px solid ${filtroSemanaSeleccionada === s.num ? '#F2BB3A' : '#334155'}; transition: all 0.2s;">
+                            <div>
+                                <span style="font-weight: 700; color: #fff;">${s.label}</span>
+                                <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: #94a3b8;">${s.range}</p>
+                            </div>
+                            <i class="fas fa-chevron-right" style="font-size: 0.7rem; color: #475569;"></i>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            <style>
+                .week-item:hover { background: #334155 !important; transform: translateX(5px); border-color: #475569; }
+                .week-item.selected { border-color: #F2BB3A !important; }
+                #week-scroll-container::-webkit-scrollbar { width: 4px; }
+                #week-scroll-container::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+            </style>
+        `
+    });
+}
+
+// Helper para activar el filtro y cerrar el modal
+window.setDashboardWeekFilter = (weekNum) => {
+    filtroSemanaSeleccionada = weekNum;
+    Swal.close();
+    renderAportesRecientes(aportesData);
+};
