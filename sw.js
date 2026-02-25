@@ -3,8 +3,8 @@
  * PWA Offline Support
  */
 
-const CACHE_NAME = 'inkacorp-v29.1.2';
-const STATIC_CACHE = 'inkacorp-static-v29.1.2';
+const CACHE_NAME = 'inkacorp-v29.1.3';
+const STATIC_CACHE = 'inkacorp-static-v29.1.3';
 
 // Archivos esenciales para cachear (Shell de la app)
 const ESSENTIAL_FILES = [

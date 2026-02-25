@@ -11,6 +11,7 @@ let currentCajaSession = null;
 let currentBalance = 0;
 let ingresosTurno = 0;
 let egresosTurno = 0;
+let currentPendingTransfer = null;
 
 /**
  * Inicialización del módulo
@@ -21,9 +22,50 @@ async function initCajaModule() {
         setupDateFilters();
         await checkCajaStatus();
         await loadCajaData();
+        await checkIncomingTransfer();
     } catch (error) {
         console.error("[CAJA] Error inicializando módulo:", error);
     }
+}
+
+async function checkIncomingTransfer() {
+    const sb = getSupabaseClient();
+    if (!sb) return;
+
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) return;
+
+        const { data: incoming, error } = await sb.from('ic_caja_transferencias')
+            .select('*, id_usuario_origen(nombre)')
+            .eq('id_usuario_destino', session.user.id)
+            .eq('estado', 'PENDIENTE')
+            .order('fecha_envio', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        const alertContainer = document.getElementById('transfer-alert-container');
+        if (!alertContainer) return; // Validación de seguridad
+
+        if (incoming) {
+            currentPendingTransfer = incoming;
+            const alertMsg = document.getElementById('transfer-alert-msg');
+            if (alertMsg) alertMsg.textContent = `Compañero ${incoming.id_usuario_origen.nombre} te ha enviado ${formatCurrency(incoming.monto)}.`;
+            alertContainer.classList.remove('hidden');
+        } else {
+            currentPendingTransfer = null;
+            alertContainer.classList.add('hidden');
+        }
+    } catch (err) {
+        console.error("[CAJA] Error verificando transferencias entrantes:", err);
+    }
+}
+
+function showAceptarTransferModal() {
+    if (!currentPendingTransfer) return;
+    // Implementación pendiente si se requiere abrir modal desde aquí
 }
 
 function setupDateFilters() {
