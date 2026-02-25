@@ -447,8 +447,8 @@ async function showLiteCreditDetails(id) {
                     `Agradecemos de antemano tu compromiso para ponerte al día y mantener tu historial impecable.\n\n` +
                     `¿A qué hora podrías realizar el depósito hoy?`
                 );
-                const phone = String(c.socio.whatsapp).replace(/^0/, '');
-                window.open(`https://wa.me/593${phone}?text=${msg}`, '_blank');
+                const phone = String(c.socio.whatsapp).replace(/\D/g, '');
+                window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
             };
         } else {
             btnWhatsapp.style.display = 'none';
