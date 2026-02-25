@@ -211,7 +211,7 @@ function openMobileSocioDetail(idsocio) {
             <div class="mobile-detail-grid">
                 ${detailItem('Nombre', socio.nombre)}
                 ${detailItem('Cédula', socio.cedula)}
-                ${detailItem('WhatsApp', socio.whatsapp ? `<a href="https://wa.me/${escapeHtml(socio.whatsapp)}" target="_blank">${escapeHtml(socio.whatsapp)}</a>` : '-', true)}
+                ${detailItem('WhatsApp', socio.whatsapp ? `<a href="https://wa.me/${String(socio.whatsapp).replace(/\D/g, '')}" target="_blank">${escapeHtml(socio.whatsapp)}</a>` : '-', true)}
                 ${detailItem('País de residencia', socio.paisresidencia)}
                 ${detailItem('Estado civil', socio.estadocivil)}
                 ${detailItem('Domicilio', socio.domicilio)}
@@ -222,7 +222,7 @@ function openMobileSocioDetail(idsocio) {
             <div class="mobile-detail-title">Referencia</div>
             <div class="mobile-detail-grid">
                 ${detailItem('Nombre referencia', socio.nombrereferencia)}
-                ${detailItem('WhatsApp referencia', socio.whatsappreferencia ? `<a href="https://wa.me/${escapeHtml(socio.whatsappreferencia)}" target="_blank">${escapeHtml(socio.whatsappreferencia)}</a>` : '-', true)}
+                ${detailItem('WhatsApp referencia', socio.whatsappreferencia ? `<a href="https://wa.me/${String(socio.whatsappreferencia).replace(/\D/g, '')}" target="_blank">${escapeHtml(socio.whatsappreferencia)}</a>` : '-', true)}
             </div>
         </section>
 
@@ -231,7 +231,7 @@ function openMobileSocioDetail(idsocio) {
             <div class="mobile-detail-grid">
                 ${detailItem('Nombre', socio.nombreconyuge)}
                 ${detailItem('Cédula', socio.cedulaconyuge)}
-                ${detailItem('WhatsApp', socio.whatsappconyuge ? `<a href="https://wa.me/${escapeHtml(socio.whatsappconyuge)}" target="_blank">${escapeHtml(socio.whatsappconyuge)}</a>` : '-', true)}
+                ${detailItem('WhatsApp', socio.whatsappconyuge ? `<a href="https://wa.me/${String(socio.whatsappconyuge).replace(/\D/g, '')}" target="_blank">${escapeHtml(socio.whatsappconyuge)}</a>` : '-', true)}
             </div>
         </section>
 
