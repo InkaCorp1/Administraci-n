@@ -380,7 +380,7 @@ function showChangelog(version) {
         title: `¡Bienvenido a INKA CORP Mobile v${version}!`,
         html: `
             <div style="text-align: left; font-size: 14px; line-height: 1.6;">
-                <p>Hemos actualizado el sistema a la versión mayor <b>v27.0.0</b>. Estos son los cambios principales:</p>
+                <p>Hemos actualizado el sistema a la versión <b>v${version}</b>. Estos son los cambios principales:</p>
                 
                 <h4 style="color: #10b981; margin-top: 15px;">💰 Control de Caja</h4>
                 <ul style="padding-left: 20px;">

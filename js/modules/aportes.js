@@ -6,7 +6,7 @@
 // Estado del módulo
 let aportesData = [];
 let sociosAportes = [];
-let selectedAporteFile = null;
+let selectedAporteFiles = [];
 let filtroSemanaSeleccionada = null; // null significa "Vista Reciente / Todo"
 let forcedTargetWeek = null; // Para bloquear la semana al completar aportes con fecha actual
 
@@ -118,13 +118,26 @@ function setupAportesEventListeners() {
     // Manejo de carga de imagen
     const uploadPlaceholder = document.getElementById('aporte-upload-placeholder');
     const fileInput = document.getElementById('aporte-comprobante');
+    const multiCheck = document.getElementById('aporte-multi-comprobante');
 
     if (uploadPlaceholder && fileInput) {
         uploadPlaceholder.addEventListener('click', () => fileInput.click());
 
         fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) handleAporteFileSelect(file);
+            if (e.target.files.length > 0) {
+                handleAporteFileSelect(Array.from(e.target.files));
+            }
+        });
+    }
+
+    if (multiCheck && fileInput) {
+        multiCheck.addEventListener('change', () => {
+            fileInput.multiple = multiCheck.checked;
+            // No reseteamos automáticamente para permitir que el usuario 
+            // cambie de opinión antes de subir, pero informamos si ya hay algo
+            if (selectedAporteFiles.length > 0) {
+                resetAporteImage();
+            }
         });
     }
 
@@ -297,32 +310,85 @@ function closeAllModals() {
 /**
  * Maneja la selección de archivo de comprobante
  */
-function handleAporteFileSelect(file) {
-    if (!file.type.startsWith('image/')) {
-        showAlert('Por favor seleccione un archivo de imagen válido', 'Error', 'error');
+function handleAporteFileSelect(files) {
+    const isMulti = document.getElementById('aporte-multi-comprobante')?.checked;
+    
+    // Validar tipos
+    const validFiles = files.filter(f => f.type.startsWith('image/'));
+    if (validFiles.length < files.length) {
+        showAlert('Algunos archivos no son imágenes válidas y fueron ignorados', 'Aviso', 'warning');
+    }
+
+    if (!isMulti) {
+        selectedAporteFiles = [validFiles[0]];
+    } else {
+        // En modo multi, acumulamos sin duplicados de nombre
+        const existingNames = selectedAporteFiles.map(f => f.name);
+        const newFiles = validFiles.filter(f => !existingNames.includes(f.name));
+        selectedAporteFiles = [...selectedAporteFiles, ...newFiles];
+    }
+
+    renderAportePreviews();
+}
+
+/**
+ * Renderiza las miniaturas de los archivos seleccionados
+ */
+function renderAportePreviews() {
+    const previewContainer = document.getElementById('aporte-preview');
+    const placeholder = document.getElementById('aporte-upload-placeholder');
+    
+    if (selectedAporteFiles.length === 0) {
+        previewContainer.classList.add('hidden');
+        previewContainer.innerHTML = '';
+        placeholder.classList.remove('hidden');
         return;
     }
 
-    selectedAporteFile = file;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const previewImg = document.querySelector('#aporte-preview img');
-        previewImg.src = e.target.result;
-        document.getElementById('aporte-upload-placeholder').classList.add('hidden');
-        document.getElementById('aporte-preview').classList.remove('hidden');
-    };
-    reader.readAsDataURL(file);
+    placeholder.classList.add('hidden');
+    previewContainer.classList.remove('hidden');
+    previewContainer.innerHTML = '';
+
+    selectedAporteFiles.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const div = document.createElement('div');
+            div.className = 'preview-item-wrapper';
+            div.style.position = 'relative';
+            div.style.width = '80px';
+            div.style.height = '80px';
+            div.style.borderRadius = '8px';
+            div.style.overflow = 'hidden';
+            div.style.border = '1px solid var(--gold)';
+
+            div.innerHTML = `
+                <img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover;">
+                <button type="button" class="btn-remove-preview" data-index="${index}" style="position:absolute; top:2px; right:2px; width:20px; height:20px; font-size:10px; padding:0; display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            div.querySelector('.btn-remove-preview').onclick = (ev) => {
+                ev.stopPropagation();
+                selectedAporteFiles.splice(index, 1);
+                renderAportePreviews();
+            };
+
+            previewContainer.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+    });
 }
 
 /**
  * Resetea la imagen del formulario
  */
 function resetAporteImage() {
-    selectedAporteFile = null;
+    selectedAporteFiles = [];
     document.getElementById('aporte-comprobante').value = '';
     document.getElementById('aporte-upload-placeholder').classList.remove('hidden');
     document.getElementById('aporte-preview').classList.add('hidden');
-    document.querySelector('#aporte-preview img').src = '';
+    document.getElementById('aporte-preview').innerHTML = '';
 }
 
 /**
@@ -393,10 +459,17 @@ function renderAportesRecientes(data) {
     // Actualizar Label de Semana en el Dashboard
     const weekLabel = document.getElementById('current-week-label');
     if (weekLabel) {
+        const targetW = filtroSemanaSeleccionada || currentWeekNum;
+        const mon = new Date(ANCHOR_DATE);
+        mon.setDate(ANCHOR_DATE.getDate() + (targetW - 1) * 7);
+        const sat = new Date(mon);
+        sat.setDate(mon.getDate() + 5);
+        const satLabel = sat.toLocaleDateString('es-EC', {day:'numeric', month:'short'});
+        
         if (filtroSemanaSeleccionada) {
-            weekLabel.innerHTML = `Semana ${filtroSemanaSeleccionada} <i class="fas fa-chevron-down" style="font-size: 0.7rem; margin-left: 5px;"></i>`;
+            weekLabel.innerHTML = `Semana ${filtroSemanaSeleccionada} (SÁB ${satLabel}) <i class="fas fa-chevron-down" style="font-size: 0.7rem; margin-left: 5px;"></i>`;
         } else {
-            weekLabel.innerHTML = `Semana ${currentWeekNum} (Actual) <i class="fas fa-chevron-down" style="font-size: 0.7rem; margin-left: 5px;"></i>`;
+            weekLabel.innerHTML = `Semana ${currentWeekNum} (SÁB ${satLabel}) <i class="fas fa-chevron-down" style="font-size: 0.7rem; margin-left: 5px;"></i>`;
         }
         weekLabel.style.cursor = 'pointer';
         weekLabel.onclick = () => abrirSelectorSemanas(currentWeekNum);
@@ -477,10 +550,16 @@ function renderAportesRecientes(data) {
                 </td>
                 <td><span class="badge badge-success px-3 py-2 rounded-pill shadow-sm"><i class="fas fa-check mr-1"></i> Recibido</span></td>
                 <td class="text-center">
-                    <div class="d-flex flex-row align-items-center justify-content-center" style="gap: 8px;">
-                        <button class="btn-icon shadow-sm" style="background: var(--gray-800); border: 1px solid var(--border-color); width: 35px; height: 35px;" onclick="verComprobanteAporte('${aporte.comprobante_url}')" title="Ver Comprobante">
-                            <i class="fas fa-image text-gold"></i>
-                        </button>
+                    <div class="d-flex flex-row align-items-center justify-content-center" style="gap: 8px; flex-wrap: wrap;">
+                        ${(aporte.comprobante_url || '').split('|').map((u, i, arr) => {
+                            if (!u.trim()) return '';
+                            const label = arr.length > 1 ? ` <span style="font-size: 0.65rem; margin-left: 2px;">${i+1}</span>` : '';
+                            return `
+                                <button class="btn-icon shadow-sm" style="background: var(--gray-800); border: 1px solid var(--border-color); width: 35px; height: 35px;" onclick="verComprobanteAporte('${u.trim()}')" title="Ver Comprobante ${i+1}">
+                                    <i class="fas fa-image text-gold"></i>${label}
+                                </button>
+                            `;
+                        }).join('')}
                         <button class="btn-icon shadow-sm" style="background: var(--gray-800); border: 1px solid var(--border-color); width: 35px; height: 35px;" onclick="gestionarSemana('${aporte.id_aporte}', '${aporte.fecha}', '${aporte.sub_semana || ''}', '${aporte.id_socio}', '${aporte.socio?.nombre || ''}')" title="Gestionar / Reemplazar Comprobante">
                             <i class="fas fa-pencil-alt text-gold"></i>
                         </button>
@@ -714,12 +793,20 @@ async function updateStatusSemana() {
         if (comprobantesContainer) {
             if (aportesExistentes && aportesExistentes.length > 0) {
                 comprobantesContainer.innerHTML = '<p style="width: 100%; font-size: 0.75rem; color: #94a3b8; margin: 0 0 5px 0;">Comprobantes en esta semana:</p>' + 
-                    aportesExistentes.map(a => `
-                        <div class="mini-comprobante" onclick="verComprobanteAporte('${a.comprobante_url}')" title="Ver comprobante de $${a.monto}">
-                            <img src="${a.comprobante_url}" alt="Comp">
-                            <div class="monto-mini">$${parseFloat(a.monto).toFixed(0)}</div>
-                        </div>
-                    `).join('');
+                    aportesExistentes.map(a => {
+                        const urls = (a.comprobante_url || '').split('|');
+                        return urls.map((u, i) => {
+                            if (!u.trim()) return '';
+                            const badge = urls.length > 1 ? `<div class="index-mini">${i+1}</div>` : '';
+                            return `
+                                <div class="mini-comprobante" onclick="verComprobanteAporte('${u.trim()}')" title="Ver comprobante de $${a.monto} (#${i+1})">
+                                    <img src="${u.trim()}" alt="Comp">
+                                    ${badge}
+                                    <div class="monto-mini">$${parseFloat(a.monto).toFixed(0)}</div>
+                                </div>
+                            `;
+                        }).join('');
+                    }).join('');
                 comprobantesContainer.style.display = 'flex';
             } else {
                 comprobantesContainer.innerHTML = '';
@@ -806,8 +893,8 @@ async function handleAporteSubmit(e) {
         return;
     }
 
-    if (!selectedAporteFile) {
-        showAlert('Debe subir una imagen del comprobante', 'Atención', 'warning');
+    if (selectedAporteFiles.length === 0) {
+        showAlert('Debe subir al menos una imagen del comprobante', 'Atención', 'warning');
         return;
     }
 
@@ -816,15 +903,17 @@ async function handleAporteSubmit(e) {
         const supabase = window.getSupabaseClient();
         const currentUser = window.getCurrentUser ? window.getCurrentUser() : null;
 
-        // 1. Subir imagen usando la utilidad centralizada
-        let imageUrl = null;
-        const uploadRes = await window.uploadFileToStorage(selectedAporteFile, 'aportes', socioId);
-        
-        if (!uploadRes.success) {
-            throw new Error('Error al subir comprobante: ' + uploadRes.error);
+        // 1. Subir imágenes usando la utilidad centralizada
+        let urls = [];
+        for (const file of selectedAporteFiles) {
+            const uploadRes = await window.uploadFileToStorage(file, 'aportes', socioId);
+            if (!uploadRes.success) {
+                throw new Error('Error al subir un comprobante: ' + uploadRes.error);
+            }
+            urls.push(uploadRes.url);
         }
 
-        imageUrl = uploadRes.url;
+        const imageUrl = urls.join('|'); // Guardar múltiples URLs separadas por pipe
 
         // 2. Guardar en DB
         const { data, error } = await supabase
@@ -1026,9 +1115,8 @@ function renderHistorialAportes(data) {
         const saturday = new Date(monday);
         saturday.setDate(monday.getDate() + 5);
 
-        const mondayStr = monday.toLocaleDateString('es-EC', { day: 'numeric', month: 'short' });
         const saturdayStr = saturday.toLocaleDateString('es-EC', { day: 'numeric', month: 'short' });
-        const weekLabel = `Semana ${weekNum} (${mondayStr} - ${saturdayStr})`;
+        const weekLabel = `Semana ${weekNum} (SÁB ${saturdayStr})`;
 
         if (!groups[groupKey]) {
             groups[groupKey] = { label: weekLabel, items: [], sortVal: weekNum };
@@ -1105,6 +1193,9 @@ function renderHistorialAportes(data) {
                             <button class="btn-icon-tiny" onclick="gestionarSemana('${agrupado.detalles[0].id_aporte}', '${agrupado.detalles[0].fecha}', '${agrupado.sub_semana || ''}', '${agrupado.id_socio}', '${agrupado.socio?.nombre || ''}')" title="Gestionar Semana" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary);">
                                 <i class="fas fa-pencil-alt" style="font-size: 0.75rem;"></i>
                             </button>
+                            <button class="btn-icon-tiny" onclick="window.eliminarAporte('${agrupado.detalles[0].id_aporte}')" title="Eliminar Registro" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444;">
+                                <i class="fas fa-trash-alt" style="font-size: 0.75rem;"></i>
+                            </button>
                         </div>
                     </td>
                     <td>
@@ -1166,6 +1257,9 @@ function renderHistorialAportes(data) {
                                             <button class="btn-icon-tiny" onclick="gestionarSemana('${d.id_aporte}', '${d.fecha}', '${agrupado.sub_semana || ''}', '${agrupado.id_socio}', '${agrupado.socio?.nombre || ''}')" title="Editar / Reemplazar Comprobante" style="background: rgba(242, 187, 58, 0.1); border: 1px solid rgba(242, 187, 58, 0.2); color: var(--gold); width: 28px; height: 28px;">
                                                 <i class="fas fa-pencil-alt" style="font-size: 0.7rem;"></i>
                                             </button>
+                                            <button class="btn-icon-tiny" onclick="window.eliminarAporte('${d.id_aporte}')" title="Eliminar Registro" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; width: 28px; height: 28px;">
+                                                <i class="fas fa-trash-alt" style="font-size: 0.7rem;"></i>
+                                            </button>
                                         </div>
                                     </div>
                                 `).join('')}
@@ -1197,7 +1291,22 @@ function renderHistorialAportes(data) {
  * Abre visualización de comprobante
  */
 function verComprobanteAporte(url) {
-    if (url) window.open(url, '_blank');
+    if (!url) return;
+    
+    // Si contiene multiples URLs (separadas por '|')
+    if (url.includes('|')) {
+        const urls = url.split('|');
+        urls.forEach((u, index) => {
+            if (u.trim()) {
+                // Abrir cada uno en una pestaña después de un pequeño delay para evitar bloqueos del navegador
+                setTimeout(() => {
+                    window.open(u.trim(), '_blank');
+                }, index * 250);
+            }
+        });
+    } else {
+        window.open(url, '_blank');
+    }
 }
 
 /**
@@ -1317,6 +1426,40 @@ async function gestionarSemana(idAporte, fechaActual, subActual, idSocio = null,
     } catch (error) {
         console.error('Error al gestionar semana:', error);
         showToast('Error al actualizar los datos', 'error');
+    } finally {
+        endLoading();
+    }
+}
+
+/**
+ * Elimina un registro de aporte de forma directa
+ */
+async function eliminarAporte(idAporte) {
+    try {
+        const result = await Swal.fire({
+            title: '¿Eliminar este aporte?',
+            text: 'Esta acción no se puede deshacer y el dinero se restará de la caja.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            background: '#1a1d21',
+            color: '#fff'
+        });
+
+        if (result.isConfirmed) {
+            beginLoading('Eliminando aporte...');
+            const supabase = window.getSupabaseClient();
+            const { error } = await supabase.from('ic_aportes_semanales').delete().eq('id_aporte', idAporte);
+            if (error) throw error;
+            
+            showToast('Aporte eliminado correctamente', 'success');
+            await cargarHistorialCompleto();
+            await cargarDatosAportes();
+        }
+    } catch (error) {
+        console.error('Error al eliminar aporte:', error);
+        showToast('Error al eliminar aporte', 'error');
     } finally {
         endLoading();
     }
@@ -1955,7 +2098,7 @@ async function generatePDFReporteAportes(params) {
                         weekNum,
                         sub: '',
                         monday: new Date(monday),
-                        label: `SEMANA ${weekNum} (${monday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})} - ${saturday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})})`,
+                        label: `SEMANA ${weekNum} (SÁB ${saturday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})})`,
                         items: [],
                         sortVal: weekNum
                     };
@@ -1985,7 +2128,7 @@ async function generatePDFReporteAportes(params) {
                         weekNum,
                         sub: '',
                         monday: new Date(monday),
-                        label: `SEMANA ${weekNum} (${monday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})} - ${saturday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})})`,
+                        label: `SEMANA ${weekNum} (SÁB ${saturday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})})`,
                         items: [],
                         sortVal: weekNum
                     };
@@ -2023,7 +2166,7 @@ async function generatePDFReporteAportes(params) {
                 groups[key] = {
                     weekNum,
                     monday,
-                    label: `SEMANA ${weekNum} (${monday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})} - ${saturday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})})`,
+                    label: `SEMANA ${weekNum} (SÁB ${saturday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})})`,
                     items: [],
                     sortVal: weekNum
                 };
@@ -2106,7 +2249,6 @@ async function generatePDFReporteAportes(params) {
         doc.setFontSize(8);
         doc.setTextColor(148, 163, 184);
         doc.text(`Generado: ${genDate} | ${genTime}`, 148, 18);
-        doc.text(`Registros: ${aportes.length}`, 148, 23);
 
         yPos = 34;
         doc.setFontSize(9);
@@ -2164,10 +2306,15 @@ async function generatePDFReporteAportes(params) {
             totalAportadoPeriodo += parseFloat(aporte.monto);
 
             // Ajustar altura del box si hay muchos comprobantes
-            const comps = aporte.comprobantes || [aporte.comprobante_url];
-            let boxHeight = 85;
-            if (comps.length > 2) boxHeight = 130;
-            if (comps.length > 4) boxHeight = 175;
+            const comps = aporte.comprobante_url ? (aporte.comprobante_url.includes('|') ? aporte.comprobante_url.split('|') : [aporte.comprobante_url]) : (aporte.comprobantes || []);
+
+            const imgSize = 48;
+            const imgsPerRow = 3;
+            const rows = Math.ceil(comps.length / imgsPerRow);
+            const imagesAreaHeight = rows > 0 ? (rows * (imgSize + 4)) + 4 : 0;
+            const textContentHeight = 40; // Altura base para el texto
+            
+            let boxHeight = Math.max(50, textContentHeight + imagesAreaHeight);
 
             if (yPos + boxHeight > (pageHeight - marginBottom)) {
                 doc.addPage();
@@ -2179,7 +2326,7 @@ async function generatePDFReporteAportes(params) {
             doc.setLineWidth(0.5);
             doc.roundedRect(15, yPos, 180, boxHeight, 3, 3);
 
-            let textY = yPos + 10;
+            let textY = yPos + 8;
             const leftMargin = 22;
 
             doc.setFont('helvetica', 'bold');
@@ -2188,16 +2335,16 @@ async function generatePDFReporteAportes(params) {
             doc.text(`APORTANTE:`, leftMargin, textY);
             doc.setFont('helvetica', 'normal');
             const socioNombre = aporte.socio?.nombre || 'Socio Desconocido';
-            const socioLines = doc.splitTextToSize(socioNombre, 70);
+            const socioLines = doc.splitTextToSize(socioNombre, 130);
             doc.text(socioLines, leftMargin + 25, textY);
             
-            textY += (socioLines.length * 5) + 5;
+            textY += (socioLines.length * 5) + 3;
             doc.setFont('helvetica', 'bold');
             doc.text(`FECHA:`, leftMargin, textY);
             doc.setFont('helvetica', 'normal');
             doc.text(`${aporte.fecha}`, leftMargin + 25, textY);
 
-            textY += 10;
+            textY += 8;
             doc.setFont('helvetica', 'bold');
             doc.text(`MONTO:`, leftMargin, textY);
             doc.setFont('helvetica', 'normal');
@@ -2205,17 +2352,17 @@ async function generatePDFReporteAportes(params) {
             
             if (aporte.esMerged && aporte.montos.length > 1) {
                 doc.text(`$${parseFloat(aporte.monto).toFixed(2)} (Total)`, leftMargin + 25, textY);
-                textY += 5;
+                textY += 4;
                 doc.setFontSize(7);
                 doc.setTextColor(100);
                 const desglose = aporte.montos.map((m, i) => `$${m.toFixed(2)} (${aporte.fechas[i]})`).join(' + ');
-                const desgloseLines = doc.splitTextToSize(desglose, 80);
+                const desgloseLines = doc.splitTextToSize(desglose, 140);
                 doc.text(desgloseLines, leftMargin + 25, textY);
-                textY += (desgloseLines.length * 4) + 2;
+                textY += (desgloseLines.length * 4) + 1;
                 doc.setFontSize(10);
             } else {
                 doc.text(`$${parseFloat(aporte.monto).toFixed(2)}`, leftMargin + 25, textY);
-                textY += 10;
+                textY += 8;
             }
 
             if (aporte.es_igualacion) {
@@ -2223,13 +2370,17 @@ async function generatePDFReporteAportes(params) {
                 doc.setTextColor(242, 187, 58);
                 doc.setFont('helvetica', 'bold');
                 doc.text(`[ PAGO DE IGUALACIÓN ]`, leftMargin, textY);
+                textY += 4;
             }
 
-            // Comprobantes (Múltiples si existen)
+            // Comprobantes debajo del texto
             if (comps.length > 0 && comps[0]) {
-                const imgWidth = comps.length > 1 ? 40 : 75;
-                const imgHeight = comps.length > 1 ? 40 : 75;
+                const imgWidth = imgSize;
+                const imgHeight = imgSize;
                 
+                // Empezar imágenes inmediatamente después del texto
+                const imagesStartY = Math.max(yPos + 38, textY + 2);
+
                 for (let i = 0; i < comps.length; i++) {
                     const cUrl = comps[i];
                     if (!cUrl) continue;
@@ -2237,28 +2388,26 @@ async function generatePDFReporteAportes(params) {
                     try {
                         const imgData = await fetchImageAsBase64Aportes(cUrl);
                         if (imgData) {
-                            // Si hay varios, ponerlos en grid
-                            const xOffset = 115 + (i % 2 === 0 ? 0 : 45);
-                            const yOffset = yPos + 5 + (Math.floor(i / 2) * 45);
-                            
-                            // Ajustar boxHeight si hay muchos comprobantes
-                            // (Para simplificar, asumiremos max 4 que caben en 85 o ajustamos dinamicamente)
+                            const xOffset = 25 + (i % imgsPerRow) * (imgSize + 5);
+                            const yOffset = imagesStartY + (Math.floor(i / imgsPerRow) * (imgSize + 5));
                             
                             doc.addImage(imgData, 'JPEG', xOffset, yOffset, imgWidth, imgHeight, undefined, 'FAST');
                         }
                     } catch (e) {
                         doc.setFontSize(8);
                         doc.setTextColor(150);
-                        doc.text("[Err. Imagen]", 115 + (i * 20), yPos + 40);
+                        const xErr = 25 + (i % imgsPerRow) * (imgSize + 5);
+                        const yErr = imagesStartY + (Math.floor(i / imgsPerRow) * (imgSize + 5)) + 10;
+                        doc.text("[Err. Imagen]", xErr, yErr);
                     }
                 }
             } else {
                 doc.setFontSize(8);
                 doc.setTextColor(150);
-                doc.text("[Sin comprobante]", 130, yPos + 40);
+                doc.text("[Sin comprobante]", leftMargin, textY + 2);
             }
 
-            yPos += boxHeight + 5;
+            yPos += boxHeight + 4;
         }
 
         // Resumen Final
@@ -2363,10 +2512,6 @@ async function fetchImageAsBase64Aportes(url) {
     }
 }
 
-function verComprobanteAporte(url) {
-    if (url) window.open(url, '_blank');
-}
-
 /**
  * Prepara el modal de registro para añadir un aporte adicional a un socio y fecha específicos
  */
@@ -2410,6 +2555,7 @@ window.prepararAporteAdicional = async function(idSocio, fecha) {
 window.initAportesModule = initAportesModule;
 window.verComprobanteAporte = verComprobanteAporte;
 window.gestionarSemana = gestionarSemana; // Asegurar exposición global
+window.eliminarAporte = eliminarAporte; // Exponer para borrado directo
 
 /**
  * Llena el selector de semanas manual en el modal de registro
@@ -2430,10 +2576,10 @@ function llenarSelectorSemanasManual(defaultWeek = null) {
     for (let i = maxWeek; i >= 1; i--) {
         const mon = new Date(anchor);
         mon.setDate(anchor.getDate() + (i - 1) * 7);
-        const sun = new Date(mon);
-        sun.setDate(mon.getDate() + 6);
-        const range = `${mon.toLocaleDateString('es-EC', {day:'numeric', month:'short'})} - ${sun.toLocaleDateString('es-EC', {day:'numeric', month:'short'})}`;
-        html += `<option value="${i}">Semana ${i}${i === maxWeek ? ' (Actual)' : ''} [${range}]</option>`;
+        const sat = new Date(mon);
+        sat.setDate(mon.getDate() + 5);
+        const satLabel = sat.toLocaleDateString('es-EC', {day:'numeric', month:'short'});
+        html += `<option value="${i}">Semana ${i}${i === maxWeek ? ' (Actual)' : ''} [SÁB ${satLabel}]</option>`;
     }
     select.innerHTML = html;
 }
@@ -2455,7 +2601,7 @@ async function abrirSelectorSemanas(maxWeek) {
         semanas.push({
             num: i,
             label: `Semana ${i}`,
-            range: `${monday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})} - ${saturday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})}`
+            range: `SÁB ${saturday.toLocaleDateString('es-EC', {day:'numeric', month:'short'})}`
         });
     }
 

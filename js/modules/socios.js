@@ -721,7 +721,7 @@ function showSocioDetails(idsocio) {
                             <span class="info-label">Teléfono</span>
                             <span class="info-value">
                                 ${socio.whatsappreferencia ? `
-                                    <a href="https://wa.me/${socio.whatsappreferencia}" target="_blank" class="whatsapp-btn-mini">
+                                    <a href="https://wa.me/${String(socio.whatsappreferencia).replace(/\D/g, '')}" target="_blank" class="whatsapp-btn-mini">
                                         <i class="fab fa-whatsapp"></i> ${socio.whatsappreferencia}
                                     </a>
                                 ` : '-'}
@@ -741,7 +741,7 @@ function showSocioDetails(idsocio) {
                     </div>
                     <div class="modal-card-content">
                         ${socio.whatsapp ? `
-                            <a href="https://wa.me/${socio.whatsapp}" target="_blank" class="whatsapp-btn-large">
+                            <a href="https://wa.me/${String(socio.whatsapp).replace(/\D/g, '')}" target="_blank" class="whatsapp-btn-large">
                                 <i class="fab fa-whatsapp"></i>
                                 <span>${socio.whatsapp}</span>
                             </a>
@@ -769,7 +769,7 @@ function showSocioDetails(idsocio) {
                                 <span class="info-label">Teléfono</span>
                                 <span class="info-value">
                                     ${socio.whatsappconyuge && socio.whatsappconyuge !== 'NO APLICA' ? `
-                                        <a href="https://wa.me/${socio.whatsappconyuge}" target="_blank" class="whatsapp-btn-mini">
+                                        <a href="https://wa.me/${String(socio.whatsappconyuge).replace(/\D/g, '')}" target="_blank" class="whatsapp-btn-mini">
                                             <i class="fab fa-whatsapp"></i> ${socio.whatsappconyuge}
                                         </a>
                                     ` : '-'}

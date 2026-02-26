@@ -1047,6 +1047,9 @@ window.showConfirmacionPagoCredito = function(valor) {
  * Maneja el inicio del proceso de pago (Abriría el modal de pago de créditos)
  */
 async function handleQuickCreditPayment(id, btn) {
+    // Asegurar que el ID del crédito sea el actual globalmente
+    window.currentCreditoId = id;
+
     const c = liteCreditosData.find(item => item.id_credito === id);
     if (!c) return;
 
